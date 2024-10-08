@@ -844,29 +844,115 @@ def sv4_eq_sv5 [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
 
 
 -- Evaluate the nth conditional starting at state s
--- Return false if the loop will not terminate on iterate n, starting at s
--- Return true if the loop will terminate on iterate n, starting at s
--- Return false if the loop never gets to iterate n, starting at s
+-- Evaluate the loop conditional n steps in the future
+-- false if the tape runs out
 def sv6_privMax_nth (τ : ℤ) (l : List ℕ) (s : sv4_state) (n : ℕ) : Bool :=
-  match s with
-  | ((past, present), future) =>
-    match n with
-    | 0 => sorry
-    | Nat.succ n' => sorry
+  match n with
+  | 0 =>
+      -- Terminates on the 0th iteration if initial state causes the checck to fail
+      ¬ sv4_privMaxC τ l s
+  | Nat.succ n' =>
+    match s with
+    -- If there is more samples on the tape, call recursively
+    | ((past, present), (future_next :: future_rest)) =>
+      -- sv4_privMaxC τ l ((past, present), (future_next :: future_rest)) ∧        -- Should not terminate here
+      sv6_privMax_nth τ l ((past ++ [present], future_next), future_rest) n'
+    | (_, []) =>
+      -- Out of samples on the tape
+      false
+
+
+
+-- TODO Test some values of sv6_priv_nth
+
+lemma sv6_privMax_0th_true (τ : ℤ) (l : List ℕ) (s : sv4_state) :
+    (sv4_privMaxC τ l s = false) -> (sv6_privMax_nth τ l s 0 = true) := by
+  simp [sv6_privMax_nth]
+
+lemma sv6_privMax_0th_false (τ : ℤ) (l : List ℕ) (s : sv4_state) :
+    (sv4_privMaxC τ l s = true) -> (sv6_privMax_nth τ l s 0 = false) := by
+  simp [sv6_privMax_nth]
+
+lemma sv6_privMax_1th_empty (τ : ℤ) (l : List ℕ) (s : sv1_state) :
+    (sv6_privMax_nth τ l (s, []) 1 = false) := by
+  simp [sv6_privMax_nth]
+
+-- Inductive formula for when the tape is empty
+lemma sv6_privMax_ind_empty (τ : ℤ) (l : List ℕ) (s : sv1_state) (n : ℕ):
+    (sv6_privMax_nth τ l (s, []) (n + 1) = false) := by
+  simp [sv6_privMax_nth]
+
+-- Inductive formula for when the tape is not empty
+lemma sv6_privMax_ind_nonempty (τ : ℤ) (l : List ℕ) pa pr f fs (n : ℕ):
+    sv6_privMax_nth τ l ((pa, pr), f :: fs) (n + 1) =
+    sv6_privMax_nth τ l ((pa ++ [pr], f), fs) n := by
+  simp [sv6_privMax_nth]
+
 
 def sv6_loop (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv4_state) : SLang ℕ :=
   if (sv6_privMax_nth τ l init point) ∧ ¬ (sv6_privMax_nth τ l init (point + 1))
     then return point
     else probZero
 
+-- the loop evaluated at point either has probability mass 0 or 1
+lemma sv6_loop_det τ l point init : sv6_loop τ l point init point = 0 ∨ sv6_loop τ l point init point = 1 := by
+  unfold sv6_loop
+  split <;> simp
+
+
+lemma sv6_loop_inv τ l point init : sv6_loop τ l point init point = 1 -> True := by sorry
+
+
+-- Question: What does (sv6_loop τ l (point + 1) init (point + 1))
+-- have to do with (sv6_loop τ l point ?? point)
+-- There is an inductive unrolling for sv6_privMax_nth (empty and nonempty)
+
+
+
+
+-- Question: Do we need any relationship between point and init?
+-- It is true on entry that init.1.1.length = point (+- 1?)
+
+
+
+
 -- These functions are not equal. However, they are equal at "point" (+- 1?)
 def sv5_sv6_loop_eq_point (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv4_state) :
     @sv5_loop τ l point init point = @sv6_loop τ l point init point := by
-  unfold sv5_loop
-  unfold sv6_loop
+  revert init
+  induction point
+  · intro init
+    simp [sv5_loop, sv6_loop]
+    simp [probWhileCut, probWhileFunctional]
+    simp [sv1_threshold]
+    split
+    · rename_i h
+      apply sv6_privMax_0th_false at h
+      simp
+      rw [h]
+      simp
+    · rename_i h
+      simp at h
+      apply sv6_privMax_0th_true at h
+      simp_all
+      -- The last one should always exhaust the tape completely?
+      -- LHS is taking a sum over the singleton "init"
+      -- so it's     if init.1.1.length = 0 then 1 else 0
+      -- RHS is asking if privMaxnth init 1 is false
+      --  So either
+
+      -- The invariant could be "sv4_state of size n"
+      -- future = size n?
+      -- But then, how does the evaluation at point (point - 1) give us anything about the evaluation at point (point)
+      sorry
+  sorry
+
+  -- unfold sv5_loop
+  -- unfold sv6_loop
+  -- unfold sv4_privMaxC
+  -- unfold sv1_privMaxC
 
   -- What is the inductive argument? What can I unroll?
-  sorry
 
 def sv6_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
