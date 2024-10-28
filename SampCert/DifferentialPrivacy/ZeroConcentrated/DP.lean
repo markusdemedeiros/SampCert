@@ -63,19 +63,16 @@ lemma zCDP_mono {m : List T -> PMF U} {ε₁ ε₂ : NNReal} (H : ε₁ ≤ ε�
   · assumption
   · rw [zCDPBound] at *
     intro α Hα l₁ l₂ N
-    sorry
-    -- apply (@le_trans _ _ _ (ENNReal.ofReal (1 / 2 * ↑ε₁ ^ 2 * α)) _ (Hε α Hα l₁ l₂ N))
-    -- apply ENNReal.coe_mono
-    -- refine (Real.toNNReal_le_toNNReal_iff ?a.hp).mpr ?a.a
-    -- · apply mul_nonneg
-    --   · apply mul_nonneg
-    --     · simp
-    --     · simp
-    --   · linarith
-    -- · repeat rw [mul_assoc]
-    --   apply (mul_le_mul_iff_of_pos_left (by simp)).mpr
-    --   apply (mul_le_mul_iff_of_pos_right (by linarith)).mpr
-    --   apply pow_le_pow_left' H (OfNat.ofNat 2)
+    apply (@le_trans _ _ _ (ENNReal.ofReal (ε₁ * α)) _ ?G1)
+    case G1 => apply Hε <;> trivial
+    apply ENNReal.coe_mono
+    refine (Real.toNNReal_le_toNNReal_iff ?a.hp).mpr ?a.a
+    · apply mul_nonneg
+      · exact NNReal.zero_le_coe
+      · linarith
+    · apply mul_le_mul_of_nonneg_right
+      · exact H
+      · linarith
 
 /--
 Obtain an approximate DP bound from a zCDP bound, when ε > 0 and δ < 1
