@@ -23,6 +23,7 @@ Implementation for
 noncomputable section
 
 variable (dps : SLang.DPSystem ℕ)
+variable (dpn : SLang.DPNoise dps)
 variable (numBins : ℕ+)
 variable (B : Bins ℕ numBins)
 
@@ -44,7 +45,7 @@ and the bounded mean with (ε₃/ε₄)-DP.
 def privMeanHistogram (ε₁ ε₂ : ℕ+) (τ : ℤ) (ε₃ ε₄ : ℕ+) : Mechanism ℕ (Option ℚ) :=
   privPostProcess
     (privComposeAdaptive
-      (@privMaxBinAboveThreshold numBins _ B dps ε₁ ε₂ τ)
+      (@privMaxBinAboveThreshold numBins _ B dps dpn ε₁ ε₂ τ)
       (fun opt_max =>
         match opt_max with
         | none => privConst none

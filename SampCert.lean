@@ -14,7 +14,7 @@ import Init.Data.UInt.Lemmas
 
 open SLang PMF
 
-def combineConcentrated := @privNoisedBoundedMean_DP gaussian_zCDPSystem
+def combineConcentrated := @privNoisedBoundedMean_DP _ gaussian_zCDPSystem
 def combinePure := @privNoisedBoundedMean_DP PureDPSystem
 
 /-
@@ -41,7 +41,7 @@ Return an upper bound on the bin value, clipped to 2^(1 + numBins)
 def unbin (n : Fin numBins) : ℕ+ := 2 ^ (1 + n.val)
 
 noncomputable def combineMeanHistogram : Mechanism ℕ (Option ℚ) :=
-  privMeanHistogram PureDPSystem numBins { bin } unbin 1 20 2 1 20
+  privMeanHistogram PureDPSystem laplace_pureDPSystem numBins { bin } unbin 1 20 2 1 20
 
 end histogramMeanExample
 

@@ -17,6 +17,7 @@ namespace SLang
 
 variable {T : Type}
 variable [dps : DPSystem T]
+variable [dpn : DPNoise dps]
 
 /--
 Query to count the size of the input list.
@@ -27,6 +28,6 @@ def exactCount (l : List T) : ℤ := List.length l
 A noised counting mechanism.
 -/
 def privNoisedCount (ε₁ ε₂ : ℕ+) (l : List T) : PMF ℤ := do
-  dps.noise exactCount 1 ε₁ ε₂ l
+  dpn.noise exactCount 1 ε₁ ε₂ l
 
 end SLang

@@ -21,6 +21,7 @@ noncomputable section
 namespace SLang
 
 variable [dps : DPSystem ℕ]
+variable [dpn : DPNoise dps]
 
 lemma budget_split (ε₁ ε₂ : ℕ+) :
   (ε₁ : NNReal) / (ε₂ : NNReal) = (ε₁ : NNReal) / ((2 * ε₂) : ℕ+) + (ε₁ : NNReal) / ((2 * ε₂) : ℕ+) := by

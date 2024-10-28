@@ -19,6 +19,7 @@ noncomputable section
 namespace SLang
 
 variable [dps : DPSystem ℕ]
+variable [dpn : DPNoise dps]
 
 /--
 Bounded sum query: computes a sum and truncates it at an upper bound.
@@ -30,6 +31,6 @@ def exactBoundedSum (U : ℕ+) (l : List ℕ) : ℤ :=
 Noised bounded sum query obtained by applying the DP noise mechanism to the bounded sum.
 -/
 def privNoisedBoundedSum (U : ℕ+) (ε₁ ε₂ : ℕ+) (l : List ℕ) : PMF ℤ := do
-  dps.noise (exactBoundedSum U) U ε₁ ε₂ l
+  dpn.noise (exactBoundedSum U) U ε₁ ε₂ l
 
 end SLang

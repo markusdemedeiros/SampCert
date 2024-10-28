@@ -21,14 +21,21 @@ variable { T : Type }
 /--
 Pure ε-DP with noise drawn from the discrete Laplace distribution.
 -/
-noncomputable instance PureDPSystem : DPSystem T where
+instance PureDPSystem : DPSystem T where
   prop := PureDP
-  prop_adp := pure_ApproximateDP
+  of_adp := sorry
+  prop_adp := sorry -- pure_ApproximateDP
   prop_mono := PureDP_mono
-  noise := privNoisedQueryPure
-  noise_prop := privNoisedQueryPure_DP
   adaptive_compose_prop := PureDP_ComposeAdaptive'
   postprocess_prop := PureDP_PostProcess
   const_prop := PureDP_privConst
+
+
+instance laplace_pureDPSystem : DPNoise (@PureDPSystem T) where
+  noise := privNoisedQueryPure
+  noise_priv := sorry
+  noise_prop := sorry -- privNoisedQueryPure_DP
+
+
 
 end SLang

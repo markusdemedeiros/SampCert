@@ -18,6 +18,7 @@ noncomputable section
 namespace SLang
 
 variable [dps : DPSystem ℕ]
+variable [dpn : DPNoise dps]
 
 /--
 Compute a noised mean using a noised sum and noised count.

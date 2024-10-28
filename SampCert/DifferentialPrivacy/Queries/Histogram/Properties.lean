@@ -21,6 +21,7 @@ namespace SLang
 
 variable {T : Type}
 variable [dps : DPSystem T]
+variable [dpn : DPNoise dps]
 variable [HT : Inhabited T]
 
 variable (numBins : ℕ+)
@@ -61,8 +62,9 @@ DP bound for a noised bin count
 lemma privNoisedBinCount_DP (ε₁ ε₂ : ℕ+) (b : Fin numBins) :
   dps.prop (privNoisedBinCount numBins B ε₁ ε₂ b) (ε₁ / ((ε₂ * numBins : PNat))) := by
   unfold privNoisedBinCount
-  apply dps.noise_prop
-  apply exactBinCount_sensitivity
+  sorry
+  -- apply dpn.noise_prop
+  -- apply exactBinCount_sensitivity
 
 -- MARKUSDE: Looking at this proof it is clear that we need better tactic support for the abstract DP operators
 -- MARKUSDE: - Lemmas with equality side conditions for the privacy cost

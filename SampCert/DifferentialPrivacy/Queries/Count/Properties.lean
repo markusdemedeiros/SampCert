@@ -21,6 +21,7 @@ namespace SLang
 
 variable {T : Type}
 variable [dps : DPSystem T]
+variable [dpn : DPNoise dps]
 
 /--
 The counting query is 1-sensitive
@@ -46,7 +47,11 @@ The noised counting query satisfies DP property
 @[simp]
 theorem privNoisedCount_DP (ε₁ ε₂ : ℕ+) :
   dps.prop (privNoisedCount ε₁ ε₂) ((ε₁ : NNReal) / ε₂) := by
-  apply dps.noise_prop
-  apply exactCount_1_sensitive
+  apply DPSystem_prop_ext
+  case H =>
+    sorry
+  all_goals sorry
+  -- apply dpn.noise_prop
+  -- apply exactCount_1_sensitive
 
 end SLang

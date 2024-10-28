@@ -22,6 +22,7 @@ noncomputable section
 namespace SLang
 
 variable (dps : DPSystem ℕ)
+variable (dpn : DPNoise dps)
 variable (numBins : ℕ+)
 variable (B : Bins ℕ numBins)
 variable (unbin : Fin numBins -> ℕ+)
@@ -60,7 +61,7 @@ instance : DiscreteMeasurableSpace (Option (Fin ↑numBins)) where
 DP bound for the adaptive mean
 -/
 lemma privMeanHistogram_DP (ε₁ ε₂ : ℕ+) (τ : ℤ) (ε₃ ε₄ : ℕ+) :
-    dps.prop (privMeanHistogram dps numBins B unbin ε₁ ε₂ τ ε₃ ε₄) (ε₁/ε₂ + ε₃/ε₄) := by
+    dps.prop (privMeanHistogram dps dpn numBins B unbin ε₁ ε₂ τ ε₃ ε₄) (ε₁/ε₂ + ε₃/ε₄) := by
   rw [privMeanHistogram]
   apply dps.postprocess_prop
   apply dps.adaptive_compose_prop

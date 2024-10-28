@@ -15,8 +15,6 @@ import SampCert.DifferentialPrivacy.Approximate.DP
 This file defines an abstract system of differentially private operators.
 -/
 
-noncomputable section
-
 open Classical Nat Int Real ENNReal
 
 namespace SLang
@@ -31,25 +29,18 @@ class DPSystem (T : Type) where
   prop : Mechanism T Z → NNReal → Prop
 
   /--
-  For any δ, prop implies ``ApproximateDP δ ε`` up to a sufficient degradation
-  of the privacy parameter.
+  Definition of DP is well-formed: Privacy parameter required to obtain (ε', δ)-approximate DP
   -/
-  prop_adp [Countable Z] {m : Mechanism T Z} :
-    ∃ (degrade : (δ : NNReal) -> (ε' : NNReal) -> NNReal), ∀ (δ : NNReal) (_ : 0 < δ) (ε' : NNReal),
-    (prop m (degrade δ ε') -> ApproximateDP m ε' δ)
+  of_adp : (δ : NNReal) -> (ε' : NNReal) -> NNReal
+  /--
+  For any ε', this definition of DP implies (ε', δ)-approximate-DP for all δ
+  -/
+  prop_adp [Countable Z] {m : Mechanism T Z} : ∀ (δ : NNReal) (_ : 0 < δ) (ε' : NNReal),
+    (prop m (of_adp δ ε') -> ApproximateDP m ε' δ)
   /--
   DP is monotonic
   -/
   prop_mono {m : Mechanism T Z} {ε₁ ε₂: NNReal} (Hε : ε₁ ≤ ε₂) (H : prop m ε₁) : prop m ε₂
-  /--
-  A noise mechanism (eg. Laplace, Discrete Gaussian, etc)
-  Paramaterized by a query, sensitivity, and a (rational) security paramater.
-  -/
-  noise : Query T ℤ → (sensitivity : ℕ+) → (num : ℕ+) → (den : ℕ+) → Mechanism T ℤ
-  /--
-  Adding noise to a query makes it private.
-  -/
-  noise_prop : ∀ q : List T → ℤ, ∀ Δ εn εd : ℕ+, sensitivity q Δ → prop (noise q Δ εn εd) (εn / εd)
   /--
   Privacy adaptively composes by addition.
   -/
@@ -95,5 +86,24 @@ lemma bind_bind_indep (p : Mechanism T U) (q : Mechanism T V) (h : U → V → P
     fun l => (privCompose p q l) >>= (fun z => h z.1 z.2) := by
   ext l x
   simp [privCompose, privComposeAdaptive, tsum_prod']
+
+
+/--
+A noise function for a differential privacy system
+-/
+class DPNoise (dps : DPSystem T) where
+  /--
+  A noise mechanism (eg. Laplace, Discrete Gaussian, etc)
+  Paramaterized by a query, sensitivity, and a (rational) security paramater.
+  -/
+  noise : Query T ℤ → (sensitivity : ℕ+) → (num : ℕ+) → (den : ℕ+) → Mechanism T ℤ
+  /--
+  How much privacy one obtains by adding Δ εn εd noise to a Δ-sensitive query
+  -/
+  noise_priv : NNReal → NNReal
+  /--
+  Adding noise to a query makes it private.
+  -/
+  noise_prop : ∀ q : List T → ℤ, ∀ Δ εn εd : ℕ+, sensitivity q Δ → dps.prop (noise q Δ εn εd) (noise_priv (εn / εd))
 
 end SLang

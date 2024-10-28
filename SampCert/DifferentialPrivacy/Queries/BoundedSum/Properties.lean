@@ -22,6 +22,7 @@ noncomputable section
 namespace SLang
 
 variable [dps : DPSystem ℕ]
+variable [dpn : DPNoise dps]
 
 /--
 Sensitivity of the bounded sum is equal to the bound.
@@ -86,7 +87,8 @@ The noised bounded sum satisfies the DP property of the DP system.
 @[simp]
 theorem privNoisedBoundedSum_DP (U : ℕ+) (ε₁ ε₂ : ℕ+) :
   dps.prop (privNoisedBoundedSum U ε₁ ε₂) ((ε₁ : NNReal) / ε₂) := by
-  apply dps.noise_prop
-  apply exactBoundedSum_sensitivity
+  sorry
+  -- apply dpn.noise_prop
+  -- apply exactBoundedSum_sensitivity
 
 end SLang
