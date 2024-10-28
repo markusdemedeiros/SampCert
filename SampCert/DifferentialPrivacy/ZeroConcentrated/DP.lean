@@ -1877,9 +1877,7 @@ Convert ε-DP bound to `(1/2)ε²`-zCDP bound
 
 Note that `zCDPBound _ ε` corresponds to `(1/2)ε²`-zCDP (not `ε`-zCDP).
 -/
-lemma ofDP_bound (ε : NNReal) (q' : List T -> PMF U) (H : SLang.PureDP q' ε) : zCDPBound q' ε := by
-  sorry
-  /-
+lemma ofDP_bound (ε : NNReal) (q' : List T -> PMF U) (H : SLang.PureDP q' ε) : zCDPBound q' ((1/2) * ε^2) := by
   rw [zCDPBound]
   intro α Hα l₁ l₂ HN
   -- Special case: (εα/2 > 1)
@@ -2299,14 +2297,13 @@ lemma ofDP_bound (ε : NNReal) (q' : List T -> PMF U) (H : SLang.PureDP q' ε) :
   apply Eq.le
   congr 1
   linarith
-  -/
 
 /-
 Convert ε-DP to `(1/2)ε²`-zCDP.
 
 Note that `zCDPBound _ ε` corresponds to `(1/2)ε²`-zCDP (not `ε`-zCDP).
 -/
-lemma ofDP (ε : NNReal) (q : List T -> PMF U) (H : SLang.PureDP q ε) : zCDP q ε := by
+lemma ofDP (ε : NNReal) (q : List T -> PMF U) (H : SLang.PureDP q ε) : zCDP q ((1/2) * ε^2) := by
   constructor
   · exact ACNeighbour_of_DP ε q H
   · exact ofDP_bound ε q H

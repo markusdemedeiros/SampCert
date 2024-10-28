@@ -221,13 +221,11 @@ def privNoisedQuery_AC (query : List T -> ℤ) (Δ ε₁ ε₂ : ℕ+) : ACNeigh
 The zCDP mechanism is ``(Δε₂/ε₁)^2``-zCDP.
 -/
 theorem privNoisedQuery_zCDP (query : List T → ℤ) (Δ ε₁ ε₂ : ℕ+) (bounded_sensitivity : sensitivity query Δ) :
-  zCDP (privNoisedQuery query Δ ε₁ ε₂) ((ε₁ : NNReal) / ε₂) := by
-  simp [zCDP]
+  zCDP (privNoisedQuery query Δ ε₁ ε₂) ((1/2) * ((ε₁ : NNReal) / ε₂) ^ 2) := by
+  simp only [zCDP]
   apply And.intro
   · exact privNoisedQuery_AC query Δ ε₁ ε₂
-  · sorry
-    -- apply privNoisedQuery_zCDPBound
-    -- exact bounded_sensitivity
-
+  · apply privNoisedQuery_zCDPBound
+    exact bounded_sensitivity
 
 end SLang
