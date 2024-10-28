@@ -45,13 +45,10 @@ theorem exactCount_1_sensitive :
 The noised counting query satisfies DP property
 -/
 @[simp]
-theorem privNoisedCount_DP (ε₁ ε₂ : ℕ+) :
-  dps.prop (privNoisedCount ε₁ ε₂) ((ε₁ : NNReal) / ε₂) := by
-  apply DPSystem_prop_ext
-  case H =>
-    sorry
-  all_goals sorry
-  -- apply dpn.noise_prop
-  -- apply exactCount_1_sensitive
+theorem privNoisedCount_DP (ε₁ ε₂ : ℕ+) (ε : NNReal) (HP : dpn.noise_priv ε₁ ε₂ ε) :
+  dps.prop (privNoisedCount ε₁ ε₂) ε := by
+  unfold privNoisedCount
+  apply (dpn.noise_prop _ _ _ _ _ HP)
+  apply exactCount_1_sensitive
 
 end SLang

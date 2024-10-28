@@ -119,7 +119,7 @@ def laplace_pureDP_noise_priv (ε₁ ε₂ : ℕ+) (ε : NNReal) : Prop := (ε�
 /--
 Laplace noising mechanism ``privNoisedQueryPure`` produces a pure ``ε₁/ε₂``-DP mechanism from a Δ-sensitive query.
 -/
-theorem privNoisedQueryPure_DP (query : List T → ℤ) (Δ ε₁ ε₂ : ℕ+) (ε : NNReal) (bounded_sensitivity : sensitivity query Δ) (HN : laplace_pureDP_noise_priv ε₁ ε₂ ε) :
+theorem privNoisedQueryPure_DP (query : List T → ℤ) (Δ ε₁ ε₂ : ℕ+) (ε : NNReal) (HN : laplace_pureDP_noise_priv ε₁ ε₂ ε) (bounded_sensitivity : sensitivity query Δ) :
     PureDP (privNoisedQueryPure query Δ ε₁ ε₂) ε := by
   unfold laplace_pureDP_noise_priv at HN
   rw [<- HN]

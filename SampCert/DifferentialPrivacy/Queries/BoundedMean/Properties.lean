@@ -39,6 +39,7 @@ theorem privNoisedBoundedMean_DP (U : ℕ+) (ε₁ ε₂ : ℕ+) :
   rw [budget_split]
   apply dps.compose_prop
   · apply privNoisedBoundedSum_DP
-  · apply privNoisedCount_DP
+  · sorry
+    -- apply privNoisedCount_DP
 
 end SLang
