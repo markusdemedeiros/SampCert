@@ -44,7 +44,7 @@ satisfying this bound are ``ε``-DP).
 -/
 def zCDPBound (q : List T → PMF U) (ε : ℝ) : Prop :=
   ∀ α : ℝ, 1 < α → ∀ l₁ l₂ : List T, Neighbour l₁ l₂ →
-  RenyiDivergence (q l₁) (q l₂) α ≤ ENNReal.ofReal ((1/2) * ε ^ 2 * α)
+  RenyiDivergence (q l₁) (q l₂) α ≤ ENNReal.ofReal ε
 
 /--
 All neighbouring queries are absolutely continuous
@@ -63,18 +63,19 @@ lemma zCDP_mono {m : List T -> PMF U} {ε₁ ε₂ : NNReal} (H : ε₁ ≤ ε�
   · assumption
   · rw [zCDPBound] at *
     intro α Hα l₁ l₂ N
-    apply (@le_trans _ _ _ (ENNReal.ofReal (1 / 2 * ↑ε₁ ^ 2 * α)) _ (Hε α Hα l₁ l₂ N))
-    apply ENNReal.coe_mono
-    refine (Real.toNNReal_le_toNNReal_iff ?a.hp).mpr ?a.a
-    · apply mul_nonneg
-      · apply mul_nonneg
-        · simp
-        · simp
-      · linarith
-    · repeat rw [mul_assoc]
-      apply (mul_le_mul_iff_of_pos_left (by simp)).mpr
-      apply (mul_le_mul_iff_of_pos_right (by linarith)).mpr
-      apply pow_le_pow_left' H (OfNat.ofNat 2)
+    sorry
+    -- apply (@le_trans _ _ _ (ENNReal.ofReal (1 / 2 * ↑ε₁ ^ 2 * α)) _ (Hε α Hα l₁ l₂ N))
+    -- apply ENNReal.coe_mono
+    -- refine (Real.toNNReal_le_toNNReal_iff ?a.hp).mpr ?a.a
+    -- · apply mul_nonneg
+    --   · apply mul_nonneg
+    --     · simp
+    --     · simp
+    --   · linarith
+    -- · repeat rw [mul_assoc]
+    --   apply (mul_le_mul_iff_of_pos_left (by simp)).mpr
+    --   apply (mul_le_mul_iff_of_pos_right (by linarith)).mpr
+    --   apply pow_le_pow_left' H (OfNat.ofNat 2)
 
 /--
 Obtain an approximate DP bound from a zCDP bound, when ε > 0 and δ < 1
@@ -82,6 +83,8 @@ Obtain an approximate DP bound from a zCDP bound, when ε > 0 and δ < 1
 lemma ApproximateDP_of_zCDP_pos_lt_one [Countable U] (m : Mechanism T U)
   (ε : ℝ) (Hε_pos : 0 < ε) (h : zCDPBound m ε) (Hm : ACNeighbour m) :
   ∀ δ : NNReal, (0 < (δ : ℝ)) -> ((δ : ℝ) < 1) -> DP' m (ε^2/2 + ε * (2*Real.log (1/δ))^(1/2 : ℝ)) δ := by
+  sorry
+  /-
   have Hε : 0 ≤ ε := by exact le_of_lt Hε_pos
   intro δ Hδ0 Hδ1
   generalize Dε' : (ε^2/2 + ε * (2*Real.log (1/δ))^(1/2 : ℝ)) = ε'
@@ -627,6 +630,7 @@ lemma ApproximateDP_of_zCDP_pos_lt_one [Countable U] (m : Mechanism T U)
 
   -- Conclude by simplification
   simp [add_comm]
+  -/
 
 
 
@@ -1873,6 +1877,8 @@ Convert ε-DP bound to `(1/2)ε²`-zCDP bound
 Note that `zCDPBound _ ε` corresponds to `(1/2)ε²`-zCDP (not `ε`-zCDP).
 -/
 lemma ofDP_bound (ε : NNReal) (q' : List T -> PMF U) (H : SLang.PureDP q' ε) : zCDPBound q' ε := by
+  sorry
+  /-
   rw [zCDPBound]
   intro α Hα l₁ l₂ HN
   -- Special case: (εα/2 > 1)
@@ -2292,6 +2298,7 @@ lemma ofDP_bound (ε : NNReal) (q' : List T -> PMF U) (H : SLang.PureDP q' ε) :
   apply Eq.le
   congr 1
   linarith
+  -/
 
 /-
 Convert ε-DP to `(1/2)ε²`-zCDP.

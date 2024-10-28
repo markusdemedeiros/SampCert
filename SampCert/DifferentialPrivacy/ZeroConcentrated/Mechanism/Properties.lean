@@ -29,6 +29,8 @@ theorem privNoisedQuery_zCDPBound (query : List T → ℤ) (Δ ε₁ ε₂ : ℕ
   have A := @discrete_GaussianGenSample_ZeroConcentrated α h1 (Δ * ε₂) ε₁ (query l₁) (query l₂)
   apply le_trans A
   clear A
+  sorry
+  /-
 
   -- Turn it into an equality ASAP
   rw [sensitivity] at bounded_sensitivity
@@ -186,6 +188,7 @@ theorem privNoisedQuery_zCDPBound (query : List T → ℤ) (Δ ε₁ ε₂ : ℕ
     case G1 => exact NNReal.zero_le_coe
     congr
     simp only [Real.toNNReal_coe]
+    -/
 
 lemma discrete_gaussian_shift {σ : ℝ} (h : σ ≠ 0) (μ : ℝ) (τ x : ℤ) :
   discrete_gaussian σ μ (x - τ) = discrete_gaussian σ (μ + τ) (x) := by
