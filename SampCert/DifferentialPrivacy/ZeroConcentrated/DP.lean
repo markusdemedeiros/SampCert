@@ -665,31 +665,82 @@ theorem ApproximateDP_of_zCDP [Countable U] (m : Mechanism T U)
     case G2 => exact Hm l₁ l₂ HN
     simp
 
+
+def D (δ : NNReal) : Real := (2 * Real.log (1 / δ)) ^ ((1 : ℝ) / (2 : ℝ))
+
+def ε (ε' : NNReal) (δ : NNReal) : NNReal :=
+  Real.toNNReal ((-2 * D δ + .sqrt ((2 * D δ) ^ 2 + 8 * ε')) / 2) ^ ((1 : ℝ) / (2 : ℝ))
+
+lemma eqε (ε' δ : NNReal) (H : δ < 1) : ε' = ((ε ε' δ)^2) / (2 : NNReal) + ε ε' δ * D δ := by
+  sorry
+
+/--
+Pure privacy bound required to obtain (ε, δ)-approximate DP
+-/
+def zCDP_of_adp (δ : NNReal) (ε' : NNReal) : NNReal := (1/2) * ((ε ε' δ)^2)
+  -- (√(2 * Real.log (1/δ) + 2 * ε) - √(2 * Real.log (1/δ))).toNNReal
+
 /--
 zCDP is no weaker than approximate DP, up to a loss of parameters.
 -/
 lemma zCDP_ApproximateDP [Countable U] {m : Mechanism T U} :
-    ∃ (degrade : (δ : NNReal) -> (ε' : NNReal) -> NNReal), ∀ (δ : NNReal) (_ : 0 < δ) (ε' : NNReal),
-     (zCDP m (degrade δ ((1/2) * ε'^2)) -> ApproximateDP m ε' δ) := by
-  let degrade (δ : NNReal) (ε' : NNReal) : NNReal :=
-    (√(2 * Real.log (1/δ) + 2 * ε') - √(2 * Real.log (1/δ))).toNNReal
-  have HDdegrade δ ε' : degrade δ ε' = (√(2 * Real.log (1/δ) + 2 * ε') - √(2 * Real.log (1/δ))).toNNReal := by rfl
-  exists degrade
-  intro δ Hδ ε' ⟨ HN , HB ⟩
-
+      ∀ (δ : NNReal) (_ : 0 < δ) (ε' : NNReal),
+     (zCDP m (zCDP_of_adp δ ε') -> ApproximateDP m ε' δ) := by
+  intro δ Hδ ε' H
   cases Classical.em (1 ≤ δ)
   · rename_i Hδ1
     exact ApproximateDP_gt1 m (↑ε') Hδ1
-
   rename_i Hδ1
-  rw [ApproximateDP]
+  simp at Hδ1
+  unfold ApproximateDP
+
+  unfold zCDP_of_adp at H
+  rcases H with ⟨ H1, H2 ⟩
+  have X := ApproximateDP_of_zCDP m (ε ε' δ) ?G1 H2 H1 δ Hδ
+  case G1 => exact NNReal.zero_le_coe
+  rw [eqε ε' δ Hδ1]
+  -- We have this, basically.
+  unfold D
+  simp_all
 
 
-  have R := ApproximateDP_of_zCDP m (degrade δ ε') (by simp) ?G1 HN δ Hδ
-  case G1 =>
-    -- this proof has to be redone
-    sorry
-  sorry
+
+  -- #check ApproximateDP_of_zCDP
+  -- have X := ApproximateDP_of_zCDP m ((2 * zCDP_of_adp δ ε') ^ ((1 : Real) / 2)) ?G1 ?G2 ?G3 δ Hδ
+  -- case G1 =>
+  --   apply Real.rpow_nonneg
+  --   apply mul_nonneg
+  --   · simp
+  --   · exact NNReal.zero_le_coe
+  -- case G2 =>
+  --   ring_nf
+  --   -- True
+  --   sorry
+  -- case G3 =>
+  --   cases H
+  --   trivial
+
+  -- have X1 : (2 * (zCDP_of_adp δ ε')) ^ (1 / 2)) ^ 2 / 2 = (zCDP_of_adp δ ε') : Real := by sorry
+  -- rw [X1]
+  -- clear X1
+
+  -- let degrade (δ : NNReal) (ε' : NNReal) : NNReal :=
+  --   (√(2 * Real.log (1/δ) + 2 * ε') - √(2 * Real.log (1/δ))).toNNReal
+  -- have HDdegrade δ ε' : degrade δ ε' = (√(2 * Real.log (1/δ) + 2 * ε') - √(2 * Real.log (1/δ))).toNNReal := by rfl
+  -- exists degrade
+  -- intro δ Hδ ε' ⟨ HN , HB ⟩
+
+
+  -- rename_i Hδ1
+  -- rw [ApproximateDP]
+
+
+
+  -- have R := ApproximateDP_of_zCDP m (degrade δ ε') (by simp) ?G1 HN δ Hδ
+  -- case G1 =>
+  --   -- this proof has to be redone
+  --   sorry
+  -- sorry
 
   /-
   have Hdegrade : ((degrade δ ε') ^ 2) / 2 + (degrade δ ε') * (2 * Real.log (1 / δ))^(1/2 : ℝ) = ε' := by

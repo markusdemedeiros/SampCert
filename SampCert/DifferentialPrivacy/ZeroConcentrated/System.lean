@@ -16,6 +16,8 @@ import SampCert.DifferentialPrivacy.ZeroConcentrated.Const
 This file contains an instance of an abstract DP system associated to the discrete gaussian mechanisms.
 -/
 
+noncomputable section
+
 namespace SLang
 
 variable { T : Type }
@@ -25,8 +27,9 @@ Instance of a DP system for zCDP
 -/
 instance zCDPSystem : DPSystem T where
   prop := zCDP
-  of_adp := sorry
-  prop_adp := sorry -- zCDP_ApproximateDP
+  of_adp := zCDP_of_adp
+  prop_adp := by
+    intros; apply zCDP_ApproximateDP <;> assumption
   prop_mono := by
     intro _ _ _ _ H HZ
     apply zCDP_mono H HZ
