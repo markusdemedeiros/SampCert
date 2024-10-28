@@ -134,11 +134,18 @@ theorem privComposeAdaptive_zCDPBound {nq1 : List T → PMF U} {nq2 : U -> List 
   -- Rewrite the upper bounds in terms of Renyi divergences of nq1/nq2
   rw [zCDPBound] at h1
   -- have marginal_ub := h1 α Hα l₁ l₂ Hneighbours
-  have conditional_ub : (⨆ (u : U),  RenyiDivergence (nq2 u l₁) (nq2 u l₂) α) ≤ ENNReal.ofReal ε₂  := -- ENNReal.ofReal (1 / 2 * ε₂ ^ 2 * α)) :=
-    iSup_le fun i => h2 i α Hα l₁ l₂ Hneighbours
+  have conditional_ub : (⨆ (u : U),  RenyiDivergence (nq2 u l₁) (nq2 u l₂) α) ≤ ENNReal.ofReal (ε₂ * α) :=
+    by exact iSup_le fun i => h2 i α Hα l₁ l₂ Hneighbours
   apply (@LE.le.trans _ _ _ (RenyiDivergence (nq1 l₁) (nq1 l₂) α + ⨆ (u : U), RenyiDivergence (nq2 u l₁) (nq2 u l₂) α) _ _ ?case_alg)
   case case_alg =>
-    rw [ENNReal.ofReal_add Hε₁ Hε₂]
+    rw [add_mul]
+    rw [ENNReal.ofReal_add ?G1 ?G2]
+    case G1 =>
+      apply Right.mul_nonneg Hε₁
+      linarith
+    case G2 =>
+      apply Right.mul_nonneg Hε₂
+      linarith
     exact _root_.add_le_add (h1 α Hα l₁ l₂ Hneighbours) conditional_ub
   exact privComposeAdaptive_renyi_bound Hα Hneighbours HAC1 HAC2
 

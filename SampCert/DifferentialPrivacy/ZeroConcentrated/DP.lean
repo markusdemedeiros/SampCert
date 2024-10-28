@@ -44,7 +44,7 @@ satisfying this bound are ``ε``-DP).
 -/
 def zCDPBound (q : List T → PMF U) (ε : ℝ) : Prop :=
   ∀ α : ℝ, 1 < α → ∀ l₁ l₂ : List T, Neighbour l₁ l₂ →
-  RenyiDivergence (q l₁) (q l₂) α ≤ ENNReal.ofReal ε
+  RenyiDivergence (q l₁) (q l₂) α ≤ ENNReal.ofReal (ε * α)
 
 /--
 All neighbouring queries are absolutely continuous
