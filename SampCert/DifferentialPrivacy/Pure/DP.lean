@@ -112,18 +112,20 @@ theorem ApproximateDP_of_DP (m : Mechanism T U) (ε : ℝ) (h : DP m ε) :
   simp
 
 /--
+Pure privacy bound required to obtain (ε, δ)-approximate DP
+-/
+def pure_of_adp (_ : NNReal) (ε : NNReal) : NNReal := ε
+
+/--
 Pure DP is no weaker than approximate DP, up to a loss of parameters
 -/
 lemma pure_ApproximateDP [Countable U] {m : Mechanism T U} :
-    ∃ (degrade : (δ : NNReal) -> (ε' : NNReal) -> NNReal), ∀ (δ : NNReal) (_ : 0 < δ) (ε' : NNReal),
-     (DP m (degrade δ ε') -> ApproximateDP m ε' δ) := by
-  let degrade (_ : NNReal) (ε' : NNReal) : NNReal := ε'
-  exists degrade
-  intro δ _ ε' HDP
+  ∀ (δ : NNReal) (_ : 0 < δ) (ε' : NNReal),
+     DP m (pure_of_adp δ ε') -> ApproximateDP m ε' δ := by
+  intro _ _ _ HDP
   rw [ApproximateDP]
   apply ApproximateDP_of_DP
-  have R1 : degrade δ ε' = ε' := by simp
-  rw [R1] at HDP
+  simp [pure_of_adp] at HDP
   trivial
 
 end SLang
