@@ -112,7 +112,7 @@ class DPNoise (dps : DPSystem T) where
   /--
   Adding noise to a query makes it private
   -/
-  noise_prop : ∀ q : List T → ℤ, ∀ Δ εn εd : ℕ+,
+  noise_prop : ∀ q : List T → ℤ, ∀ Δ εn εd : ℕ+, ∀ ε : NNReal,
     sensitivity q Δ →
     noise_priv εn εd ε ->
     dps.prop (noise q Δ εn εd) ε

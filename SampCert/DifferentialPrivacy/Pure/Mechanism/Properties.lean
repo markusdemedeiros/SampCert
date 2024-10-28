@@ -114,12 +114,15 @@ theorem privNoisedQueryPure_DP_bound (query : List T → ℤ) (Δ ε₁ ε₂ : 
           exact (add_lt_add_iff_right 1).mpr A
     · apply exp_pos
 
+def laplace_pureDP_noise_priv (ε₁ ε₂ : ℕ+) (ε : NNReal) : Prop := (ε₁ : NNReal) / ε₂ = ε
 
 /--
 Laplace noising mechanism ``privNoisedQueryPure`` produces a pure ``ε₁/ε₂``-DP mechanism from a Δ-sensitive query.
 -/
-theorem privNoisedQueryPure_DP (query : List T → ℤ) (Δ ε₁ ε₂ : ℕ+) (bounded_sensitivity : sensitivity query Δ) :
-  PureDP (privNoisedQueryPure query Δ ε₁ ε₂) ((ε₁ : NNReal) / ε₂) := by
+theorem privNoisedQueryPure_DP (query : List T → ℤ) (Δ ε₁ ε₂ : ℕ+) (ε : NNReal) (bounded_sensitivity : sensitivity query Δ) (HN : laplace_pureDP_noise_priv ε₁ ε₂ ε) :
+    PureDP (privNoisedQueryPure query Δ ε₁ ε₂) ε := by
+  unfold laplace_pureDP_noise_priv at HN
+  rw [<- HN]
   simp [PureDP]
   apply privNoisedQueryPure_DP_bound
   apply bounded_sensitivity

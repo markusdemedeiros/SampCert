@@ -32,7 +32,7 @@ theorem privConst_DP_Bound {u : U} : DP (privConst u : Mechanism T U) 0 := by
 /--
 ``privComposeAdaptive`` satisfies zCDP
 -/
-theorem PureDP_privConst : ∀ (u : U),  PureDP (privConst u : Mechanism T U) (0 : NNReal) := by
+theorem PureDP_privConst : ∀ (u : U) (ε : NNReal), (ε = 0) -> PureDP (privConst u : Mechanism T U) ε := by
   simp [PureDP] at *
   apply privConst_DP_Bound
 

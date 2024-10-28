@@ -26,16 +26,13 @@ instance PureDPSystem : DPSystem T where
   of_adp := sorry
   prop_adp := sorry -- pure_ApproximateDP
   prop_mono := PureDP_mono
-  adaptive_compose_prop := sorry -- PureDP_ComposeAdaptive'
+  adaptive_compose_prop := PureDP_ComposeAdaptive'
   postprocess_prop := PureDP_PostProcess
-  const_prop := sorry -- PureDP_privConst
-
+  const_prop := PureDP_privConst
 
 instance laplace_pureDPSystem : DPNoise (@PureDPSystem T) where
   noise := privNoisedQueryPure
-  noise_priv := sorry
-  noise_prop := sorry -- privNoisedQueryPure_DP
-
-
+  noise_priv := laplace_pureDP_noise_priv
+  noise_prop := privNoisedQueryPure_DP
 
 end SLang
