@@ -69,11 +69,13 @@ lemma privMeanHistogram_DP (ε₁ ε₂ : ℕ+) (τ : ℤ) (ε₃ ε₄ : ℕ+) 
   intro u
   cases u
   · simp only
-    apply dps.prop_mono ?G1 ?G2
-    case G2 => apply dps.const_prop
-    simp only [_root_.zero_le]
+    sorry
+    -- apply dps.prop_mono ?G1 ?G2
+    -- case G2 => apply dps.const_prop
+    -- simp only [_root_.zero_le]
   · rename_i mx
     simp only
     apply dps.postprocess_prop
     apply privNoisedBoundedMean_DP
+  rfl
 end SLang

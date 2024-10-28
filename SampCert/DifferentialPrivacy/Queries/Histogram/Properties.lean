@@ -76,19 +76,23 @@ lemma privNoisedHistogramAux_DP (ε₁ ε₂ : ℕ+) (n : ℕ) (Hn : n < numBins
   induction n
   · unfold privNoisedHistogramAux
     simp only [Nat.cast_zero, succ_eq_add_one, zero_add, Nat.cast_one, Nat.cast_mul, one_mul]
-    refine DPSystem.postprocess_prop
-             (privCompose (privNoisedBinCount numBins B ε₁ ε₂ 0) (privConst (emptyHistogram numBins B)))
-             (↑↑ε₁ / ↑↑(ε₂ * numBins)) ?G1
-    apply (DPSystem_prop_ext _ ?HEq ?Hdp)
-    case Hdp =>
-      apply (DPSystem.compose_prop
-              (privNoisedBinCount numBins B ε₁ ε₂ 0)
-              (privConst (emptyHistogram numBins B))
-              (↑↑ε₁ / ↑↑(ε₂ * numBins))
-              0
-              (privNoisedBinCount_DP numBins B ε₁ ε₂ 0)
-              (DPSystem.const_prop (emptyHistogram numBins B)))
-    case HEq => simp only [PNat.mul_coe, Nat.cast_mul, add_zero]
+    sorry
+    -- refine DPSystem.postprocess_prop
+    --          (privCompose (privNoisedBinCount numBins B ε₁ ε₂ 0) (privConst (emptyHistogram numBins B)))
+    --          (↑↑ε₁ / ↑↑(ε₂ * numBins)) ?G1
+    -- apply (DPSystem_prop_ext _ ?HEq ?Hdp)
+    -- case Hdp =>
+    --   sorry
+    --   -- apply (DPSystem.compose_prop
+    --   --         (privNoisedBinCount numBins B ε₁ ε₂ 0)
+    --   --         (privConst (emptyHistogram numBins B))
+    --   --         (↑↑ε₁ / ↑↑(ε₂ * numBins))
+    --   --         0
+    --   --         (privNoisedBinCount_DP numBins B ε₁ ε₂ 0)
+    --   --         (DPSystem.const_prop (emptyHistogram numBins B)))
+    -- case HEq =>
+    --   sorry
+    --   -- simp only [PNat.mul_coe, Nat.cast_mul, add_zero]
   · rename_i n IH
     unfold privNoisedHistogramAux
     simp only []

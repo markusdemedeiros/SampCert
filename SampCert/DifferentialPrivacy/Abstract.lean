@@ -44,9 +44,13 @@ class DPSystem (T : Type) where
   /--
   Privacy adaptively composes by addition.
   -/
-  adaptive_compose_prop : {U V : Type} → [MeasurableSpace U] → [Countable U] → [DiscreteMeasurableSpace U] → [Inhabited U] → [MeasurableSpace V] → [Countable V] → [DiscreteMeasurableSpace V] → [Inhabited V] → ∀ m₁ : Mechanism T U, ∀ m₂ : U -> Mechanism T V,
-    ∀ ε₁ ε₂ : NNReal,
-    prop m₁ ε₁ → (∀ u, prop (m₂ u) ε₂) -> prop (privComposeAdaptive m₁ m₂) (ε₁ + ε₂)
+  adaptive_compose_prop : {U V : Type} →
+    [MeasurableSpace U] → [Countable U] → [DiscreteMeasurableSpace U] → [Inhabited U] →
+    [MeasurableSpace V] → [Countable V] → [DiscreteMeasurableSpace V] → [Inhabited V] →
+    ∀ m₁ : Mechanism T U, ∀ m₂ : U -> Mechanism T V, ∀ ε₁ ε₂ ε : NNReal,
+    prop m₁ ε₁ → (∀ u, prop (m₂ u) ε₂) ->
+    ε₁ + ε₂ = ε ->
+    prop (privComposeAdaptive m₁ m₂) ε
   /--
   Privacy is invariant under post-processing.
   -/
@@ -56,7 +60,8 @@ class DPSystem (T : Type) where
   /--
   Constant query is 0-DP
   -/
-  const_prop : {U : Type} → [MeasurableSpace U] → [Countable U] → [DiscreteMeasurableSpace U] -> (u : U) -> prop (privConst u) (0 : NNReal)
+  const_prop : {U : Type} → [MeasurableSpace U] → [Countable U] → [DiscreteMeasurableSpace U] -> (u : U) ->
+    ∀ ε : NNReal, ε = (0 : NNReal) -> prop (privConst u) ε
 
 
 namespace DPSystem
@@ -69,7 +74,8 @@ lemma compose_prop {U V : Type} [dps : DPSystem T] [MeasurableSpace U] [Countabl
     dps.prop m₁ ε₁ → dps.prop m₂ ε₂ → dps.prop (privCompose m₁ m₂) (ε₁ + ε₂) := by
   intros m₁ m₂ ε₁ ε₂ p1 p2
   unfold privCompose
-  exact adaptive_compose_prop m₁ (fun _ => m₂) ε₁ ε₂ p1 fun _ => p2
+  apply adaptive_compose_prop m₁ (fun _ => m₂) ε₁ ε₂ _ p1 (fun _ => p2)
+  rfl
 
 end DPSystem
 
@@ -88,6 +94,8 @@ lemma bind_bind_indep (p : Mechanism T U) (q : Mechanism T V) (h : U → V → P
   simp [privCompose, privComposeAdaptive, tsum_prod']
 
 
+
+
 /--
 A noise function for a differential privacy system
 -/
@@ -98,12 +106,25 @@ class DPNoise (dps : DPSystem T) where
   -/
   noise : Query T ℤ → (sensitivity : ℕ+) → (num : ℕ+) → (den : ℕ+) → Mechanism T ℤ
   /--
-  How much privacy one obtains by adding Δ εn εd noise to a Δ-sensitive query
+  Relationship between arguments to noise and resulting privacy amount
   -/
-  noise_priv : NNReal → NNReal
+  noise_priv : (num : ℕ+) → (den : ℕ+) → (priv : NNReal) -> Prop
   /--
-  Adding noise to a query makes it private.
+  Adding noise to a query makes it private
   -/
-  noise_prop : ∀ q : List T → ℤ, ∀ Δ εn εd : ℕ+, sensitivity q Δ → dps.prop (noise q Δ εn εd) (noise_priv (εn / εd))
+  noise_prop : ∀ q : List T → ℤ, ∀ Δ εn εd : ℕ+,
+    sensitivity q Δ →
+    noise_priv εn εd ε ->
+    dps.prop (noise q Δ εn εd) ε
+
+
+-- /-
+-- A DPNoise instance for when the arguments to noise_prop can be computed dynamically
+-- -/
+-- class DPNoiseDynamic {dps : DPSystem T} (dpn : DPNoise dps) where
+--   compute_factor : (ε : NNReal) -> (ℕ+ × ℕ+)
+--   compute_factor_spec : ∀ ε : NNReal, dpn.noise_priv (compute_factor ε).1 (compute_factor ε).2 ε
+
+
 
 end SLang

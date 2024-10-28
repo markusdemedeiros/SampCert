@@ -30,9 +30,9 @@ instance zCDPSystem : DPSystem T where
   prop_mono := zCDP_mono
   -- noise := privNoisedQuery
   -- noise_prop := sorry -- privNoisedQuery_zCDP
-  adaptive_compose_prop := privComposeAdaptive_zCDP
+  adaptive_compose_prop := sorry -- privComposeAdaptive_zCDP
   postprocess_prop := privPostProcess_zCDP
-  const_prop := privConst_zCDP
+  const_prop := sorry -- privConst_zCDP
 
 /--
 Gaussian noise for zCDP system
