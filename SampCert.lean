@@ -14,7 +14,7 @@ import Init.Data.UInt.Lemmas
 
 open SLang PMF
 
-def combineConcentrated := @privNoisedBoundedMean_DP _ gaussian_zCDPSystem
+def combineConcentrated := @privNoisedBoundedMean_DP zCDPSystem
 def combinePure := @privNoisedBoundedMean_DP PureDPSystem
 
 /-
