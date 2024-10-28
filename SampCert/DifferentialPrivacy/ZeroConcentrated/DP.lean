@@ -78,10 +78,8 @@ lemma zCDP_mono {m : List T -> PMF U} {ε₁ ε₂ : NNReal} (H : ε₁ ≤ ε�
 Obtain an approximate DP bound from a zCDP bound, when ε > 0 and δ < 1
 -/
 lemma ApproximateDP_of_zCDP_pos_lt_one [Countable U] (m : Mechanism T U)
-  (ε : ℝ) (Hε_pos : 0 < ε) (h : zCDPBound m ε) (Hm : ACNeighbour m) :
+  (ε : ℝ) (Hε_pos : 0 < ε) (h : zCDPBound m ((1/2) * ε^2)) (Hm : ACNeighbour m) :
   ∀ δ : NNReal, (0 < (δ : ℝ)) -> ((δ : ℝ) < 1) -> DP' m (ε^2/2 + ε * (2*Real.log (1/δ))^(1/2 : ℝ)) δ := by
-  sorry
-  /-
   have Hε : 0 ≤ ε := by exact le_of_lt Hε_pos
   intro δ Hδ0 Hδ1
   generalize Dε' : (ε^2/2 + ε * (2*Real.log (1/δ))^(1/2 : ℝ)) = ε'
@@ -627,7 +625,6 @@ lemma ApproximateDP_of_zCDP_pos_lt_one [Countable U] (m : Mechanism T U)
 
   -- Conclude by simplification
   simp [add_comm]
-  -/
 
 
 
@@ -635,12 +632,11 @@ lemma ApproximateDP_of_zCDP_pos_lt_one [Countable U] (m : Mechanism T U)
 Obtain an approximate DP bound from a zCDP bound, when ε > 0
 -/
 lemma ApproximateDP_of_zCDP_pos [Countable U] (m : Mechanism T U)
-    (ε : ℝ) (Hε_pos : 0 < ε) (h : zCDPBound m ε) (Hm : ACNeighbour m) :
+    (ε : ℝ) (Hε_pos : 0 < ε) (h : zCDPBound m ((1/2) * ε^2)) (Hm : ACNeighbour m) :
     ∀ δ : NNReal, (0 < (δ : ℝ)) -> DP' m (ε^2/2 + ε * (2*Real.log (1/δ))^(1/2 : ℝ)) δ := by
   intro δ Hδ0
   cases (Classical.em (δ < 1))
-  · intro Hδ1
-    apply ApproximateDP_of_zCDP_pos_lt_one m ε Hε_pos h Hm δ Hδ0
+  · apply ApproximateDP_of_zCDP_pos_lt_one m ε Hε_pos h Hm δ Hδ0
     trivial
   · apply ApproximateDP_gt1
     apply le_of_not_lt
@@ -650,7 +646,7 @@ lemma ApproximateDP_of_zCDP_pos [Countable U] (m : Mechanism T U)
 Obtain an approximate DP bound from a zCDP bound
 -/
 theorem ApproximateDP_of_zCDP [Countable U] (m : Mechanism T U)
-    (ε : ℝ) (Hε : 0 ≤ ε) (h : zCDPBound m ε) (Hm : ACNeighbour m) :
+    (ε : ℝ) (Hε : 0 ≤ ε) (h : zCDPBound m ((1/2) * ε^2)) (Hm : ACNeighbour m) :
     ∀ δ : NNReal, (0 < (δ : ℝ)) -> DP' m (ε^2/2 + ε * (2*Real.log (1/δ))^(1/2 : ℝ)) δ := by
   cases LE.le.lt_or_eq Hε
   · rename_i Hε
@@ -674,7 +670,7 @@ zCDP is no weaker than approximate DP, up to a loss of parameters.
 -/
 lemma zCDP_ApproximateDP [Countable U] {m : Mechanism T U} :
     ∃ (degrade : (δ : NNReal) -> (ε' : NNReal) -> NNReal), ∀ (δ : NNReal) (_ : 0 < δ) (ε' : NNReal),
-     (zCDP m (degrade δ ε') -> ApproximateDP m ε' δ) := by
+     (zCDP m (degrade δ ((1/2) * ε'^2)) -> ApproximateDP m ε' δ) := by
   let degrade (δ : NNReal) (ε' : NNReal) : NNReal :=
     (√(2 * Real.log (1/δ) + 2 * ε') - √(2 * Real.log (1/δ))).toNNReal
   have HDdegrade δ ε' : degrade δ ε' = (√(2 * Real.log (1/δ) + 2 * ε') - √(2 * Real.log (1/δ))).toNNReal := by rfl
@@ -687,8 +683,15 @@ lemma zCDP_ApproximateDP [Countable U] {m : Mechanism T U} :
 
   rename_i Hδ1
   rw [ApproximateDP]
-  have R := ApproximateDP_of_zCDP m (degrade δ ε') (by simp) HB HN δ Hδ
 
+
+  have R := ApproximateDP_of_zCDP m (degrade δ ε') (by simp) ?G1 HN δ Hδ
+  case G1 =>
+    -- this proof has to be redone
+    sorry
+  sorry
+
+  /-
   have Hdegrade : ((degrade δ ε') ^ 2) / 2 + (degrade δ ε') * (2 * Real.log (1 / δ))^(1/2 : ℝ) = ε' := by
     rw [HDdegrade]
     generalize HD : Real.log (1 / δ) = D
@@ -733,6 +736,7 @@ lemma zCDP_ApproximateDP [Countable U] {m : Mechanism T U} :
     linarith
   rw [Hdegrade] at R
   trivial
+  -/
 
 
 /--
