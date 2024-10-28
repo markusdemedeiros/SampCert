@@ -40,29 +40,29 @@ class DPSystem (T : Type) where
   /--
   DP is monotonic
   -/
-  prop_mono {m : Mechanism T Z} {ε₁ ε₂: NNReal} (Hε : ε₁ ≤ ε₂) (H : prop m ε₁) : prop m ε₂
+  prop_mono {m : Mechanism T Z} {ε₁ ε₂: NNReal} :
+    ε₁ ≤ ε₂ -> prop m ε₁ -> prop m ε₂
   /--
   Privacy adaptively composes by addition.
   -/
-  adaptive_compose_prop : {U V : Type} →
-    [MeasurableSpace U] → [Countable U] → [DiscreteMeasurableSpace U] → [Inhabited U] →
-    [MeasurableSpace V] → [Countable V] → [DiscreteMeasurableSpace V] → [Inhabited V] →
-    ∀ m₁ : Mechanism T U, ∀ m₂ : U -> Mechanism T V, ∀ ε₁ ε₂ ε : NNReal,
+  adaptive_compose_prop {U V : Type}
+    [MeasurableSpace U] [Countable U] [DiscreteMeasurableSpace U] [Inhabited U]
+    [MeasurableSpace V] [Countable V] [DiscreteMeasurableSpace V] [Inhabited V]
+    {m₁ : Mechanism T U} {m₂ : U -> Mechanism T V} {ε₁ ε₂ ε : NNReal} :
     prop m₁ ε₁ → (∀ u, prop (m₂ u) ε₂) ->
     ε₁ + ε₂ = ε ->
     prop (privComposeAdaptive m₁ m₂) ε
   /--
   Privacy is invariant under post-processing.
   -/
-  postprocess_prop : {U : Type} → [MeasurableSpace U] → [Countable U] → [DiscreteMeasurableSpace U] → [Inhabited U] → { pp : U → V } →
-    ∀ m : Mechanism T U, ∀ ε : NNReal,
-   prop m ε → prop (privPostProcess m pp) ε
+  postprocess_prop {U : Type} [MeasurableSpace U] [Countable U] [DiscreteMeasurableSpace U] [Inhabited U]
+    { pp : U → V } {m : Mechanism T U} {ε : NNReal} :
+    prop m ε → prop (privPostProcess m pp) ε
   /--
   Constant query is 0-DP
   -/
-  const_prop : {U : Type} → [MeasurableSpace U] → [Countable U] → [DiscreteMeasurableSpace U] -> (u : U) ->
-    ∀ ε : NNReal, ε = (0 : NNReal) -> prop (privConst u) ε
-
+  const_prop {U : Type} [MeasurableSpace U] [Countable U] [DiscreteMeasurableSpace U]  {u : U} {ε : NNReal} :
+    ε = (0 : NNReal) -> prop (privConst u) ε
 
 namespace DPSystem
 
@@ -70,12 +70,13 @@ namespace DPSystem
 Non-adaptive privacy composes by addition.
 -/
 lemma compose_prop {U V : Type} [dps : DPSystem T] [MeasurableSpace U] [Countable U] [DiscreteMeasurableSpace U] [Inhabited U] [MeasurableSpace V] [Countable V] [DiscreteMeasurableSpace V] [Inhabited V] :
-    ∀ m₁ : Mechanism T U, ∀ m₂ : Mechanism T V, ∀ ε₁ ε₂ : NNReal,
-    dps.prop m₁ ε₁ → dps.prop m₂ ε₂ → dps.prop (privCompose m₁ m₂) (ε₁ + ε₂) := by
-  intros m₁ m₂ ε₁ ε₂ p1 p2
+    {m₁ : Mechanism T U} -> {m₂ : Mechanism T V} ->  {ε₁ ε₂ ε : NNReal} ->
+    (ε₁ + ε₂ = ε) ->
+    dps.prop m₁ ε₁ → dps.prop m₂ ε₂ → dps.prop (privCompose m₁ m₂) ε := by
+  intros _ _ _ _ _ _ p1 p2
   unfold privCompose
-  apply adaptive_compose_prop m₁ (fun _ => m₂) ε₁ ε₂ _ p1 (fun _ => p2)
-  rfl
+  apply adaptive_compose_prop p1 (fun _ => p2)
+  trivial
 
 end DPSystem
 
@@ -112,7 +113,7 @@ class DPNoise (dps : DPSystem T) where
   /--
   Adding noise to a query makes it private
   -/
-  noise_prop : ∀ q : List T → ℤ, ∀ Δ εn εd : ℕ+, ∀ ε : NNReal,
+  noise_prop {q : List T → ℤ} {Δ εn εd : ℕ+} {ε : NNReal} :
     noise_priv εn εd ε ->
     sensitivity q Δ →
     dps.prop (noise q Δ εn εd) ε

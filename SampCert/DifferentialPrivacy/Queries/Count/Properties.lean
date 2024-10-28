@@ -48,7 +48,7 @@ The noised counting query satisfies DP property
 theorem privNoisedCount_DP (ε₁ ε₂ : ℕ+) (ε : NNReal) (HP : dpn.noise_priv ε₁ ε₂ ε) :
   dps.prop (privNoisedCount ε₁ ε₂) ε := by
   unfold privNoisedCount
-  apply (dpn.noise_prop _ _ _ _ _ HP)
+  apply dpn.noise_prop HP
   apply exactCount_1_sensitive
 
 end SLang

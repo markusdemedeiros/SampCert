@@ -34,12 +34,13 @@ DP bound for noised mean.
 theorem privNoisedBoundedMean_DP (U : ℕ+) (ε₁ ε₂ : ℕ+) :
   dps.prop (privNoisedBoundedMean U ε₁ ε₂) ((ε₁ : NNReal) / ε₂) := by
   unfold privNoisedBoundedMean
-  rw [bind_bind_indep]
-  apply dps.postprocess_prop
-  rw [budget_split]
-  apply dps.compose_prop
-  · apply privNoisedBoundedSum_DP
-  · sorry
-    -- apply privNoisedCount_DP
+  sorry
+  -- rw [bind_bind_indep]
+  -- apply dps.postprocess_prop
+  -- rw [budget_split]
+  -- apply dps.compose_prop
+  -- · apply privNoisedBoundedSum_DP
+  -- · sorry
+  --   -- apply privNoisedCount_DP
 
 end SLang

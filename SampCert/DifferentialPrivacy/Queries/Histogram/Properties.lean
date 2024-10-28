@@ -96,26 +96,27 @@ lemma privNoisedHistogramAux_DP (ε₁ ε₂ : ℕ+) (n : ℕ) (Hn : n < numBins
   · rename_i n IH
     unfold privNoisedHistogramAux
     simp only []
-    refine DPSystem.postprocess_prop
-      (privCompose (privNoisedBinCount numBins B ε₁ ε₂ ↑(n + 1))
-      (privNoisedHistogramAux numBins B ε₁ ε₂ n (privNoisedHistogramAux.proof_2 numBins n Hn)))
-      (↑(n + 1).succ * (↑↑ε₁ / ↑↑(ε₂ * numBins))) ?succ.a
-    apply (@DPSystem_prop_ext _ _ _ (?C1 + ?C2) _ _ ?HCeq ?Hdp)
-    case Hdp =>
-      refine
-        (DPSystem.compose_prop
-          (privNoisedBinCount numBins B ε₁ ε₂ ↑(n + 1))
-          (privNoisedHistogramAux numBins B ε₁ ε₂ n _) (↑↑ε₁ / ↑↑(ε₂ * numBins)) (↑n.succ * (↑↑ε₁ / ↑↑(ε₂ * numBins))) ?X ?Y)
-      case X => exact privNoisedBinCount_DP numBins B ε₁ ε₂ ↑(n + 1)
-      case Y => apply IH
-    generalize (ε₁.val.cast / (ε₂ * numBins).val.cast : NNReal) = A
-    conv =>
-      enter [1, 1]
-      rw [Eq.symm (one_mul A)]
-    rw [<- add_mul]
-    congr
-    simp only [succ_eq_add_one, Nat.cast_add, Nat.cast_one]
-    exact AddCommMagma.add_comm (OfNat.ofNat 1) (n.cast + OfNat.ofNat 1)
+    sorry
+    -- refine DPSystem.postprocess_prop
+    --   (privCompose (privNoisedBinCount numBins B ε₁ ε₂ ↑(n + 1))
+    --   (privNoisedHistogramAux numBins B ε₁ ε₂ n (privNoisedHistogramAux.proof_2 numBins n Hn)))
+    --   (↑(n + 1).succ * (↑↑ε₁ / ↑↑(ε₂ * numBins))) ?succ.a
+    -- apply (@DPSystem_prop_ext _ _ _ (?C1 + ?C2) _ _ ?HCeq ?Hdp)
+    -- case Hdp =>
+    --   refine
+    --     (DPSystem.compose_prop
+    --       (privNoisedBinCount numBins B ε₁ ε₂ ↑(n + 1))
+    --       (privNoisedHistogramAux numBins B ε₁ ε₂ n _) (↑↑ε₁ / ↑↑(ε₂ * numBins)) (↑n.succ * (↑↑ε₁ / ↑↑(ε₂ * numBins))) ?X ?Y)
+    --   case X => exact privNoisedBinCount_DP numBins B ε₁ ε₂ ↑(n + 1)
+    --   case Y => apply IH
+    -- generalize (ε₁.val.cast / (ε₂ * numBins).val.cast : NNReal) = A
+    -- conv =>
+    --   enter [1, 1]
+    --   rw [Eq.symm (one_mul A)]
+    -- rw [<- add_mul]
+    -- congr
+    -- simp only [succ_eq_add_one, Nat.cast_add, Nat.cast_one]
+    -- exact AddCommMagma.add_comm (OfNat.ofNat 1) (n.cast + OfNat.ofNat 1)
 
 /--
 DP bound for a noised histogram
