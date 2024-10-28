@@ -31,9 +31,9 @@ lemma budget_split (ε₁ ε₂ : ℕ+) :
 /--
 DP bound for noised mean.
 -/
-theorem privNoisedBoundedMean_DP (U : ℕ+) (ε₁ ε₂ : ℕ+)
-  (HP_half : dpn.noise_priv ε₁ (2 * ε₂) (ε₁ / ↑(2 * ε₂))) :
-  dps.prop (privNoisedBoundedMean U ε₁ ε₂) ((ε₁ : NNReal) / ε₂) := by
+theorem privNoisedBoundedMean_DP (U : ℕ+) (ε₁ ε₂ : ℕ+) (ε : NNReal)
+  (HP_half : dpn.noise_priv ε₁ (2 * ε₂) (ε / 2)) :
+  dps.prop (privNoisedBoundedMean U ε₁ ε₂) ε := by
   unfold privNoisedBoundedMean
   rw [bind_bind_indep]
   apply dps.postprocess_prop
@@ -44,10 +44,7 @@ theorem privNoisedBoundedMean_DP (U : ℕ+) (ε₁ ε₂ : ℕ+)
     apply HP_half
 
   case SC1 =>
-    -- Arithmetic
     ring_nf
-    rw [div_mul]
-    congr
-    simp
+    simp [div_mul]
 
 end SLang

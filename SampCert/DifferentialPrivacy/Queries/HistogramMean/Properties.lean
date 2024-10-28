@@ -57,26 +57,28 @@ instance : DiscreteMeasurableSpace (Option (Fin ↑numBins)) where
   forall_measurableSet := by simp only [MeasurableSpace.measurableSet_top, implies_true]
 
 
-/-
+/--
 DP bound for the adaptive mean
 -/
-lemma privMeanHistogram_DP (ε₁ ε₂ : ℕ+) (τ : ℤ) (ε₃ ε₄ : ℕ+) :
-    dps.prop (privMeanHistogram dps dpn numBins B unbin ε₁ ε₂ τ ε₃ ε₄) (ε₁/ε₂ + ε₃/ε₄) := by
+lemma privMeanHistogram_DP (ε₁ ε₂ : ℕ+) (τ : ℤ) (ε₃ ε₄ : ℕ+) (εA εB : NNReal)
+      (HN_A : dpn.noise_priv ε₁ (ε₂ * numBins) (εA / numBins))
+      (HN_B : dpn.noise_priv ε₃ (2 * ε₄) (εB / 2)):
+    dps.prop (privMeanHistogram dps dpn numBins B unbin ε₁ ε₂ τ ε₃ ε₄) (εA + εB) := by
   rw [privMeanHistogram]
   apply dps.postprocess_prop
   apply dps.adaptive_compose_prop
   · apply privMaxBinAboveThreshold_DP
-  intro u
-  cases u
-  · simp only
-    sorry
-    -- apply dps.prop_mono ?G1 ?G2
-    -- case G2 => apply dps.const_prop
-    -- simp only [_root_.zero_le]
-  · sorry
-    -- rename_i mx
-    -- simp only
-    -- apply dps.postprocess_prop
-    -- apply privNoisedBoundedMean_DP
+    apply HN_A
+  · intro u
+    cases u
+    · simp only []
+      apply (@DPSystem.prop_mono _ _ _ _ 0 εB _)
+      · apply dps.const_prop
+        rfl
+      · apply _root_.zero_le
+    · simp only []
+      apply dps.postprocess_prop
+      apply privNoisedBoundedMean_DP
+      apply HN_B
   rfl
 end SLang

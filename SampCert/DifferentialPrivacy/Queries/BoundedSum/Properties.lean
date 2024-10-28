@@ -85,8 +85,8 @@ theorem exactBoundedSum_sensitivity (U : ℕ+) : sensitivity (exactBoundedSum U)
 The noised bounded sum satisfies the DP property of the DP system.
 -/
 @[simp]
-theorem privNoisedBoundedSum_DP (U : ℕ+) (ε₁ ε₂ : ℕ+) (HP : dpn.noise_priv ε₁ ε₂ (ε₁ / ε₂)) :
-    dps.prop (privNoisedBoundedSum U ε₁ ε₂) ((ε₁ : NNReal) / ε₂) := by
+theorem privNoisedBoundedSum_DP (U : ℕ+) (ε₁ ε₂ : ℕ+) (ε : NNReal) (HP : dpn.noise_priv ε₁ ε₂ ε) :
+    dps.prop (privNoisedBoundedSum U ε₁ ε₂) ε := by
   apply dpn.noise_prop HP
   apply exactBoundedSum_sensitivity
 
