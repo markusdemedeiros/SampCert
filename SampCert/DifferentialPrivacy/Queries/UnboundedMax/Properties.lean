@@ -209,6 +209,10 @@ lemma sv0_eq_sv1 [dps : DPSystem ℕ] ε₁ ε₂ l : sv0_privMax ε₁ ε₂ l 
 
   -- RHS: sum over all lists of length "result"?
   -- rw [tsum_ite_eq]
+  -- simp [sv1_threshold]
+
+
+
   sorry
 
 
@@ -836,12 +840,99 @@ def sv4_eq_sv5 [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
   simp
 
 
+
 /-
 ## Program version 6
   - Executable
   - Changes the loop from a probWhileCut into a single, deterministic, check
 -/
 
+-- First n loop iterates
+-- future samples to try them
+def sv6_privMax_check (τ : ℤ) (l : List ℕ) (s : sv4_state) (n : ℕ) : Bool :=
+  match n with
+  | 0 => true
+  | Nat.succ n' =>
+    match s with
+    -- If there is more samples on the tape, call recursively
+    | ((past, present), (future_next :: future_rest)) =>
+      sv4_privMaxC τ l ((past, present), (future_next :: future_rest)) ∧
+      sv6_privMax_check τ l ((past ++ [present], future_next), future_rest) n'
+    | (_, []) =>
+      -- Out of samples on the tape
+      false
+
+-- The state sp is a "past configuration" of sc, ie. one we already checked
+def is_past_configuration (sp sc : sv4_state) : Prop :=
+  (sp.1.1.length ≤ sc.1.1.length) ∧ sp.1.1 ++ [sp.1.2] ++ sp.2 = sc.1.1 ++ [sc.1.2] ++ sc.2
+
+lemma is_past_configuration_ex1 : is_past_configuration (([], 0), []) (([], 0), []) := by
+  simp [is_past_configuration]
+
+lemma is_past_configuration_ex2 : is_past_configuration (([], 0), [1]) (([0], 1), []) := by
+  simp [is_past_configuration]
+
+lemma is_past_configuration_ex3 : is_past_configuration (([], 0), [1, 2]) (([0], 1), [2]) := by
+  simp [is_past_configuration]
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- All past configurations had their loop check execute to True
+def sv6_privMax_hist (τ : ℤ) (l : List ℕ) (s : sv4_state) : Prop :=
+  ∀ sp, (is_past_configuration sp s) -> sv4_privMaxC τ l sp = true
+
+
+
+
+
+
+
+
+
+-- What am I defining:
+-- When I step sv5 (the probWhileCut), unrolling a loop iterate pops the first value out of
+-- future, and pushes it onto the initial condition.
+-- This means I want to do induction over future.
+-- Therefore, I need to establish what it means for a loop body with some of these pops to have
+-- not terminated (??)
+-- IE. given a state, I want to be able to express the fact that
+--   - Every loop check which moved something to the past must have returned false
+--   - We are waiting for n loop checks from the current state to return true
+-- For the latter, I define sv6_privMax_check
+-- For the former, I define sc6_provMax_hist
+-- Should be able to establish these inductively based on hist, assuming the first n-1 loop checks are valid
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/-
 
 -- Evaluate the nth conditional starting at state s
 -- Evaluate the loop conditional n steps in the future
@@ -877,16 +968,50 @@ lemma sv6_privMax_1th_empty (τ : ℤ) (l : List ℕ) (s : sv1_state) :
     (sv6_privMax_nth τ l (s, []) 1 = false) := by
   simp [sv6_privMax_nth]
 
--- Inductive formula for when the tape is empty
+-- Inductive formula for n when the tape is empty (not useful)
 lemma sv6_privMax_ind_empty (τ : ℤ) (l : List ℕ) (s : sv1_state) (n : ℕ):
     (sv6_privMax_nth τ l (s, []) (n + 1) = false) := by
   simp [sv6_privMax_nth]
 
--- Inductive formula for when the tape is not empty
+-- Inductive formula for n when the tape is not empty (not useful)
 lemma sv6_privMax_ind_nonempty (τ : ℤ) (l : List ℕ) pa pr f fs (n : ℕ):
     sv6_privMax_nth τ l ((pa, pr), f :: fs) (n + 1) =
     sv6_privMax_nth τ l ((pa ++ [pr], f), fs) n := by
   simp [sv6_privMax_nth]
+
+def len_constr (s : sv4_state) (p : ℕ) : Prop := s.1.1.length + s.2.length = p
+
+-- These are not true
+-- Could change sv4 definition to be monotone so that it is
+--
+-- -- After its false once, its false forever
+-- lemma sv4_constancy_lo τ l P v P' v' (H : sv1_privMaxC τ l (P, v) = false) :
+--     (∃ D, P' ++ [v'] = P ++ [v] ++ D) -> (sv1_privMaxC τ l (P', v') = false) := by
+--   intro H1
+--   rcases H1 with ⟨ D, HD ⟩
+--   simp [sv1_privMaxC, sv1_threshold, sv1_noise, exactDiffSum] at H
+--   simp [sv1_privMaxC, sv1_threshold, sv1_noise, exactDiffSum]
+--   apply (Int.le_trans H)
+--   clear H
+--
+--   sorry
+--
+-- -- If its true once, its true at all points before
+-- lemma sv4_constancy_hi τ l P v P' v' (H : sv1_privMaxC τ l (P, v) = false) :
+--     (∃ D, P' ++ [v'] ++ D = P ++ [v]) -> (sv1_privMaxC τ l (P', v') = false) := by
+--   sorry
+
+-- Inductive formula for tail
+lemma sv6_privMax_ind (τ : ℤ) (l : List ℕ) pa pr f fs (n : ℕ):
+    -- sv4_privMaxC τ l ((pa ++ [pr], f), fs) = true ->
+    -- len_constr ((pa, pr), f :: fs) n ->
+    sv6_privMax_nth τ l ((pa, pr), f :: fs) n =
+    sv6_privMax_nth τ l ((pa ++ [pr], f), fs) n := by
+  revert pa pr f
+  induction fs
+  · intro pa pr f
+    sorry
+  · sorry
 
 
 def sv6_loop (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv4_state) : SLang ℕ :=
@@ -894,65 +1019,213 @@ def sv6_loop (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv4_state) : SLang 
     then return point
     else probZero
 
--- the loop evaluated at point either has probability mass 0 or 1
-lemma sv6_loop_det τ l point init : sv6_loop τ l point init point = 0 ∨ sv6_loop τ l point init point = 1 := by
-  unfold sv6_loop
+-- If the sv6 return flag is true (at zero) then... the sv4 loop condition is false (at zero)
+lemma sv6_privMax_loop_cond_true_0 (τ : ℤ) (l : List ℕ) (init : sv4_state) :
+    (len_constr init 0) ->
+    (sv6_privMax_nth τ l init 0 = true ∧ sv6_privMax_nth τ l init 1 = false) →
+    (sv4_privMaxC τ l init = false) := by
+  intro _
+  intro ⟨ H1, _ ⟩ -- We can get nothing out of H2?
+  simp [sv6_privMax_nth] at H1
+  trivial
+
+-- If the sv6 return flag is true (at 1) then
+--  there is at least one element in the future list
+--  The sv4_condition after executing one shift is false
+lemma sv6_privMax_loop_cond_true_1 (τ : ℤ) (l : List ℕ) (init : sv4_state) :
+    (len_constr init 1) ->
+    (sv6_privMax_nth τ l init 1 = true ∧ sv6_privMax_nth τ l init 2 = false) →
+    ∃ init_past init_pres init_fut1 init_futR,
+      (init = ((init_past, init_pres), (init_fut1 :: init_futR)) ∧
+       sv4_privMaxC τ l ((init_past ++ [init_pres], init_fut1), init_futR) = false) := by
+  intro HL
+  rcases init with ⟨ ⟨ init_past, init_present ⟩, init_future ⟩
+  simp [len_constr] at HL
+
+  intro ⟨ H1, H2 ⟩
+
+  cases init_past
+  · -- init_past is [] so init_future is [x]
+    simp at HL
+    cases init_future
+    · exfalso
+      simp at HL
+    rename_i future_1 future_rest
+    cases future_rest
+    · -- Continue...
+      clear HL
+
+      -- What can we get out of H2? Nothing
+      simp [sv6_privMax_nth] at H2
+
+      -- What can we get out of H1?
+      simp [sv6_privMax_nth] at H1
+      -- sv4_privMaxC τ l (sv4_privMaxF (init)) is false
+      -- ∃ x,  sv4_privMaxC τ l (([init_present], future_1), []) = false
+      exists []
+      exists init_present
+      exists future_1
+      exists []
+    · exfalso
+      simp at HL
+  · -- init_past is nonempty so init_future is empty
+    rename_i past_1 past_rest
+    simp at HL
+    -- past_rest is empty
+    cases past_rest
+    · -- init_future is empty
+      cases init_future
+      · -- Continue...
+        clear HL
+
+        -- What can we get out of H2? Nothing
+        simp [sv6_privMax_nth] at H2
+
+        -- What can we get out of H1? Contradiction?
+        simp [sv6_privMax_nth] at H1
+        -- contradiction?
+
+      · exfalso
+        simp at HL
+    · exfalso
+      simp at HL
+      linarith
+
+
+-- So if we know that init.future is nonempty, we should be able to make a conclusion
+-- about sv4_loop_cond using the s6 loop flag.
+
+-- lemma sv6_privMax_loop_cond_true (τ : ℤ) (l : List ℕ) (init : sv4_state) (p : ℕ) :
+--     (len_constr init p) ->
+--     (sv6_privMax_nth τ l init p = true ∧ sv6_privMax_nth τ l init (p + 1) = false) →
+--     False := by
+--   sorry
+
+
+
+
+
+
+
+
+-- What can we get out of the case where the sv6 flag is false?
+
+-- When the sv6 flag is false (at zero) then sv4 loop cond at 1 is true
+lemma sv6_privMax_loop_cond_false_0 (τ : ℤ) (l : List ℕ) (init : sv4_state) :
+    (len_constr init 0) ->
+    ¬ (sv6_privMax_nth τ l init 0 = true ∧ sv6_privMax_nth τ l init 1 = false) →
+    sv4_privMaxC τ l init = true := by
+  intro HL H
+  simp [len_constr] at HL
+  rcases HL with ⟨ HL1, HL2 ⟩
+  rcases init with ⟨ ⟨ init_past, init_present ⟩, init_future ⟩
+  simp_all [HL1, HL2]
+  rw [sv6_privMax_1th_empty] at H
+  simp at H
+  simp [sv6_privMax_nth] at H
+  trivial
+
+
+
+
+
+
+  -- simp [sv6_privMax_nth] at H2
+  -- -- H2 is giving us nothing, this is suspicious
+
+
+  -- sorry
+
+
+-- Specify that the total length of past and future samples is equal to point (0)
+def sv5_sv6_loop_eq_point_0_len_constr (τ : ℤ) (l : List ℕ) (init : sv4_state) :
+    len_constr init 0 ->
+    @sv5_loop τ l 0 init 0 = @sv6_loop τ l 0 init 0 := by
+  intro HC
+  simp [sv6_loop]
   split <;> simp
+  · rename_i h
+    -- rcases h with ⟨ h1, h2 ⟩
+    -- FIXME: See above for general lemmas about the loop conditional and sv4 loop evals
+    -- Don't do this manually
+    sorry
+  · rename_i h
+    simp at h
+    sorry
+
+-- sv6 and sv5 both do (decreasing) induction over the "future" field--
+--   When the condition is true for sv5, it shifts one sample out of future, and decreases the cut by 1
+--   sv6_loop does ...?
+
+-- So I want inductive formulas for those, ie,
+--    init = (x, y, (a :: as))
+--      in terms of
+--    init = (x ++ [a], y, a)
+--      evaluated at point = length(x) + length(a::as)
 
 
-lemma sv6_loop_inv τ l point init : sv6_loop τ l point init point = 1 -> True := by sorry
 
-
--- Question: What does (sv6_loop τ l (point + 1) init (point + 1))
--- have to do with (sv6_loop τ l point ?? point)
--- There is an inductive unrolling for sv6_privMax_nth (empty and nonempty)
-
-
-
-
--- Question: Do we need any relationship between point and init?
--- It is true on entry that init.1.1.length = point (+- 1?)
 
 
 
 
 -- These functions are not equal. However, they are equal at "point" (+- 1?)
-def sv5_sv6_loop_eq_point (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv4_state) :
-    @sv5_loop τ l point init point = @sv6_loop τ l point init point := by
-  revert init
-  induction point
-  · intro init
-    simp [sv5_loop, sv6_loop]
-    simp [probWhileCut, probWhileFunctional]
-    simp [sv1_threshold]
+def sv5_sv6_loop_eq_point (τ : ℤ) (l : List ℕ) (point eval_point : ℕ) (init : sv4_state) :
+    point ≤ eval_point ->
+    len_constr init eval_point ->
+    @sv5_loop τ l point init eval_point = @sv6_loop τ l point init eval_point := by
+
+  rcases init with ⟨ ⟨ pa, pr ⟩, fu ⟩
+  revert pa pr point
+  induction fu
+  · intro point pa pr HlenIneq Hlen
+    simp [len_constr] at Hlen
+    -- simp only [sv6_loop]
+    simp only [sv5_loop, probWhileCut, probWhileFunctional]
+    simp only [pure, pure_apply, ↓reduceIte]
+    simp only [sv1_threshold]
+    simp only [sv4_privMaxF]
     split
-    · rename_i h
-      apply sv6_privMax_0th_false at h
+    · simp
+      unfold sv6_loop
+      split
+      · exfalso
+        -- There should be a contradiction in here somewhere
+        -- TODO: Probably change the definition of sv6_cond so that its monotone?
+        sorry
+      · simp
+    · unfold sv4_state
+      unfold sv1_state
       simp
-      rw [h]
-      simp
-    · rename_i h
-      simp at h
-      apply sv6_privMax_0th_true at h
-      simp_all
-      -- The last one should always exhaust the tape completely?
-      -- LHS is taking a sum over the singleton "init"
-      -- so it's     if init.1.1.length = 0 then 1 else 0
-      -- RHS is asking if privMaxnth init 1 is false
-      --  So either
+      rw [ENNReal.tsum_eq_add_tsum_ite ((pa, pr), [])]
+      conv =>
+        rhs
+        rw [<- add_zero (sv6_loop _ _ _ _ _)]
+      congr
+      · simp
+        simp [sv6_loop]
+        -- ???
 
-      -- The invariant could be "sv4_state of size n"
-      -- future = size n?
-      -- But then, how does the evaluation at point (point - 1) give us anything about the evaluation at point (point)
+        sorry
+      · simp
+        intro _ _ _ _ _ _ _ _
+        rename_i h a b b_1 a_1 a_2 a_3 a_4 a_5
+        subst Hlen a_4 a_5 a_3
+        simp_all only [Bool.not_eq_true, not_true_eq_false, imp_false]
+  · intro point pa pr HlenIneq Hlen
+    rename_i f ff IH
+    cases point
+    · -- point being zero should be a contradiction?
+      simp [sv6_loop]
+      simp [sv5_loop]
+      -- Not sure. Messed up.
       sorry
-  sorry
+    rename_i point
+    unfold sv5_loop
+    unfold probWhileCut
+    unfold probWhileFunctional
+    sorry
 
-  -- unfold sv5_loop
-  -- unfold sv6_loop
-  -- unfold sv4_privMaxC
-  -- unfold sv1_privMaxC
-
-  -- What is the inductive argument? What can I unroll?
 
 def sv6_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
@@ -980,3 +1253,5 @@ def sv5_sv6_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
   intro _
   congr
   rw [sv5_sv6_loop_eq_point]
+  all_goals sorry
+-/
