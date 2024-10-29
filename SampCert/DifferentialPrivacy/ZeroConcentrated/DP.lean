@@ -665,20 +665,58 @@ theorem ApproximateDP_of_zCDP [Countable U] (m : Mechanism T U)
     case G2 => exact Hm l₁ l₂ HN
     simp
 
+namespace zCDP_of_adp_def
 
 def D (δ : NNReal) : Real := (2 * Real.log (1 / δ)) ^ ((1 : ℝ) / (2 : ℝ))
 
-def ε (ε' : NNReal) (δ : NNReal) : NNReal :=
-  Real.toNNReal ((-2 * D δ + .sqrt ((2 * D δ) ^ 2 + 8 * ε')) / 2) ^ ((1 : ℝ) / (2 : ℝ))
+def ε (ε' : NNReal) (δ : NNReal) : NNReal := Real.toNNReal (-D δ + discrim (OfNat.ofNat 2)⁻¹ (D δ) (-↑ε') ^ (2 : ℝ)⁻¹)
 
-lemma eqε (ε' δ : NNReal) (H : δ < 1) : ε' = ((ε ε' δ)^2) / (2 : NNReal) + ε ε' δ * D δ := by
-  sorry
+lemma eqε (ε' δ : NNReal) (H0 : 0 < δ) (H1 : δ < 1) : ε' = ((ε ε' δ)^2) / (2 : NNReal) + ε ε' δ * D δ := by
+  suffices (((1 : ℝ) / (2 : ℝ)) * (ε ε' δ) * (ε ε' δ) + D δ * ε ε' δ + (- ε')) = 0 by
+    simp_all
+    rw [add_neg_eq_zero] at this
+    rw [<- this]
+    ring_nf
+
+  have Hle : 0 < D δ ^ 2 + 4 * (OfNat.ofNat 2)⁻¹ * ε' := by
+    apply Right.add_pos_of_pos_of_nonneg
+    · apply sq_pos_of_pos
+      unfold D
+      apply Real.rpow_pos_of_pos
+      apply mul_pos <;> simp
+      exact Real.log_neg H0 H1
+    · simp
+
+  apply (@quadratic_eq_zero_iff Real _ _ _ _ _ ?Ga ((discrim (OfNat.ofNat 1 / OfNat.ofNat 2) (D δ) (-ε'.toReal)) ^ ((1 : ℝ) / (2 : ℝ))) ?Gs ((ε ε' δ).toReal)).mpr
+  case Ga => simp
+  case Gs =>
+    rw [<- Real.rpow_add ?Gadd]
+    case Gadd =>
+      simp [discrim]
+      apply Hle
+    rw [add_halves]
+    simp
+  left
+  simp
+  unfold ε
+  apply Real.coe_toNNReal
+  simp [discrim]
+  apply nonneg_le_nonneg_of_sq_le_sq
+  · apply Real.rpow_nonneg
+    exact le_of_lt Hle
+  rw [<- Real.rpow_add Hle]
+  rw [<- one_div]
+  rw [add_halves]
+  simp
+  rw [<- sq]
+  simp
+
+end zCDP_of_adp_def
 
 /--
 Pure privacy bound required to obtain (ε, δ)-approximate DP
 -/
-def zCDP_of_adp (δ : NNReal) (ε' : NNReal) : NNReal := (1/2) * ((ε ε' δ)^2)
-  -- (√(2 * Real.log (1/δ) + 2 * ε) - √(2 * Real.log (1/δ))).toNNReal
+def zCDP_of_adp (δ : NNReal) (ε' : NNReal) : NNReal := (1/2) * ((zCDP_of_adp_def.ε ε' δ)^2)
 
 /--
 zCDP is no weaker than approximate DP, up to a loss of parameters.
@@ -686,7 +724,7 @@ zCDP is no weaker than approximate DP, up to a loss of parameters.
 lemma zCDP_ApproximateDP [Countable U] {m : Mechanism T U} :
       ∀ (δ : NNReal) (_ : 0 < δ) (ε' : NNReal),
      (zCDP m (zCDP_of_adp δ ε') -> ApproximateDP m ε' δ) := by
-  intro δ Hδ ε' H
+  intro δ Hδ0 ε' H
   cases Classical.em (1 ≤ δ)
   · rename_i Hδ1
     exact ApproximateDP_gt1 m (↑ε') Hδ1
@@ -696,98 +734,12 @@ lemma zCDP_ApproximateDP [Countable U] {m : Mechanism T U} :
 
   unfold zCDP_of_adp at H
   rcases H with ⟨ H1, H2 ⟩
-  have X := ApproximateDP_of_zCDP m (ε ε' δ) ?G1 H2 H1 δ Hδ
+  have X := ApproximateDP_of_zCDP m (zCDP_of_adp_def.ε ε' δ) ?G1 H2 H1 δ Hδ0
   case G1 => exact NNReal.zero_le_coe
-  rw [eqε ε' δ Hδ1]
-  -- We have this, basically.
-  unfold D
+  rw [zCDP_of_adp_def.eqε ε' δ Hδ0 Hδ1]
+  unfold zCDP_of_adp_def.D
   simp_all
 
-
-
-  -- #check ApproximateDP_of_zCDP
-  -- have X := ApproximateDP_of_zCDP m ((2 * zCDP_of_adp δ ε') ^ ((1 : Real) / 2)) ?G1 ?G2 ?G3 δ Hδ
-  -- case G1 =>
-  --   apply Real.rpow_nonneg
-  --   apply mul_nonneg
-  --   · simp
-  --   · exact NNReal.zero_le_coe
-  -- case G2 =>
-  --   ring_nf
-  --   -- True
-  --   sorry
-  -- case G3 =>
-  --   cases H
-  --   trivial
-
-  -- have X1 : (2 * (zCDP_of_adp δ ε')) ^ (1 / 2)) ^ 2 / 2 = (zCDP_of_adp δ ε') : Real := by sorry
-  -- rw [X1]
-  -- clear X1
-
-  -- let degrade (δ : NNReal) (ε' : NNReal) : NNReal :=
-  --   (√(2 * Real.log (1/δ) + 2 * ε') - √(2 * Real.log (1/δ))).toNNReal
-  -- have HDdegrade δ ε' : degrade δ ε' = (√(2 * Real.log (1/δ) + 2 * ε') - √(2 * Real.log (1/δ))).toNNReal := by rfl
-  -- exists degrade
-  -- intro δ Hδ ε' ⟨ HN , HB ⟩
-
-
-  -- rename_i Hδ1
-  -- rw [ApproximateDP]
-
-
-
-  -- have R := ApproximateDP_of_zCDP m (degrade δ ε') (by simp) ?G1 HN δ Hδ
-  -- case G1 =>
-  --   -- this proof has to be redone
-  --   sorry
-  -- sorry
-
-  /-
-  have Hdegrade : ((degrade δ ε') ^ 2) / 2 + (degrade δ ε') * (2 * Real.log (1 / δ))^(1/2 : ℝ) = ε' := by
-    rw [HDdegrade]
-    generalize HD : Real.log (1 / δ) = D
-    have HDnn : 0 ≤ D := by
-      rw [<- HD]
-      apply Real.log_nonneg
-      apply one_le_one_div Hδ
-      exact le_of_not_ge Hδ1
-    simp only [Real.coe_toNNReal']
-    rw [max_eq_left ?G1]
-    case G1 =>
-      apply sub_nonneg_of_le
-      apply Real.sqrt_le_sqrt
-      simp
-    rw [sub_sq']
-    rw [Real.sq_sqrt ?G1]
-    case G1 =>
-      apply add_nonneg
-      · simp
-        trivial
-      · simp
-    rw [Real.sq_sqrt ?G1]
-    case G1 =>
-      simp
-      trivial
-    rw [← Real.sqrt_eq_rpow]
-    rw [mul_sub_right_distrib]
-    rw [<- sq]
-    rw [Real.sq_sqrt ?G1]
-    case G1 =>
-      simp
-      trivial
-    generalize HW : √(2 * D + 2 * ↑ε') * √(2 * D) = W
-    conv =>
-      enter [1, 1, 1, 2]
-      rw [mul_assoc]
-      rw [HW]
-    rw [sub_div]
-    rw [add_div]
-    rw [add_div]
-    simp
-    linarith
-  rw [Hdegrade] at R
-  trivial
-  -/
 
 
 /--
