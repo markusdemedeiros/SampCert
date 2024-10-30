@@ -20,6 +20,27 @@ open Classical Nat Int Real ENNReal
 namespace SLang
 
 /--
+Typeclass synonym for the classes we use for probaility
+-/
+class DiscProbSpace (T : Type) where
+  instMeasurableSpace : MeasurableSpace T
+  instCountable : Countable T
+  instDiscreteMeasurableSpace : DiscreteMeasurableSpace T
+  instInhabited : Inhabited T
+
+-- Typeclass inference to- and from- the synonym
+instance [idps : DiscProbSpace T] : MeasurableSpace T := idps.instMeasurableSpace
+instance [idps : DiscProbSpace T] : Countable T := idps.instCountable
+instance [idps : DiscProbSpace T] : DiscreteMeasurableSpace T := idps.instDiscreteMeasurableSpace
+instance [idps : DiscProbSpace T] : Inhabited T := idps.instInhabited
+
+instance [im : MeasurableSpace T] [ic : Countable T] [idm : DiscreteMeasurableSpace T] [ii : Inhabited T] : DiscProbSpace T where
+  instMeasurableSpace := im
+  instCountable := ic
+  instDiscreteMeasurableSpace := idm
+  instInhabited := ii
+
+/--
 Abstract definition of a differentially private systemm.
 -/
 class DPSystem (T : Type) where
@@ -45,9 +66,7 @@ class DPSystem (T : Type) where
   /--
   Privacy adaptively composes by addition.
   -/
-  adaptive_compose_prop {U V : Type}
-    [MeasurableSpace U] [Countable U] [DiscreteMeasurableSpace U] [Inhabited U]
-    [MeasurableSpace V] [Countable V] [DiscreteMeasurableSpace V] [Inhabited V]
+  adaptive_compose_prop {U V : Type} [DiscProbSpace U] [DiscProbSpace V]
     {m₁ : Mechanism T U} {m₂ : U -> Mechanism T V} {ε₁ ε₂ ε : NNReal} :
     prop m₁ ε₁ → (∀ u, prop (m₂ u) ε₂) ->
     ε₁ + ε₂ = ε ->
@@ -55,13 +74,13 @@ class DPSystem (T : Type) where
   /--
   Privacy is invariant under post-processing.
   -/
-  postprocess_prop {U : Type} [MeasurableSpace U] [Countable U] [DiscreteMeasurableSpace U] [Inhabited U]
+  postprocess_prop {U : Type} [DiscProbSpace U]
     { pp : U → V } {m : Mechanism T U} {ε : NNReal} :
     prop m ε → prop (privPostProcess m pp) ε
   /--
   Constant query is 0-DP
   -/
-  const_prop {U : Type} [MeasurableSpace U] [Countable U] [DiscreteMeasurableSpace U]  {u : U} {ε : NNReal} :
+  const_prop {U : Type} [DiscProbSpace U] {u : U} {ε : NNReal} :
     ε = (0 : NNReal) -> prop (privConst u) ε
 
 namespace DPSystem
@@ -69,7 +88,7 @@ namespace DPSystem
 /-
 Non-adaptive privacy composes by addition.
 -/
-lemma compose_prop {U V : Type} [dps : DPSystem T] [MeasurableSpace U] [Countable U] [DiscreteMeasurableSpace U] [Inhabited U] [MeasurableSpace V] [Countable V] [DiscreteMeasurableSpace V] [Inhabited V] :
+lemma compose_prop {U V : Type} [dps : DPSystem T] [DiscProbSpace U] [DiscProbSpace V] :
     {m₁ : Mechanism T U} -> {m₂ : Mechanism T V} ->  {ε₁ ε₂ ε : NNReal} ->
     (ε₁ + ε₂ = ε) ->
     dps.prop m₁ ε₁ → dps.prop m₂ ε₂ → dps.prop (privCompose m₁ m₂) ε := by

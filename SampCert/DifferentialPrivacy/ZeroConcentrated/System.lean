@@ -34,17 +34,17 @@ instance zCDPSystem : DPSystem T where
     intro _ _ _ _ H HZ
     apply zCDP_mono H HZ
   adaptive_compose_prop := by
-    intros _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ HZ HZ2 Hε
+    intros _ _ _ _ _ _ _ _ _ HZ HZ2 Hε
     rw [<- Hε]
     apply privComposeAdaptive_zCDP
     apply HZ
     apply HZ2
   postprocess_prop := by
-    intros _ _ _ _ _ _ _ _ _ HZ
+    intros _ _ _ _ _ _ HZ
     apply privPostProcess_zCDP
     apply HZ
   const_prop := by
-    intros _ _ _ _ _ _ Hε
+    intros _ _ _ _ Hε
     rw [Hε]
     apply privConst_zCDP
 
