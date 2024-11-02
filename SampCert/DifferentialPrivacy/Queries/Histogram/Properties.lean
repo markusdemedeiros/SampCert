@@ -32,26 +32,10 @@ exactBinCount is 1-sensitive
 -/
 theorem exactBinCount_sensitivity (b : Fin numBins) : sensitivity (exactBinCount numBins B b) 1 := by
   rw [sensitivity]
-  intros l₁ l₂ HN
-  cases HN
-  · rename_i l₁' l₂' v' Hl₁ Hl₂
-    rw [ Hl₁, Hl₂ ]
-    rw [exactBinCount, exactBinCount]
-    simp [List.filter_cons]
-    aesop
-  · rename_i l₁' v' l₂' Hl₁ Hl₂
-    rw [ Hl₁, Hl₂ ]
-    rw [exactBinCount, exactBinCount]
-    simp [List.filter_cons]
-    aesop
-  · rename_i l₁' v₁' l₂' v₂' Hl₁ Hl₂
-    rw [ Hl₁, Hl₂ ]
-    rw [exactBinCount, exactBinCount]
-    simp [List.filter_cons]
-    -- There has to be a better way
-    cases (Classical.em (B.bin v₁' = b)) <;> cases (Classical.em (B.bin v₂' = b))
-    all_goals (rename_i Hrw1 Hrw2)
-    all_goals (simp [Hrw1, Hrw2])
+  intros _ _ H
+  cases H
+  all_goals simp_all [exactBinCount, exactBinCount, List.filter_cons]
+  all_goals aesop
 
 /--
 DP bound for a noised bin count
@@ -71,25 +55,18 @@ lemma privNoisedHistogramAux_DP (ε₁ ε₂ : ℕ+) (ε : NNReal) (n : ℕ) (Hn
   dps.prop (privNoisedHistogramAux numBins B ε₁ ε₂ n Hn) (n.succ * (ε / numBins)) := by
   induction n
   · unfold privNoisedHistogramAux
-    simp only [Nat.cast_zero, succ_eq_add_one, zero_add, Nat.cast_one, Nat.cast_mul, one_mul]
-    apply DPSystem.postprocess_prop
-    apply DPSystem.compose_prop ?SC1
-    · apply privNoisedBinCount_DP
-      apply HN_bin
-    · apply DPSystem.const_prop
-      rfl
-    case SC1 => simp only [add_zero]
-  · rename_i n IH
-    unfold privNoisedHistogramAux
-    simp only []
-    apply DPSystem.postprocess_prop
-    apply DPSystem.compose_prop ?SC1
-    · apply privNoisedBinCount_DP
-      apply HN_bin
+    simp
+    apply dps.postprocess_prop
+    apply dps.compose_prop (AddLeftCancelMonoid.add_zero _)
+    · apply privNoisedBinCount_DP; apply HN_bin
+    · apply dps.const_prop; rfl
+  · rename_i _ IH
+    simp [privNoisedHistogramAux]
+    apply dps.postprocess_prop
+    apply dps.compose_prop ?arithmetic
+    · apply privNoisedBinCount_DP; apply HN_bin
     · apply IH
-    case SC1 =>
-      simp
-      ring_nf
+    case arithmetic => simp; ring_nf
 
 /--
 DP bound for a noised histogram
@@ -98,12 +75,8 @@ lemma privNoisedHistogram_DP (ε₁ ε₂ : ℕ+) (ε : NNReal) (HN_bin : dpn.no
   dps.prop (privNoisedHistogram numBins B ε₁ ε₂) ε := by
   unfold privNoisedHistogram
   apply (DPSystem_prop_ext _ ?HEq ?Hdp)
-  case Hdp =>
-    apply privNoisedHistogramAux_DP
-    apply HN_bin
-  case HEq =>
-    simp [predBins]
-    simp [mul_div_left_comm]
+  case Hdp => apply privNoisedHistogramAux_DP; apply HN_bin
+  case HEq => simp [predBins, mul_div_left_comm]
 
 /--
 DP bound for the thresholding maximum
