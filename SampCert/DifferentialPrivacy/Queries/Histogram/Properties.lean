@@ -27,6 +27,8 @@ variable [HT : Inhabited T]
 variable (numBins : ℕ+)
 variable (B : Bins T numBins)
 
+variable (ε₁ ε₂ : ℕ+) (ε : NNReal) (HN_bin : dpn.noise_priv ε₁ (ε₂ * numBins) (ε / numBins))
+
 /-
 exactBinCount is 1-sensitive
 -/
@@ -40,8 +42,7 @@ theorem exactBinCount_sensitivity (b : Fin numBins) : sensitivity (exactBinCount
 /--
 DP bound for a noised bin count
 -/
-lemma privNoisedBinCount_DP (ε₁ ε₂ : ℕ+) (ε : NNReal) (b : Fin numBins)
-  (HN_bin : dpn.noise_priv ε₁ (ε₂ * numBins) (ε / numBins)) :
+lemma privNoisedBinCount_DP  (b : Fin numBins) :
   dps.prop (privNoisedBinCount numBins B ε₁ ε₂ b) (ε / numBins) := by
   unfold privNoisedBinCount
   apply dpn.noise_prop HN_bin
@@ -50,8 +51,7 @@ lemma privNoisedBinCount_DP (ε₁ ε₂ : ℕ+) (ε : NNReal) (b : Fin numBins)
 /--
 DP bound for intermediate steps in the histogram calculation.
 -/
-lemma privNoisedHistogramAux_DP (ε₁ ε₂ : ℕ+) (ε : NNReal) (n : ℕ) (Hn : n < numBins)
-  (HN_bin : dpn.noise_priv ε₁ (ε₂ * numBins) (ε / numBins)) :
+lemma privNoisedHistogramAux_DP (n : ℕ) (Hn : n < numBins) :
   dps.prop (privNoisedHistogramAux numBins B ε₁ ε₂ n Hn) (n.succ * (ε / numBins)) := by
   induction n
   · unfold privNoisedHistogramAux
@@ -71,7 +71,7 @@ lemma privNoisedHistogramAux_DP (ε₁ ε₂ : ℕ+) (ε : NNReal) (n : ℕ) (Hn
 /--
 DP bound for a noised histogram
 -/
-lemma privNoisedHistogram_DP (ε₁ ε₂ : ℕ+) (ε : NNReal) (HN_bin : dpn.noise_priv ε₁ (ε₂ * numBins) (ε / numBins)) :
+lemma privNoisedHistogram_DP :
   dps.prop (privNoisedHistogram numBins B ε₁ ε₂) ε := by
   unfold privNoisedHistogram
   apply (DPSystem_prop_ext _ ?HEq ?Hdp)
@@ -81,7 +81,7 @@ lemma privNoisedHistogram_DP (ε₁ ε₂ : ℕ+) (ε : NNReal) (HN_bin : dpn.no
 /--
 DP bound for the thresholding maximum
 -/
-lemma privMaxBinAboveThreshold_DP (ε₁ ε₂ : ℕ+) (ε : NNReal) (τ : ℤ) (HN_bin : dpn.noise_priv ε₁ (ε₂ * numBins) (ε / numBins)) :
+lemma privMaxBinAboveThreshold_DP (τ : ℤ) :
   dps.prop (privMaxBinAboveThreshold numBins B ε₁ ε₂ τ) ε := by
   unfold privMaxBinAboveThreshold
   apply dps.postprocess_prop
