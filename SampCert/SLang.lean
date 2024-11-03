@@ -155,6 +155,40 @@ end PMF
 
 namespace SLang
 
+/--
+ProbUniformByte is a proper distribution
+-/
+def probUniformByte_normalizes : HasSum probUniformByte 1 := by
+  rw [Summable.hasSum_iff ENNReal.summable]
+  unfold SLang.probUniformByte
+  rw [division_def]
+  rw [ENNReal.tsum_mul_right]
+  simp only [Nat.cast_ofNat]
+  apply (ENNReal.toReal_eq_one_iff _).mp
+  simp only [ENNReal.toReal_mul]
+  rw [ENNReal.tsum_toReal_eq ?G1]
+  case G1 => simp
+  simp only [ENNReal.one_toReal, tsum_const, nsmul_eq_mul, mul_one]
+  rw [@Nat.card_eq_of_equiv_fin UInt8 256 ?G1]
+  case G1 =>
+    apply Equiv.ofBijective (fun v => v.val)
+    apply Function.bijective_iff_has_inverse.mpr
+    exists (fun v => {val := v : UInt8})
+    simp [Function.RightInverse, Function.LeftInverse]
+  simp [ENNReal.toReal_inv]
+
+/--
+ProbUniformByte as a PMF
+-/
+def probUniformByte_PMF : PMF UInt8 := ⟨ probUniformByte, probUniformByte_normalizes ⟩
+
+end SLang
+
+
+
+
+namespace SLang
+
 -- Could also do this w/ external function, if Lean doesn't optimize it enough.
 partial def exec_loop (cond : T → Bool) (exec_body : T → IO T) (init : T) : IO T := do
   if cond init
@@ -166,12 +200,45 @@ inductive exec : {α : Type} -> SLang α -> IO α -> Type 1 where
 | exec_pure (u : α) : exec (probPure u) (return u)
 | exec_bind : exec p ep -> (∀ b , exec (q b) (eq b)) -> exec (probBind p q) (ep >>= eq)
 | exec_byte : exec probUniformByte (run probUniformByte_PMF)
-| exec_loop {cond : T -> Bool} : exec (probWhile cond body init) (exec_loop cond ebody init)
+| exec_loop {cond : T -> Bool} : (∀ t : T, exec (body t) (ebody t)) -> exec (probWhile cond body init) (exec_loop cond ebody init)
 
 -- has_cmp respects equality
 -- has_cmp doesn't need to add an external definition to the PMF type in mathlib
-def has_cmp (s : SLang α) : Type 1 := Σ (i : IO α), SLang.exec s i
+def has_cmp (s : SLang α) : Type 1 := Σ (go : IO α), SLang.exec s go
 
-def compile {s : SLang α} (C : has_cmp s) : IO α := C.1
+-- Make it so that you only open the fd once here (top-level)
+def run {s : SLang α} (C : has_cmp s) : IO α := C.1
+
+def has_cmp_pure (u : α) : has_cmp (probPure u) :=
+  ⟨ _ , exec.exec_pure u ⟩
+
+def has_cmp_bind (Cp : has_cmp p) (Cq : ∀ b , has_cmp (q b)) : has_cmp (probBind p q) :=
+  ⟨ _, exec.exec_bind Cp.2 (fun b => (Cq b).2) ⟩
+
+def has_cmp_byte : has_cmp probUniformByte :=
+  ⟨ _, exec.exec_byte ⟩
+
+def has_cmp_loop {cond : T -> Bool} (H : ∀ t : T, has_cmp (body t)) : has_cmp (probWhile cond body init) :=
+  ⟨ _, exec.exec_loop (fun t => (H t).2) ⟩
 
 end SLang
+
+namespace PMF
+
+-- def has_cmp (p : PMF α) : Type 1 := SLang.has_cmp p
+--
+-- -- Extraction for PMF's follows from Lean-level equality
+-- -- No need to try and bind external def to MathLib internal code
+--
+-- def has_cmp_pure (u : α) : has_cmp ((Pure.pure u) : PMF α) := by
+--   have H : (DFunLike.coe ((Pure.pure u) : PMF _)) = SLang.probPure u := by trivial
+--   rw [PMF.has_cmp, H]
+--   exact SLang.has_cmp_pure u
+--
+-- def has_cmp_bind (p : PMF α) (q : α -> PMF β) (H1 : PMF.has_cmp p) (H2 : ∀ a, PMF.has_cmp (q a)) :
+--     PMF.has_cmp ((p >>= q) : PMF β) := by
+--   have H : (DFunLike.coe ((p >>= q) : PMF β )) = SLang.probBind p (fun a => q a) := by trivial
+--   rw [PMF.has_cmp, H]
+--   exact SLang.has_cmp_bind H1 H2
+--
+-- end PMF

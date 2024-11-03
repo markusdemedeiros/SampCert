@@ -38,34 +38,6 @@ local instance : Finite UInt8 := by
     simp [Function.RightInverse, Function.LeftInverse]
 
 
-
-/--
-ProbUniformByte is a proper distribution
--/
-def probUniformByte_normalizes : HasSum probUniformByte 1 := by
-  rw [Summable.hasSum_iff ENNReal.summable]
-  unfold SLang.probUniformByte
-  rw [division_def]
-  rw [ENNReal.tsum_mul_right]
-  simp only [Nat.cast_ofNat]
-  apply (ENNReal.toReal_eq_one_iff _).mp
-  simp only [ENNReal.toReal_mul]
-  rw [ENNReal.tsum_toReal_eq ?G1]
-  case G1 => simp
-  simp only [ENNReal.one_toReal, tsum_const, nsmul_eq_mul, mul_one]
-  rw [@Nat.card_eq_of_equiv_fin UInt8 256 ?G1]
-  case G1 =>
-    apply Equiv.ofBijective (fun v => v.val)
-    apply Function.bijective_iff_has_inverse.mpr
-    exists (fun v => {val := v : UInt8})
-    simp [Function.RightInverse, Function.LeftInverse]
-  simp [ENNReal.toReal_inv]
-
-/--
-ProbUniformByte as a PMF
--/
-def probUniformByte_PMF : PMF UInt8 := ⟨ probUniformByte, probUniformByte_normalizes ⟩
-
 /--
 Evaluation of ``probUniformByteUpperBits`` for inside the support
 -/

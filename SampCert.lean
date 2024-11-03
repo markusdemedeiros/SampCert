@@ -43,6 +43,97 @@ def unbin (n : Fin numBins) : ℕ+ := 2 ^ (1 + n.val)
 noncomputable def combineMeanHistogram : Mechanism ℕ (Option ℚ) :=
   privMeanHistogram PureDPSystem laplace_pureDPSystem numBins { bin } unbin 1 20 2 1 20
 
+
+-- (A) Can I even do this and run it?
+-- (B) Can I automate this
+def privNoisedCound_cmp (l : List ℕ) : SLang.has_cmp (@privNoisedCount _ PureDPSystem laplace_pureDPSystem 1 20 l) := by
+  simp only [DFunLike.coe, PMF.instFunLike]
+  simp only [privNoisedCount, DPNoise.noise, privNoisedQueryPure, DiscreteLaplaceGenSamplePMF]
+  simp only [DiscreteLaplaceGenSample]
+  -- Eta conversion, why does this come up?
+  suffices has_cmp (DiscreteLaplaceSample (OfNat.ofNat 1 * OfNat.ofNat 20) (OfNat.ofNat 1) >>= fun s => Pure.pure (s + exactCount l))  by trivial
+  simp
+  apply SLang.has_cmp_bind
+  · unfold DiscreteLaplaceSample
+    simp only [Bind.bind]
+    apply SLang.has_cmp_bind
+    · unfold probUntil
+      simp only [Bind.bind]
+      apply SLang.has_cmp_bind
+      · sorry
+      · intro _
+        apply has_cmp_loop
+        intro _
+        unfold DiscreteLaplaceSampleLoop
+        simp only [Bind.bind]
+        apply SLang.has_cmp_bind
+        · unfold DiscreteLaplaceSampleLoopIn2
+          simp only [Bind.bind]
+          apply SLang.has_cmp_bind
+          · apply has_cmp_loop
+            intro _
+            unfold DiscreteLaplaceSampleLoopIn2Aux
+            simp only [Bind.bind]
+            apply has_cmp_bind
+            · unfold BernoulliExpNegSample
+              simp only [Bind.bind]
+              split
+              · apply has_cmp_bind
+                · unfold BernoulliExpNegSampleUnit
+                  simp only [Bind.bind]
+                  apply has_cmp_bind
+                  · unfold BernoulliExpNegSampleUnitAux
+                    simp only [Bind.bind]
+                    apply has_cmp_bind
+                    · apply has_cmp_loop
+                      intro _
+                      unfold BernoulliExpNegSampleUnitLoop
+                      simp only [Bind.bind]
+                      apply has_cmp_bind
+                      · unfold BernoulliSample
+                        simp only [Bind.bind]
+                        apply has_cmp_bind
+                        · sorry
+                        · sorry
+                      · sorry
+                    · sorry
+                  · sorry
+                · sorry
+              · sorry
+            · intro _
+              simp only [Pure.pure]
+              apply has_cmp_pure
+          · sorry
+        · intro _
+          apply has_cmp_bind
+          · unfold BernoulliSample
+            simp only [Bind.bind]
+            apply has_cmp_bind
+            · unfold UniformSample
+              simp only [Bind.bind]
+              apply has_cmp_bind
+              · unfold probUntil
+                simp only [Bind.bind]
+                apply has_cmp_bind
+                · sorry
+                · intro _
+                  apply has_cmp_loop
+                  intro _
+                  unfold UniformPowerOfTwoSample
+                  unfold probUniformP2
+                  sorry
+              · intro _
+                apply has_cmp_pure
+            · intro _
+              apply has_cmp_pure
+          · intro _
+            apply has_cmp_pure
+    · intro _
+      apply has_cmp_pure
+  · intro _
+    apply has_cmp_pure
+
+
 end histogramMeanExample
 
 -- The following is unsound and should NOT be part of the code
