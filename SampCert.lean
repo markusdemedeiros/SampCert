@@ -43,6 +43,33 @@ def unbin (n : Fin numBins) : ℕ+ := 2 ^ (1 + n.val)
 noncomputable def combineMeanHistogram : Mechanism ℕ (Option ℚ) :=
   privMeanHistogram PureDPSystem laplace_pureDPSystem numBins { bin } unbin 1 20 2 1 20
 
+
+-- Do I just need to tweak the PMF definitions so that they're _constructed_ from SLang terms
+-- or do I really need
+
+-- set_option pp.all true
+
+
+-- def test0 : PMF ℕ := PMF.pure 0                -- PMF return is nont computable
+def test1 : SLang ℕ := SLang.probPure 0           -- SLang return is computable
+def test2 : PMF ℕ := ⟨ ((do
+                         return 0) : SLang ℕ) ,
+                       by
+                         simp
+                         have H1 : probPure 0 = PMF.pure 0 := by
+                           simp [DFunLike.coe, PMF.instFunLike, PMF.pure]
+                           unfold probPure
+                           trivial
+                         rw [H1]
+                         cases (PMF.pure 0)
+                         simp [DFunLike.coe, PMF.instFunLike]
+                         trivial ⟩  -- PMF built out of computable primitives is computable
+
+
+
+
+
+
 end histogramMeanExample
 
 -- The following is unsound and should NOT be part of the code

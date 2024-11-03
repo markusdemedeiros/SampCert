@@ -36,7 +36,7 @@ def privPostProcess_AC {f : U -> V} (nq : Mechanism T U) (Hac : ACNeighbour nq) 
   unfold AbsCts at *
   intro l₁ l₂ Hn v
   have Hac := Hac l₁ l₂ Hn
-  simp [privPostProcess]
+  simp [privPostProcess, DFunLike.coe, PMF.instFunLike]
   intro Hppz i fi
   apply Hac
   apply Hppz
@@ -575,7 +575,6 @@ theorem privPostProcess_zCDPBound {nq : Mechanism T U} {ε : ℝ}
     apply inv_nonneg_of_nonneg
     linarith
   apply elog_mono_le.mp
-  simp [PMF.bind, PMF.pure]
   simp [PMF.instFunLike]
   apply privPostPocess_DP_pre
   · exact fun l => PMF.hasSum_coe_one (nq l)

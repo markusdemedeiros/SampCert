@@ -13,23 +13,67 @@ import SampCert.Foundations.Basic
 This file defines an abstract system of differentially private operators.
 -/
 
-noncomputable section
-
-open Classical Nat Int Real ENNReal
-
 namespace SLang
 
 abbrev Query (T U : Type) := List T → U
 
 abbrev Mechanism (T U : Type) := List T → PMF U
 
+
 /--
 General (value-dependent) composition of mechanisms
 -/
-def privComposeAdaptive (nq1 : Mechanism T U) (nq2 : U -> Mechanism T V) (l : List T) : PMF (U × V) := do
-  let A <- nq1 l
-  let B <- nq2 A l
-  return (A, B)
+def privComposeAdaptive (nq1 : Mechanism T U) (nq2 : U -> Mechanism T V) (l : List T) : PMF (U × V) :=
+  ⟨ ((do
+        let A <- nq1 l
+        let B <- nq2 A l
+        return (A, B)) : SLang (U × V)),
+    sorry ⟩
+
+/--
+Product of mechanisms.
+-/
+def privCompose (nq1 : Mechanism T U) (nq2 : Mechanism T V) (l : List T) : PMF (U × V) :=
+  privComposeAdaptive nq1 (fun _ => nq2) l
+
+/--
+Mechanism obtained by applying a post-processing function to a mechanism.
+-/
+def privPostProcess (nq : Mechanism T U) (pp : U → V) (l : List T) : PMF V :=
+  ⟨ ((do
+        let A ← nq l
+        return pp A) : SLang V),
+    sorry ⟩
+
+/--
+Constant mechanism
+-/
+def privConst (u : U) (l : List T) : PMF U :=
+  ⟨ ((do return u) : SLang U),
+    sorry ⟩
+
+
+
+-- def test2 : PMF ℕ := ⟨ ((do
+--                          return 0) : SLang ℕ) ,
+--                        by
+--                          simp
+--                          have H1 : probPure 0 = PMF.pure 0 := by
+--                            simp [DFunLike.coe, PMF.instFunLike, PMF.pure]
+--                            unfold probPure
+--                            trivial
+--                          rw [H1]
+--                          cases (PMF.pure 0)
+--                          simp [DFunLike.coe, PMF.instFunLike]
+--                          trivial ⟩  -- PMF built out of computable primitives is computable
+
+
+noncomputable section
+
+open Classical Nat Int Real ENNReal
+
+
+
 
 lemma compose_sum_rw_adaptive (nq1 : List T → PMF U) (nq2 : U -> List T → PMF V) (u : U) (v : V) (l : List T) :
   (∑' (a : U), nq1 l a * ∑' (a_1 : V), if u = a ∧ v = a_1 then nq2 a l a_1 else 0) = nq1 l u * nq2 u l v := by
@@ -70,24 +114,8 @@ lemma privComposeChainRule (nq1 : Mechanism T U) (nq2 : U -> Mechanism T V) (l :
   intros u v
   rw [<- compose_sum_rw_adaptive]
   simp [privComposeAdaptive]
+  sorry
 
-/--
-Product of mechanisms.
--/
-def privCompose (nq1 : Mechanism T U) (nq2 : Mechanism T V) (l : List T) : PMF (U × V) :=
-  privComposeAdaptive nq1 (fun _ => nq2) l
-
-/--
-Mechanism obtained by applying a post-processing function to a mechanism.
--/
-def privPostProcess (nq : Mechanism T U) (pp : U → V) (l : List T) : PMF V := do
-  let A ← nq l
-  return pp A
-
-/--
-Constant mechanism
--/
-def privConst (u : U) : Mechanism T U := fun _ => PMF.pure u
 
 
 -- @[simp]
@@ -218,4 +246,5 @@ lemma condition_to_subset (f : U → V) (g : U → ENNReal) (x : V) :
     simp
   rw [B]
 
+end
 end SLang
