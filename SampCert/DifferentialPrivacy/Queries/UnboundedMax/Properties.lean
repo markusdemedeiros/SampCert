@@ -959,12 +959,96 @@ lemma sv6_privMax_hist_step_strict (τ : ℤ) (l : List ℕ) (past fut_rest : Li
     simp_all
 
 
-
+@[simp]
+def sv6_cond (τ : ℤ) (l : List ℕ) (init : sv4_state) : Bool :=
+  (sv6_privMax_hist_strict τ l init ∧ ¬ sv4_privMaxC τ l init)
 
 def sv6_loop (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv4_state) : SLang ℕ := do
-  if (sv6_privMax_hist_strict τ l init ∧ ¬ sv4_privMaxC τ l init)
+  if (sv6_cond τ l init)
     then return point
     else probZero
+
+
+-- QUESTION: What do we need for equality in the base case?
+lemma sv5_sv6_loop_base_case  (τ : ℤ) (l : List ℕ) (point eval : ℕ) (past future : List ℤ) (pres : ℤ) :
+    future = [] ->
+    List.length future = eval ->
+    List.length (past ++ [pres] ++ future) = point ->
+    True ->
+    (sv6_loop τ l eval ((past, pres), future)) point = (sv5_loop τ l eval ((past, pres), future)) point := by
+  intro Hfuture Heval Hstate _
+  rw [Hfuture]
+  simp_all
+  rw [<- Heval]
+
+  unfold sv5_loop
+  simp
+  unfold probWhileCut
+  unfold probWhileFunctional
+  split
+  · -- If (sv4_privMaxC τ l ((past, pres), []) = true) then
+    -- sv6_loop _ _ _ = 0
+    simp [probWhileCut]
+    sorry
+  · -- If (sv4_privMaxC τ l ((past, pres), []) = false) then
+    -- (RHS = 0)
+    -- (sv6_loop τ l 0 (_, [])) point = 0
+    simp
+    unfold sv4_state
+    unfold sv1_state
+    rw [ENNReal.tsum_eq_add_tsum_ite ((past, pres), [])]
+    conv =>
+      lhs
+      rw [<- add_zero (sv6_loop _ _ _ _ _)]
+      rw [add_comm]
+    conv =>
+      rhs
+      rw [add_comm]
+    congr 1
+    · symm
+      simp
+      aesop
+    simp [sv1_threshold]
+    -- SUSPECT!
+    rw [<- Hstate]
+    simp
+    sorry
+
+
+
+-- QUESTION: What do we need for sv6_loop to be equal to sv6_loop_cond (next)
+lemma sv6_loop_ind (τ : ℤ) (l : List ℕ) (eval point : ℕ) (past ff: List ℤ) (pres f: ℤ) :
+      (sv4_privMaxC τ l ((past, pres), f :: ff) = true) ->
+      True ->
+      (sv6_loop τ l eval ((past, pres), f :: ff)) point = (sv6_loop τ l eval ((past ++ [pres], f), ff)) point := by
+  intro Hcondition _
+  unfold sv6_loop
+  suffices (sv6_cond τ l ((past, pres), f :: ff) = sv6_cond τ l ((past ++ [pres], f), ff)) by
+    split <;> split <;> try rfl
+    all_goals simp_all
+  sorry
+
+
+
+-- QUESTION: What do we need for sv5 to be equal to sv5_loop_cond (next) evaluated at point
+lemma sv5_loop_ind (τ : ℤ) (l : List ℕ) (eval point : ℕ) (past ff: List ℤ) (pres f: ℤ) :
+      (sv4_privMaxC τ l ((past, pres), f :: ff) = true) ->
+      (sv5_loop τ l (eval + 1) ((past, pres), f :: ff)) point = (sv5_loop τ l eval ((past ++ [pres], f), ff)) point := by
+  intro Hcondition
+  conv =>
+    lhs
+    unfold sv5_loop
+    unfold probWhileCut
+    unfold probWhileFunctional
+  split
+  · simp only [bind, pure, sv4_privMaxF, pure_bind]
+    unfold sv5_loop
+    rfl
+  · exfalso
+    trivial
+
+
+
 
 
 def sv6_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
@@ -1009,9 +1093,10 @@ def sv5_sv6_loop_eq_point (τ : ℤ) (l : List ℕ) (point eval_pt : ℕ) (past 
       split
       · -- RHS check True (contradiction, would return 1)
         rename_i hhist
-        rcases hhist with ⟨ hhist, hlast' ⟩
-        exfalso
-        simp_all
+        sorry
+        -- rcases hhist with ⟨ hhist, hlast' ⟩
+        -- exfalso
+        -- simp_all
       · -- RHS check returns False (returns probZero)
         rename_i hhist
         simp at hhist
@@ -1054,8 +1139,6 @@ def sv5_sv6_loop_eq_point (τ : ℤ) (l : List ℕ) (point eval_pt : ℕ) (past 
 
   · -- Inductive case
     rename_i fut_next fut_rest IH
-
-
     sorry
 
 
@@ -1067,14 +1150,22 @@ def sv5_sv6_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
   intro eval_point
   simp
   apply tsum_congr
-  intro _
+  intro τ
   congr
   apply funext
-  intro _
+  intro v0
   congr
   apply funext
-  intro _
+  intro future
   congr
+  -- Now to prove Equality at the evaluation point
+
+  have Heval : List.length (future : List ℤ) = eval_point := by
+    exact Mathlib.Vector.length_val future
+
+
+
+  -- length (past + present + future) = point + 1
   rw [sv5_sv6_loop_eq_point]
   all_goals sorry
 
