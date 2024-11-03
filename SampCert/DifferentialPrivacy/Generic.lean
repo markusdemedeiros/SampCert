@@ -7,7 +7,7 @@ import SampCert.SLang
 import SampCert.DifferentialPrivacy.Sensitivity
 import SampCert.Foundations.Basic
 
-/-!
+/-
 # Differential Privacy
 
 This file defines an abstract system of differentially private operators.
@@ -15,9 +15,34 @@ This file defines an abstract system of differentially private operators.
 
 namespace SLang
 
+
+/--
+The type of (computable) PMFs
+
+We want PMF monad composition to use probPure and probBind, rather than PMF.pure and PMF.bind.
+-/
+abbrev SPMF.{u} (α : Type u) : Type u := { f : SLang α // HasSum f 1 }
+
+-- instance : Coe (PMF α) (SPMF α) where
+--   coe a := by sorry
+
+instance : Coe (SPMF α) (PMF α) where
+  coe a := by sorry
+
+instance : Coe (SPMF α) (SLang α) where
+  coe a := a.1
+
+instance : Monad SPMF where
+  pure a := ⟨ probPure a, sorry ⟩
+  bind pa pb := ⟨ pa.1.probBind (fun x => (pb x).1), sorry ⟩
+
 abbrev Query (T U : Type) := List T → U
 
-abbrev Mechanism (T U : Type) := List T → PMF U
+abbrev Mechanism (T U : Type) := List T → SPMF U
+
+
+
+
 
 
 /--
