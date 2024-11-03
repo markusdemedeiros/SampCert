@@ -847,8 +847,7 @@ def sv4_eq_sv5 [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
   - Changes the loop from a probWhileCut into a single, deterministic, check
 -/
 
--- First n loop iterates
--- future samples to try them
+-- When you look at exactly n loops in the future, the check evaluates to true
 def sv6_privMax_check (τ : ℤ) (l : List ℕ) (s : sv4_state) (n : ℕ) : Bool :=
   match n with
   | 0 => true
@@ -876,25 +875,130 @@ lemma is_past_configuration_ex3 : is_past_configuration (([], 0), [1, 2]) (([0],
   simp [is_past_configuration]
 
 
-
-
-
-
-
-
-
-
-
-
-
 -- All past configurations had their loop check execute to True
 def sv6_privMax_hist (τ : ℤ) (l : List ℕ) (s : sv4_state) : Prop :=
   ∀ sp, (is_past_configuration sp s) -> sv4_privMaxC τ l sp = true
 
 
+-- If all past configurations of sp evaluate to True,
+-- and the next one evaluates to true,
+-- then all past configurations for the next one evaluate to True
+lemma sv6_privMax_hist_step (τ : ℤ) (l : List ℕ) (past fut_rest : List ℤ) (present fut : ℤ) :
+    sv6_privMax_hist τ l ((past, present), fut :: fut_rest) ->
+    sv4_privMaxC τ l ((past ++ [present], fut), fut_rest) ->
+    sv6_privMax_hist τ l ((past ++ [present], fut), fut_rest) := by
+  intro H1 H2
+  unfold sv6_privMax_hist
+  intro s H3
+  unfold is_past_configuration at H3
+  rcases H3 with ⟨ H3, H4 ⟩
+  simp_all
+
+  apply Nat.lt_or_eq_of_le at H3
+  cases H3
+  · -- The length of s1.1.1 is less than or equal to past
+    apply H1
+    apply And.intro
+    · linarith
+    · simp_all
+  · rename_i Hs11_len
+    -- The length of s.1.1 is equal to past.length + 1
+    -- Now we can characterize s
+    have Hs11 : List.take (past.length + 1) (s.1.1 ++ s.1.2 :: s.2) =
+                List.take (past.length + 1) (past ++ present :: fut :: fut_rest) := by
+      rw [H4]
+    rw [List.take_left' Hs11_len] at Hs11
+    simp [List.take_append] at Hs11
+    simp_all
+    rcases H4 with ⟨ H5, H6 ⟩
+    cases s
+    rename_i s1 _
+    cases s1
+    simp_all
+
+
+-- Relationship between sv6_privMax_nth and sv6_privMax_hist
+-- If sv6_privMax_nth .. n is true then
+--  sv6_privMax_all holds, for the state which separates off the first n elements
+-- Do this for sv7 instead?
 
 
 
+
+
+
+
+def sv6_loop (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv4_state) : SLang ℕ := do
+  sorry
+  -- let sk <- probWhileCut (sv4_privMaxC τ l) sv4_privMaxF (point + 1) init
+  -- return (sv1_threshold sk.1)
+
+def sv6_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+  fun (point : ℕ) =>
+  let computation : SLang ℕ := do
+    let τ <- @privNoiseZero dps ε₁ (2 * ε₂)
+    let v0 <- @privNoiseZero dps ε₁ (4 * ε₂)
+    let presamples <- @sv4_presample dps ε₁ ε₂ point
+    @sv6_loop τ l point (([], v0), presamples)
+  computation point
+
+
+
+-- sv6_loop and sv5_loop are equal at point (under some conditions)
+def sv5_sv6_loop_eq_point (τ : ℤ) (l : List ℕ) (point eval_pt : ℕ) (past future : List ℤ) (pres : ℤ) :
+    List.length (past ++ [pres] ++ future) = (point + 1) ->
+    List.length future = eval_point ->
+    sv6_privMax_hist τ l ((past, pres), future) ->
+    @sv5_loop τ l eval_point ((past, pres), future) point = @sv6_loop τ l eval_point ((past, pres), future) point := by
+
+  -- To do induction over future, the length of past plus the number of steps remaining shoud be constant
+
+  revert eval_point past pres
+  induction future
+  · -- Base case: no future
+    intro eval_point past pres Hstate Heval Hpast_evals
+    simp_all
+    rw [<- Heval]
+    unfold sv5_loop
+    unfold probWhileCut
+    unfold probWhileFunctional
+
+    -- LHS: We have consumed the entire future now,
+    -- If the last conditional check is False, return pure ...
+    -- else return zero
+
+    -- NOTE: This should definitely not follow from Hpast_evals...
+    have Hshould_be_not_provable : sv4_privMaxC τ l ((past, pres), []) := by
+      apply Hpast_evals
+      simp [is_past_configuration]$
+      -- Uh oh!
+
+      -- sorry
+
+
+    sorry
+  · -- Inductive case
+    sorry
+
+
+def sv5_sv6_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
+    @sv5_privMax dps ε₁ ε₂ l = @sv6_privMax dps ε₁ ε₂ l := by
+  unfold sv5_privMax
+  unfold sv6_privMax
+  apply SLang.ext
+  intro eval_point
+  simp
+  apply tsum_congr
+  intro _
+  congr
+  apply funext
+  intro _
+  congr
+  apply funext
+  intro _
+  congr
+  rw [sv5_sv6_loop_eq_point]
+  all_goals sorry
 
 
 
@@ -1236,22 +1340,4 @@ def sv6_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang
     @sv6_loop τ l point (([], v0), presamples)
   computation point
 
-def sv5_sv6_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
-    @sv5_privMax dps ε₁ ε₂ l = @sv6_privMax dps ε₁ ε₂ l := by
-  unfold sv5_privMax
-  unfold sv6_privMax
-  apply SLang.ext
-  intro eval_point
-  simp
-  apply tsum_congr
-  intro _
-  congr
-  apply funext
-  intro _
-  congr
-  apply funext
-  intro _
-  congr
-  rw [sv5_sv6_loop_eq_point]
-  all_goals sorry
 -/
