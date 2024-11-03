@@ -917,21 +917,55 @@ lemma sv6_privMax_hist_step (τ : ℤ) (l : List ℕ) (past fut_rest : List ℤ)
     simp_all
 
 
--- Relationship between sv6_privMax_nth and sv6_privMax_hist
--- If sv6_privMax_nth .. n is true then
---  sv6_privMax_all holds, for the state which separates off the first n elements
--- Do this for sv7 instead?
 
 
+def is_past_configuration_strict (sp sc : sv4_state) : Prop :=
+  (sp.1.1.length < sc.1.1.length) ∧ sp.1.1 ++ [sp.1.2] ++ sp.2 = sc.1.1 ++ [sc.1.2] ++ sc.2
 
+-- All strictly past configurations had their loop check execute to True
+def sv6_privMax_hist_strict (τ : ℤ) (l : List ℕ) (s : sv4_state) : Prop :=
+  ∀ sp, (is_past_configuration_strict sp s) -> sv4_privMaxC τ l sp = true
+
+lemma sv6_privMax_hist_step_strict (τ : ℤ) (l : List ℕ) (past fut_rest : List ℤ) (present fut : ℤ) :
+    sv6_privMax_hist_strict τ l ((past, present), fut :: fut_rest) ->
+    sv4_privMaxC τ l ((past, present), fut :: fut_rest) ->
+    sv6_privMax_hist_strict τ l ((past ++ [present], fut), fut_rest) := by
+  intro H1 H2
+  unfold sv6_privMax_hist_strict
+  intro s H3
+  unfold is_past_configuration_strict at H3
+  rcases H3 with ⟨ H3, H4 ⟩
+  simp_all
+
+  apply Nat.lt_or_eq_of_le at H3
+  cases H3
+  · -- The length of s1.1.1 is less than or equal to past
+    apply H1
+    apply And.intro
+    · linarith
+    · simp_all
+  · rename_i Hs11_len
+    have Hs11 : List.take (past.length) (s.1.1 ++ s.1.2 :: s.2) =
+                List.take (past.length) (past ++ present :: fut :: fut_rest) := by
+      rw [H4]
+    simp at Hs11_len
+    rw [List.take_left] at Hs11
+    rw [<- Hs11_len] at Hs11
+    rw [List.take_left] at Hs11
+    cases s
+    rename_i s1 s2
+    cases s1
+    rename_i s11 s12
+    simp_all
 
 
 
 
 def sv6_loop (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv4_state) : SLang ℕ := do
-  sorry
-  -- let sk <- probWhileCut (sv4_privMaxC τ l) sv4_privMaxF (point + 1) init
-  -- return (sv1_threshold sk.1)
+  if (sv6_privMax_hist_strict τ l init ∧ ¬ sv4_privMaxC τ l init)
+    then return point
+    else probZero
+
 
 def sv6_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
@@ -948,8 +982,8 @@ def sv6_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang
 def sv5_sv6_loop_eq_point (τ : ℤ) (l : List ℕ) (point eval_pt : ℕ) (past future : List ℤ) (pres : ℤ) :
     List.length (past ++ [pres] ++ future) = (point + 1) ->
     List.length future = eval_point ->
-    sv6_privMax_hist τ l ((past, pres), future) ->
-    @sv5_loop τ l eval_point ((past, pres), future) point = @sv6_loop τ l eval_point ((past, pres), future) point := by
+    sv6_privMax_hist_strict τ l ((past, pres), future) ->
+    @sv5_loop τ l eval_point ((past, pres), future) point = @sv6_loop τ l point ((past, pres), future) point := by
 
   -- To do induction over future, the length of past plus the number of steps remaining shoud be constant
 
@@ -967,17 +1001,61 @@ def sv5_sv6_loop_eq_point (τ : ℤ) (l : List ℕ) (point eval_pt : ℕ) (past 
     -- If the last conditional check is False, return pure ...
     -- else return zero
 
-    -- NOTE: This should definitely not follow from Hpast_evals...
-    have Hshould_be_not_provable : sv4_privMaxC τ l ((past, pres), []) := by
-      apply Hpast_evals
-      simp [is_past_configuration]$
-      -- Uh oh!
+    -- RHS: Should be able to simplify now using Hpast_evals
+    unfold sv6_loop
+    split
+    · -- LHS when the last loop condition returns True (LHS returns 0)
+      rename_i hlast
+      split
+      · -- RHS check True (contradiction, would return 1)
+        rename_i hhist
+        rcases hhist with ⟨ hhist, hlast' ⟩
+        exfalso
+        simp_all
+      · -- RHS check returns False (returns probZero)
+        rename_i hhist
+        simp at hhist
+        simp
+        intro _ _ _
+        simp_all
+        right
+        rw [<- Heval]
+        simp [probWhileCut]
 
-      -- sorry
+    · -- LHS when the last loop condition returns False (should return 1?)
+      rename_i hlast
+      simp at hlast
+      conv =>
+        lhs
+        simp [sv1_threshold]
+        unfold sv4_state
+        unfold sv1_state
+      rw [(ENNReal.tsum_eq_add_tsum_ite ((past, pres), []))]
+      conv =>
+        lhs
+        rw [add_comm]
+      conv =>
+        rhs
+        rw [<- zero_add (@ite _ _ _ _ _ )]
+      congr 1
+      · simp
+        simp_all
+      rw [<- Hstate]
+      simp
 
+      split
+      · -- RHS evaluates to True
+        simp
+      · -- RHS evaluates to False (contradiction)
+        exfalso
+        rename_i h
+        simp at h
+        aesop
 
-    sorry
   · -- Inductive case
+    rename_i fut_next fut_rest IH
+
+
     sorry
 
 
