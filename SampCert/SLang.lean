@@ -152,3 +152,26 @@ namespace PMF
 opaque run (c : PMF T) : IO T
 
 end PMF
+
+namespace SLang
+
+-- Could also do this w/ external function, if Lean doesn't optimize it enough.
+partial def exec_loop (cond : T → Bool) (exec_body : T → IO T) (init : T) : IO T := do
+  if cond init
+    then exec_loop cond exec_body (<- exec_body init)
+    else return init
+
+-- Defines the IO action associated to executing a SLang term
+inductive exec : {α : Type} -> SLang α -> IO α -> Type 1 where
+| exec_pure (u : α) : exec (probPure u) (return u)
+| exec_bind : exec p ep -> (∀ b , exec (q b) (eq b)) -> exec (probBind p q) (ep >>= eq)
+| exec_byte : exec probUniformByte (run probUniformByte_PMF)
+| exec_loop {cond : T -> Bool} : exec (probWhile cond body init) (exec_loop cond ebody init)
+
+-- has_cmp respects equality
+-- has_cmp doesn't need to add an external definition to the PMF type in mathlib
+def has_cmp (s : SLang α) : Type 1 := Σ (i : IO α), SLang.exec s i
+
+def compile {s : SLang α} (C : has_cmp s) : IO α := C.1
+
+end SLang
