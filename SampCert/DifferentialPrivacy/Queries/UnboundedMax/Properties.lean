@@ -1336,3 +1336,46 @@ def sv7_sv8_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
   simp only []
   repeat (apply tsum_congr; intro _; congr 1)
   simp only [sv7_sv8_cond_eq, sv6_cond]
+
+
+
+/-
+## Program v9
+
+Not executable
+Rewritten so that the randomness we will cancel out is right at the front
+-/
+
+
+def sv9_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+  fun (point : ℕ) =>
+  let computation : SLang ℕ := do
+    match point with
+    | 0 => do
+      let τ <- @privNoiseThresh dps ε₁ ε₂
+      let v0 <- @privNoiseGuess dps ε₁ ε₂
+      if (sv8_sum l [] v0 ≥ τ)
+        then probPure point
+        else probZero
+    | (Nat.succ point') => do
+      let v0 <- @privNoiseGuess dps ε₁ ε₂
+      let presamples <- @sv4_presample dps ε₁ ε₂ point'
+      let τ <- @privNoiseThresh dps ε₁ ε₂
+      let vk <- @privNoiseGuess dps ε₁ ε₂
+      if (sv8_cond τ l [] v0 presamples vk)
+        then probPure point
+        else probZero
+  computation point
+
+def sv8_sv9_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
+    @sv8_privMax dps ε₁ ε₂ l = @sv8_privMax dps ε₁ ε₂ l := by
+  apply SLang.ext
+  intro point
+  sorry
+
+
+/--
+sv9 normalizes because sv1 normalizes
+-/
+def sv9_privMax_pmf [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : PMF ℕ :=
+  ⟨ @sv9_privMax dps ε₁ ε₂ l, sorry ⟩
