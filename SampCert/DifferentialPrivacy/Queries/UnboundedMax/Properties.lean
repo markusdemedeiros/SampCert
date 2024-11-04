@@ -979,8 +979,6 @@ lemma sv6_privMax_hist_step (τ : ℤ) (l : List ℕ) (past fut_rest : List ℤ)
     simp_all
 
 
-
-
 def is_past_configuration_strict (sp sc : sv4_state) : Prop :=
   (sp.1.1.length < sc.1.1.length) ∧ sp.1.1 ++ [sp.1.2] ++ sp.2 = sc.1.1 ++ [sc.1.2] ++ sc.2
 
@@ -1022,74 +1020,68 @@ lemma sv6_privMax_hist_step_strict (τ : ℤ) (l : List ℕ) (past fut_rest : Li
 
 
 @[simp]
+def sv6_cond_rec (τ : ℤ) (l : List ℕ) (past : List ℤ) (pres : ℤ) (future : List ℤ) : Bool :=
+  match future with
+  | [] => False
+  | (f :: ff) => (sv4_privMaxC τ l ((past, pres), f :: ff) = true) && (sv6_cond_rec τ l (past ++ [pres]) f ff)
+
+@[simp]
 def sv6_cond (τ : ℤ) (l : List ℕ) (init : sv4_state) : Bool :=
-  (sv6_privMax_hist_strict τ l init ∧ ¬ sv4_privMaxC τ l init)
+  sv6_cond_rec τ l init.1.1 init.1.2 init.2
 
 def sv6_loop (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv4_state) : SLang ℕ := do
   if (sv6_cond τ l init)
     then return point
     else probZero
 
+lemma sv6_loop_base (τ : ℤ) (l : List ℕ) (point: ℕ) (past: List ℤ) (pres : ℤ) :
+    (sv6_loop τ l 0 ((past, pres), [])) point = 0 := by
+  simp [sv6_loop]
 
 -- QUESTION: What do we need for equality in the base case?
 lemma sv5_sv6_loop_base_case  (τ : ℤ) (l : List ℕ) (point eval : ℕ) (past future : List ℤ) (pres : ℤ) :
     future = [] ->
     List.length future = eval ->
     List.length (past ++ [pres] ++ future) = point ->
-    True ->
-    (sv6_loop τ l eval ((past, pres), future)) point = (sv5_loop τ l eval ((past, pres), future)) point := by
-  intro Hfuture Heval Hstate _
+    (sv6_loop τ l point ((past, pres), future)) point = (sv5_loop τ l eval ((past, pres), future)) point := by
+  intro Hfuture Heval Hstate
   rw [Hfuture]
   simp_all
   rw [<- Heval]
-
+  simp [sv6_loop]
   unfold sv5_loop
-  simp
   unfold probWhileCut
   unfold probWhileFunctional
   split
-  · -- If (sv4_privMaxC τ l ((past, pres), []) = true) then
-    -- sv6_loop _ _ _ = 0
-    simp [probWhileCut]
-    sorry
-  · -- If (sv4_privMaxC τ l ((past, pres), []) = false) then
-    -- (RHS = 0)
-    -- (sv6_loop τ l 0 (_, [])) point = 0
-    simp
+  · simp [probWhileCut]
+  · simp
     unfold sv4_state
     unfold sv1_state
     rw [ENNReal.tsum_eq_add_tsum_ite ((past, pres), [])]
-    conv =>
-      lhs
-      rw [<- add_zero (sv6_loop _ _ _ _ _)]
-      rw [add_comm]
-    conv =>
-      rhs
-      rw [add_comm]
-    congr 1
-    · symm
-      simp
+    symm
+    simp only [add_eq_zero]
+    apply And.intro
+    · simp [sv1_threshold]
+      linarith
+    · simp
       aesop
-    simp [sv1_threshold]
-    -- SUSPECT!
-    rw [<- Hstate]
-    simp
-    sorry
-
 
 
 -- QUESTION: What do we need for sv6_loop to be equal to sv6_loop_cond (next)
-lemma sv6_loop_ind (τ : ℤ) (l : List ℕ) (eval point : ℕ) (past ff: List ℤ) (pres f: ℤ) :
+lemma sv6_loop_ind (τ : ℤ) (l : List ℕ) (point : ℕ) (past ff: List ℤ) (pres f: ℤ) :
       (sv4_privMaxC τ l ((past, pres), f :: ff) = true) ->
-      True ->
-      (sv6_loop τ l eval ((past, pres), f :: ff)) point = (sv6_loop τ l eval ((past ++ [pres], f), ff)) point := by
+      List.length (past ++ [pres] ++ f :: ff) = point ->
+      (sv6_loop τ l point ((past, pres), f :: ff)) point = (sv6_loop τ l point ((past ++ [pres], f), ff)) point := by
   intro Hcondition _
   unfold sv6_loop
   suffices (sv6_cond τ l ((past, pres), f :: ff) = sv6_cond τ l ((past ++ [pres], f), ff)) by
     split <;> split <;> try rfl
     all_goals simp_all
-  sorry
-
+  conv =>
+    lhs
+    unfold sv6_cond
+    simp
+  simp [Hcondition]
 
 
 -- QUESTION: What do we need for sv5 to be equal to sv5_loop_cond (next) evaluated at point
@@ -1110,9 +1102,6 @@ lemma sv5_loop_ind (τ : ℤ) (l : List ℕ) (eval point : ℕ) (past ff: List �
     trivial
 
 
-
-
-
 def sv6_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
@@ -1125,83 +1114,40 @@ def sv6_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang
 
 
 -- sv6_loop and sv5_loop are equal at point (under some conditions)
-def sv5_sv6_loop_eq_point (τ : ℤ) (l : List ℕ) (point eval_pt : ℕ) (past future : List ℤ) (pres : ℤ) :
-    List.length (past ++ [pres] ++ future) = (point + 1) ->
-    List.length future = eval_point ->
-    sv6_privMax_hist_strict τ l ((past, pres), future) ->
-    @sv5_loop τ l eval_point ((past, pres), future) point = @sv6_loop τ l point ((past, pres), future) point := by
-
-  -- To do induction over future, the length of past plus the number of steps remaining shoud be constant
-
-  revert eval_point past pres
+def sv5_sv6_loop_eq_point (τ : ℤ) (l : List ℕ) (point eval : ℕ) (past future : List ℤ) (pres : ℤ) :
+    List.length (past ++ [pres] ++ future) = point  ->
+    List.length future = eval ->
+    -- sv6_privMax_hist_strict τ l ((past, pres), future) ->
+    @sv5_loop τ l eval ((past, pres), future) point = @sv6_loop τ l point ((past, pres), future) point := by
+  revert past pres eval
   induction future
-  · -- Base case: no future
-    intro eval_point past pres Hstate Heval Hpast_evals
-    simp_all
-    rw [<- Heval]
+  · intro eval past pres H1 H2
+    symm
+    apply (sv5_sv6_loop_base_case _ _ _ _ _ _ _ (by rfl) H2 H1)
+  · rename_i f ff IH
+    intro eval past pres Hstate Heval
+    cases eval
+    · simp at Heval
+
+    rename_i eval
+    cases (Classical.em (sv4_privMaxC τ l ((past, pres), f :: ff) = true))
+    · rename_i Hcondition
+      rw [sv5_loop_ind _ _ _ _ _ _ _ _ Hcondition]
+      rw [sv6_loop_ind _ _ _ _ _ _ _ Hcondition Hstate]
+      apply (IH eval (past ++ [pres]) f ?G1 ?G2)
+      case G1 => simp_all
+      case G2 => simp_all
+
+    rename_i Hcondition
+    simp at Hcondition
+    simp [sv6_loop, Hcondition]
     unfold sv5_loop
     unfold probWhileCut
     unfold probWhileFunctional
-
-    -- LHS: We have consumed the entire future now,
-    -- If the last conditional check is False, return pure ...
-    -- else return zero
-
-    -- RHS: Should be able to simplify now using Hpast_evals
-    unfold sv6_loop
-    split
-    · -- LHS when the last loop condition returns True (LHS returns 0)
-      rename_i hlast
-      split
-      · -- RHS check True (contradiction, would return 1)
-        rename_i hhist
-        sorry
-        -- rcases hhist with ⟨ hhist, hlast' ⟩
-        -- exfalso
-        -- simp_all
-      · -- RHS check returns False (returns probZero)
-        rename_i hhist
-        simp at hhist
-        simp
-        intro _ _ _
-        simp_all
-        right
-        rw [<- Heval]
-        simp [probWhileCut]
-
-    · -- LHS when the last loop condition returns False (should return 1?)
-      rename_i hlast
-      simp at hlast
-      conv =>
-        lhs
-        simp [sv1_threshold]
-        unfold sv4_state
-        unfold sv1_state
-      rw [(ENNReal.tsum_eq_add_tsum_ite ((past, pres), []))]
-      conv =>
-        lhs
-        rw [add_comm]
-      conv =>
-        rhs
-        rw [<- zero_add (@ite _ _ _ _ _ )]
-      congr 1
-      · simp
-        simp_all
-      rw [<- Hstate]
-      simp
-
-      split
-      · -- RHS evaluates to True
-        simp
-      · -- RHS evaluates to False (contradiction)
-        exfalso
-        rename_i h
-        simp at h
-        aesop
-
-  · -- Inductive case
-    rename_i fut_next fut_rest IH
-    sorry
+    rw [Hcondition]
+    simp
+    intro i Hi Hk
+    simp_all [sv1_threshold]
 
 
 def sv5_sv6_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
@@ -1225,11 +1171,11 @@ def sv5_sv6_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
   have Heval : List.length (future : List ℤ) = eval_point := by
     exact Mathlib.Vector.length_val future
 
-
-
   -- length (past + present + future) = point + 1
   rw [sv5_sv6_loop_eq_point]
-  all_goals sorry
+  · simp
+    sorry
+  · sorry
 
 
 
