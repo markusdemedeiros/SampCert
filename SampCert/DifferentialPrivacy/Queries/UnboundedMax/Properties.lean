@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Jean-Baptiste Tristan
+Authors: Markus de Medeiros
 -/
 
 import SampCert.DifferentialPrivacy.Abstract
@@ -1178,30 +1178,142 @@ def sv5_sv6_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
 
 
 
+-- To prepare for v8, we need to separate out the point=0 case, and move the last sample
+-- to the end
 
--- What am I defining:
--- When I step sv5 (the probWhileCut), unrolling a loop iterate pops the first value out of
--- future, and pushes it onto the initial condition.
--- This means I want to do induction over future.
--- Therefore, I need to establish what it means for a loop body with some of these pops to have
--- not terminated (??)
--- IE. given a state, I want to be able to express the fact that
---   - Every loop check which moved something to the past must have returned false
---   - We are waiting for n loop checks from the current state to return true
--- For the latter, I define sv6_privMax_check
--- For the former, I define sc6_provMax_hist
--- Should be able to establish these inductively based on hist, assuming the first n-1 loop checks are valid
-
-
-
-
-
-
-
-
-
+def sv7_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+  fun (point : ℕ) =>
+  let computation : SLang ℕ := do
+    let τ <- @privNoiseZero dps ε₁ (2 * ε₂)
+    let v0 <- @privNoiseZero dps ε₁ (4 * ε₂)
+    match point with
+    | 0 =>
+      if (¬ (sv4_privMaxC τ l (([], v0), [])))
+        then probPure point
+        else probZero
+    | (Nat.succ point') => do
+      let presamples <- @sv4_presample dps ε₁ ε₂ point'
+      let vlast <- @privNoiseZero dps ε₁ (4 * ε₂)
+      if (sv6_cond τ l (([], v0), presamples ++ [vlast]))
+        then probPure point
+        else probZero
+  computation point
 
 
+def sv6_sv7_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
+    @sv6_privMax dps ε₁ ε₂ l = @sv7_privMax dps ε₁ ε₂ l := by
+  apply SLang.ext
+  intro point
+  unfold sv6_privMax
+  unfold sv7_privMax
+  cases point
+  · simp [sv6_loop, sv6_cond]
+    apply tsum_congr
+    intro τ
+    congr 1
+    apply tsum_congr
+    intro v0
+    congr 1
+    simp [sv4_presample]
+    rw [ENNReal.tsum_eq_add_tsum_ite ⟨[], rfl⟩]
+    simp
+    conv =>
+      rhs
+      rw [<- (add_zero (@ite _ _ _ _ _))]
+    congr 1
+    simp
+  · rename_i point'
+    simp only []
+    apply tsum_congr
+    intro τ
+    congr 1
+    apply tsum_congr
+    intro v0
+    congr 1
+    simp
+    conv =>
+      enter [2, 1, a]
+      rw [<- ENNReal.tsum_mul_left]
+    conv =>
+      lhs
+      unfold sv6_loop
+    simp
+    rw [← ENNReal.tsum_prod]
+    -- There is a bijection here
+    sorry
+
+
+
+
+
+
+
+
+-- /-
+-- ## Program version 8
+--
+-- Define G from the paper
+-- -/
+--
+-- def sv8_sum (l : List ℕ) (past : List ℤ) (pres : ℤ) : ℤ := exactDiffSum (List.length past) l + pres
+--
+-- -- G is only defined for k > 0
+-- def sv7_G  (l : List ℕ) (past : List ℤ) (pres next : ℤ) (future : List ℤ) : ℤ :=
+--   match future with
+--   | []        => sv7_sum l past pres
+--   | (f :: ff) => max (sv7_sum l past pres) (sv7_G l (past ++ [pres]) next f ff)
+--
+--  def sv7_cond (τ : ℤ) (l : List ℕ)  : Bool :=
+--    sv7_cond_rec τ l init.1.1 init.1.2 init.2
+
+
+
+
+-- def sv7_loop (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv4_state) : SLang ℕ := do
+--   if (sv7_cond τ l init)
+--     then return point
+--     else probZero
+--
+--
+-- def sv7_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+--   fun (point : ℕ) =>
+--   let computation : SLang ℕ := do
+--     let τ <- @privNoiseZero dps ε₁ (2 * ε₂)
+--     let v0 <- @privNoiseZero dps ε₁ (4 * ε₂)
+--     let presamples <- @sv4_presample dps ε₁ ε₂ point
+--     @sv7_loop τ l point (([], v0), presamples)
+--   computation point
+
+
+
+
+
+
+
+
+-- lemma sv4_privMaxC_mono (τ : ℤ) (l : List ℕ) (past : List ℤ) (pres next : ℤ) (future : List ℤ) :
+--      sv4_privMaxC τ l ((past, pres), next :: future) = false ->
+--      sv4_privMaxC τ l ((past ++ [pres], next), future) = false := by
+--   unfold sv4_privMaxC
+--   unfold sv1_privMaxC
+--   simp
+--   intro H
+--   apply (le_trans H)
+--   clear H
+--   simp [sv1_threshold]
+--   sorry
+
+-- -- If it's false at any point (except the very end), the sv7 loop is false
+-- lemma sv4_privMaxC_mono_lim (τ : ℤ) (l : List ℕ) (past : List ℤ) (future : List ℤ) (first : List ℤ) (last : ℤ) :
+--      future = first ++ [last] ->
+--      sv4_privMaxC τ l ((past, pres), next :: future) = false ->
+--      sv6_cond_rec τ l past pres future = false := by
+--   sorry
+
+
+
+
+  
 
 
 
