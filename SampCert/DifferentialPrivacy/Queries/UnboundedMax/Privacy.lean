@@ -97,6 +97,15 @@ lemma laplace_inequality (τ τ' : ℤ) (Δ : ℕ+) :
     · apply zero_le
 
 
+lemma laplace_inequality_sub (τ τ' : ℤ) (Δ : ℕ+) :
+      ((DiscreteLaplaceGenSamplePMF (Δ * ε₂) ε₁ 0 (τ + τ'))) ≤
+      ((ENNReal.ofReal (Real.exp (abs τ' / (Δ * ε₂ / ε₁)))) *
+      (DiscreteLaplaceGenSamplePMF (Δ * ε₂) ε₁ 0) τ) := by
+    apply le_trans
+    · apply laplace_inequality ε₁ ε₂ (τ + τ') (-τ') Δ
+    apply Eq.le
+    simp
+
 
 lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) : PureDPSystem.prop (@sv9_privMax_pmf PureDPSystem ε₁ ε₂) ε := by
   -- Unfold DP definitions
@@ -195,7 +204,6 @@ lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) : PureDPSystem
         apply Iff.intro <;> intro _ <;> linarith
 
     -- Might be more sensitive
-    let sens_cov_τ : ℤ := 1
     have Hsens_cov_τ : cov_τ ≤ sens_cov_τ := by
       dsimp [cov_τ]
       cases vs
@@ -214,15 +222,69 @@ lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) : PureDPSystem
       · sorry
 
     -- Might be more sensitive in reality
-    let sens_cov_vk : ℤ := 2
     have Hsens_cov_vk : cov_vk ≤ sens_cov_vk := by
       sorry
 
     simp [privNoiseThresh, privNoiseGuess,
          privNoiseZero, DPSystem.noise, privNoisedQueryPure]
 
+    -- Apply the Laplace inequalities
+    apply le_trans
+    · apply mul_le_mul
+      · apply laplace_inequality_sub
+      · apply laplace_inequality_sub
+      · apply zero_le
+      · apply zero_le
 
+    -- Cancel the Laplace samples
+    conv =>
+      lhs
+      rw [mul_assoc]
+      rw [mul_comm]
+    conv =>
+      rhs
+      rw [mul_assoc]
+      rw [mul_comm]
+    repeat rw [mul_assoc]
+    apply ENNReal.mul_left_mono
+    conv =>
+      lhs
+      rw [mul_comm]
+    repeat rw [mul_assoc]
+    apply ENNReal.mul_left_mono
 
-
-
-    sorry
+    -- Apply the ineuqalities
+    rw [<- ENNReal.ofReal_mul ?G1]
+    case G1 => apply Real.exp_nonneg
+    apply ENNReal.ofReal_le_ofReal
+    rw [← Real.exp_add]
+    apply Real.exp_monotone
+    apply @le_trans _ _ _ ((|sens_cov_τ| : ℝ) / (↑↑(2 * sens_cov_τ) * ↑↑ε₂ / ↑↑ε₁) + (|sens_cov_vk| : ℝ) / (↑↑(2 * sens_cov_vk) * ↑↑ε₂ / ↑↑ε₁))
+    · apply add_le_add
+      · simp
+        apply div_le_div_of_nonneg_right
+        · -- apply abs_le'.mpr
+          sorry
+        · apply mul_nonneg <;> simp
+      · sorry
+    simp [sens_cov_τ]
+    simp [sens_cov_vk]
+    ring_nf
+    rw [InvolutiveInv.inv_inv]
+    rw [Hε]
+    conv =>
+      lhs
+      enter [2, 1]
+      rw [mul_comm]
+    rw [<- add_mul]
+    rw [<- add_mul]
+    conv =>
+      lhs
+      enter [1, 1]
+      rw [<- (one_mul (ε₁.val.cast))]
+    rw [<- add_mul]
+    repeat rw [div_eq_mul_inv]
+    simp
+    rw [one_add_one_eq_two]
+    ring_nf
+    rfl

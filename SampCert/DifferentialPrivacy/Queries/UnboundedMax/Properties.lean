@@ -11,6 +11,8 @@ open Classical
 
 namespace SLang
 
+def sens_cov_τ : ℕ+ := 1
+def sens_cov_vk : ℕ+ := 2
 
 /--
 Stronger congruence rule for probBind: The bound-to functions have to be equal only on the support of
@@ -67,9 +69,9 @@ This looks strange, but will specialize to Lap(ε₁/ε₂, 0) in the pure DP ca
 def privNoiseZero [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) : SLang ℤ := dps.noise (fun _ => 0) 1 ε₁ ε₂ []
 
 
-def privNoiseGuess [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) : SLang ℤ := @privNoiseZero dps ε₁ (4 * ε₂)
+def privNoiseGuess [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) : SLang ℤ := @privNoiseZero dps ε₁ (2 * sens_cov_vk * ε₂)
 
-def privNoiseThresh [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) : SLang ℤ := @privNoiseZero dps ε₁ (2 * ε₂)
+def privNoiseThresh [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) : SLang ℤ := @privNoiseZero dps ε₁ (2 * sens_cov_τ * ε₂)
 
 
 /-
