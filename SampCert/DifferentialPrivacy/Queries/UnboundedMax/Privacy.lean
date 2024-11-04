@@ -140,6 +140,18 @@ lemma sv8_G_comm : sv8_G (A ++ B) vp v0 vf = sv8_G (B ++ A) vp v0 vf := by
     congr 1
     apply IH
 
+-- IDK
+lemma sv8_G_cons : sv8_G (x :: L) vp v0 vf = 0 := by
+  revert vp v0
+  induction vf
+  · intros v0 vp
+    simp [sv8_G]
+    sorry
+  · intro vp v0
+    simp [sv8_G]
+    sorry
+    -- unfold sv8_G
+
 lemma exactDiffSum_nonpos : exactDiffSum point L ≤ 0 := by
   simp [exactDiffSum, exactClippedSum]
   induction L
@@ -273,18 +285,30 @@ lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) : PureDPSystem
       cases Hneighbour
       · rename_i A B n H1 H2
         rw [H1, H2]; clear H1 H2
+        conv =>
+          enter [1, 2, 1]
+          rw [List.append_assoc]
+        rw [@sv8_G_comm A ([n] ++ B)]
         sorry
-        -- induction vs
-        -- · simp only [sv8_G, sv8_sum_append]
-        --   simp [sv8_sum]
-        --   sorry
-        -- · simp only [sv8_G]
-        --   sorry
-      · rename_i _ n _ H1 H2
+
+      · rename_i A n B H1 H2
         rw [H1, H2]; clear H1 H2
+        conv =>
+          enter [1, 1, 1]
+          rw [List.append_assoc]
+        rw [@sv8_G_comm A ([n] ++ B)]
         sorry
-      · rename_i n1 _ n2 H1 H2
+
+      · rename_i A n1 B n2 H1 H2
         rw [H1, H2]; clear H1 H2
+        conv =>
+          enter [1, 1, 1]
+          rw [List.append_assoc]
+        conv =>
+          enter [1, 2, 1]
+          rw [List.append_assoc]
+        rw [@sv8_G_comm A ([n1] ++ B)]
+        rw [@sv8_G_comm A ([n2] ++ B)]
         sorry
 
     -- Prove sensitivity bound
