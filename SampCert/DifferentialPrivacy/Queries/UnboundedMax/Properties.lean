@@ -12,7 +12,7 @@ open Classical
 namespace SLang
 
 def sens_cov_τ : ℕ+ := 1
-def sens_cov_vk : ℕ+ := 2
+def sens_cov_vk : ℕ+ := 1 + sens_cov_τ
 
 /--
 Stronger congruence rule for probBind: The bound-to functions have to be equal only on the support of
@@ -569,7 +569,7 @@ lemma sv3_loop_unroll_1 [dps : DPSystem ℕ] (τ : ℤ) (ε₁ ε₂ : ℕ+) l p
     split <;> try simp
     unfold privNoiseGuess
     unfold privNoiseZero
-    exact Eq.symm (PMF.tsum_coe (DPSystem.noise (fun _ => 0) 1 ε₁ (4 * ε₂) []))
+    exact Eq.symm (PMF.tsum_coe (DPSystem.noise (fun x => 0) 1 ε₁ (2 * sens_cov_vk * ε₂) []))
 
 /-
 ## Program version 4

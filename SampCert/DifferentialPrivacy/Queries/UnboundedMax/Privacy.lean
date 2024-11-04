@@ -107,6 +107,66 @@ lemma laplace_inequality_sub (τ τ' : ℤ) (Δ : ℕ+) :
     simp
 
 
+
+lemma exactClippedSum_append : exactClippedSum i (A ++ B) = exactClippedSum i A + exactClippedSum i B := by
+  simp [exactClippedSum]
+
+lemma exactDiffSum_append : exactDiffSum i (A ++ B) = exactDiffSum i A + exactDiffSum i B := by
+  simp [exactDiffSum]
+  rw [exactClippedSum_append]
+  rw [exactClippedSum_append]
+  linarith
+
+lemma sv8_sum_append : sv8_sum (A ++ B) [] v0 = sv8_sum A [] v0 + sv8_sum B [] v0 - v0 := by
+  simp [sv8_sum]
+  simp [exactDiffSum_append]
+  linarith
+
+lemma sv8_sum_comm : sv8_sum (A ++ B) vp v0 = sv8_sum (B ++ A) vp v0 := by
+  unfold sv8_sum
+  simp
+  simp [exactDiffSum, exactClippedSum]
+  linarith
+
+lemma sv8_G_comm : sv8_G (A ++ B) vp v0 vf = sv8_G (B ++ A) vp v0 vf := by
+  revert vp v0
+  induction vf
+  · intros
+    apply sv8_sum_comm
+  · intro v0 vp
+    rename_i next rest IH
+    unfold sv8_G
+    rw [sv8_sum_comm]
+    congr 1
+    apply IH
+
+lemma exactDiffSum_nonpos : exactDiffSum point L ≤ 0 := by
+  simp [exactDiffSum, exactClippedSum]
+  induction L
+  · simp
+  · rename_i l ll IH
+    simp
+    apply le_trans
+    · apply add_le_add
+      · rfl
+      · apply IH
+    simp
+
+lemma exactDiffSum_singleton_le_1 : -1 ≤ exactDiffSum point [v] := by
+  simp [exactDiffSum, exactClippedSum]
+  cases (Classical.em (point ≤ v))
+  · right
+    trivial
+  · left
+    rename_i h
+    simp at h
+    rw [Int.min_def]
+    simp
+    split
+    · linarith
+    · linarith
+
+
 lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) : PureDPSystem.prop (@sv9_privMax_pmf PureDPSystem ε₁ ε₂) ε := by
   -- Unfold DP definitions
   simp [DPSystem.prop]
@@ -122,6 +182,7 @@ lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) : PureDPSystem
     simp only [sv9_privMax]
 
     sorry
+
 
 
   · rename_i point
@@ -203,27 +264,60 @@ lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) : PureDPSystem
         dsimp [cov_vk]
         apply Iff.intro <;> intro _ <;> linarith
 
-    -- Might be more sensitive
+    -- Prove sensitivity bound
     have Hsens_cov_τ : cov_τ ≤ sens_cov_τ := by
       dsimp [cov_τ]
       cases vs
       rename_i vs Hvs
-      simp
-
+      simp only []
       cases Hneighbour
-      · rename_i A B C H1 H2
-        simp [H1, H2]; clear H1 H2
-        induction A
-        · simp
-          unfold sv8_G
-          sorry
-        · sorry
-      · sorry
-      · sorry
+      · rename_i A B n H1 H2
+        rw [H1, H2]; clear H1 H2
+        sorry
+        -- induction vs
+        -- · simp only [sv8_G, sv8_sum_append]
+        --   simp [sv8_sum]
+        --   sorry
+        -- · simp only [sv8_G]
+        --   sorry
+      · rename_i _ n _ H1 H2
+        rw [H1, H2]; clear H1 H2
+        sorry
+      · rename_i n1 _ n2 H1 H2
+        rw [H1, H2]; clear H1 H2
+        sorry
 
-    -- Might be more sensitive in reality
+    -- Prove sensitivity bound
     have Hsens_cov_vk : cov_vk ≤ sens_cov_vk := by
-      sorry
+      dsimp [cov_vk]
+      cases vs
+      rename_i vs Hvs
+      cases Hneighbour
+      · rename_i _ _ n H1 H2
+        rw [H1, H2]; clear H1 H2
+        repeat rw [exactDiffSum_append]
+        simp_all [sens_cov_vk, sens_cov_τ]
+        have _ := @exactDiffSum_singleton_le_1 (point + 1) n
+        have _ := @exactDiffSum_nonpos (point + 1) [n]
+        linarith
+
+      · rename_i _ n _ H1 H2
+        rw [H1, H2]; clear H1 H2
+        repeat rw [exactDiffSum_append]
+        simp_all [sens_cov_vk, sens_cov_τ]
+        have _ := @exactDiffSum_singleton_le_1 (point + 1) n
+        have _ := @exactDiffSum_nonpos (point + 1) [n]
+        linarith
+
+      · rename_i n1 _ n2 H1 H2
+        rw [H1, H2]; clear H1 H2
+        repeat rw [exactDiffSum_append]
+        simp_all [sens_cov_vk, sens_cov_τ]
+        have _ := @exactDiffSum_singleton_le_1 (point + 1) n1
+        have _ := @exactDiffSum_nonpos (point + 1) [n1]
+        have _ := @exactDiffSum_singleton_le_1 (point + 1) n2
+        have _ := @exactDiffSum_nonpos (point + 1) [n2]
+        linarith
 
     simp [privNoiseThresh, privNoiseGuess,
          privNoiseZero, DPSystem.noise, privNoisedQueryPure]
@@ -267,8 +361,7 @@ lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) : PureDPSystem
           sorry
         · apply mul_nonneg <;> simp
       · sorry
-    simp [sens_cov_τ]
-    simp [sens_cov_vk]
+    simp [sens_cov_τ, sens_cov_vk]
     ring_nf
     rw [InvolutiveInv.inv_inv]
     rw [Hε]
