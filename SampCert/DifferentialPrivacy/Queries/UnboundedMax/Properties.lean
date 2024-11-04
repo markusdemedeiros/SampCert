@@ -66,6 +66,12 @@ This looks strange, but will specialize to Lap(ε₁/ε₂, 0) in the pure DP ca
 -/
 def privNoiseZero [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) : SLang ℤ := dps.noise (fun _ => 0) 1 ε₁ ε₂ []
 
+
+def privNoiseGuess [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) : SLang ℤ := @privNoiseZero dps ε₁ (4 * ε₂)
+
+def privNoiseThresh [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) : SLang ℤ := @privNoiseZero dps ε₁ (2 * ε₂)
+
+
 /-
 Not used for anything, but to give confidence in our definitions
 
@@ -128,13 +134,13 @@ def sv0_privMaxC (τ : ℤ) (l : List ℕ) (s : sv0_state) : Bool :=
   decide (exactDiffSum (sv0_threshold s) l + (sv0_noise s) < τ)
 
 def sv0_privMaxF [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (s : sv0_state) : SLang sv0_state := do
-  let vn <- @privNoiseZero dps ε₁ (4 * ε₂)
+  let vn <- @privNoiseGuess dps ε₁ ε₂
   let n := (sv0_threshold s) + 1
   return (n, vn)
 
 def sv0_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ := do
-  let τ <- @privNoiseZero dps ε₁ (2 * ε₂)
-  let v0 <- @privNoiseZero dps ε₁ (4 * ε₂)
+  let τ <- @privNoiseThresh dps ε₁ ε₂
+  let v0 <- @privNoiseGuess dps ε₁ ε₂
   let sk <- probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (0, v0)
   return (sv0_threshold sk)
 
@@ -154,12 +160,12 @@ def sv1_privMaxC (τ : ℤ) (l : List ℕ) (s : sv1_state) : Bool :=
   decide (exactDiffSum (sv1_threshold s) l + (sv1_noise s) < τ)
 
 def sv1_privMaxF [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (s : sv1_state) : SLang sv1_state := do
-  let vn <- @privNoiseZero dps ε₁ (4 * ε₂)
+  let vn <- @privNoiseGuess dps ε₁ ε₂
   return (s.1 ++ [s.2], vn)
 
 def sv1_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ := do
-  let τ <- @privNoiseZero dps ε₁ (2 * ε₂)
-  let v0 <- @privNoiseZero dps ε₁ (4 * ε₂)
+  let τ <- @privNoiseThresh dps ε₁ ε₂
+  let v0 <- @privNoiseGuess dps ε₁ ε₂
   let sk <- probWhile (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) ([], v0)
   return (sv1_threshold sk)
 
@@ -225,8 +231,8 @@ lemma sv0_eq_sv1 [dps : DPSystem ℕ] ε₁ ε₂ l : sv0_privMax ε₁ ε₂ l 
 def sv2_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
-    let τ <- @privNoiseZero dps ε₁ (2 * ε₂)
-    let v0 <- @privNoiseZero dps ε₁ (4 * ε₂)
+    let τ <- @privNoiseThresh dps ε₁ ε₂
+    let v0 <- @privNoiseGuess dps ε₁ ε₂
     let sk <- probWhile (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) ([], v0)
     return (sv1_threshold sk)
   computation point
@@ -250,8 +256,8 @@ def sv3_loop [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ)
 def sv3_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
-    let τ <- @privNoiseZero dps ε₁ (2 * ε₂)
-    let v0 <- @privNoiseZero dps ε₁ (4 * ε₂)
+    let τ <- @privNoiseThresh dps ε₁ ε₂
+    let v0 <- @privNoiseGuess dps ε₁ ε₂
     let sk <- @sv3_loop dps ε₁ ε₂ τ l point ([], v0)
     return (sv1_threshold sk)
   computation point
@@ -514,7 +520,7 @@ lemma sv2_eq_sv3 [dps : DPSystem ℕ] ε₁ ε₂ l : sv2_privMax ε₁ ε₂ l 
 lemma sv3_loop_unroll_1 [dps : DPSystem ℕ] (τ : ℤ) (ε₁ ε₂ : ℕ+) l point L vk :
     sv3_loop ε₁ ε₂ τ l (point + 1) (L, vk) =
     (do
-      let vk1 <- @privNoiseZero dps ε₁ (4 * ε₂)
+      let vk1 <- @privNoiseGuess dps ε₁ ε₂
       if (sv1_privMaxC τ l (L, vk))
         then (sv3_loop ε₁ ε₂ τ l point (L ++ [vk], vk1))
         else probPure (L, vk)) := by
@@ -559,6 +565,7 @@ lemma sv3_loop_unroll_1 [dps : DPSystem ℕ] (τ : ℤ) (ε₁ ε₂ : ℕ+) l p
     intro ⟨ HF, vkf ⟩
     simp [probBind]
     split <;> try simp
+    unfold privNoiseGuess
     unfold privNoiseZero
     exact Eq.symm (PMF.tsum_coe (DPSystem.noise (fun _ => 0) 1 ε₁ (4 * ε₂) []))
 
@@ -575,7 +582,7 @@ def sv4_presample [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (n : ℕ) : SLang { 
   match n with
   | Nat.zero => return ⟨ [], by simp ⟩
   | Nat.succ n' => do
-    let vk1 <- @privNoiseZero dps ε₁ (4 * ε₂)
+    let vk1 <- @privNoiseGuess dps ε₁ ε₂
     let vks  <- @sv4_presample dps ε₁ ε₂ n'
     return ⟨ vks ++ [vk1], by simp ⟩
 
@@ -595,7 +602,7 @@ def sv4_loop [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ)
 lemma sv3_loop_unroll_1_alt [dps : DPSystem ℕ] (τ : ℤ) (ε₁ ε₂ : ℕ+) l point (initial_state : sv1_state) :
     sv3_loop ε₁ ε₂ τ l (point + 1) initial_state =
     (do
-      let vk1 <- @privNoiseZero dps ε₁ (4 * ε₂)
+      let vk1 <- @privNoiseGuess dps ε₁ ε₂
       if (sv1_privMaxC τ l initial_state)
         then (sv3_loop ε₁ ε₂ τ l point (initial_state.1 ++ [initial_state.2], vk1))
         else probPure initial_state) := by
@@ -604,7 +611,6 @@ lemma sv3_loop_unroll_1_alt [dps : DPSystem ℕ] (τ : ℤ) (ε₁ ε₂ : ℕ+)
 
 def len_list_append_rev {m n : ℕ} (x : { l : List ℤ // l.length = m }) (y: { l : List ℤ // l.length = n }) : { l : List ℤ // l.length = n + m } :=
   ⟨ x.1 ++ y.1 , by simp  [add_comm] ⟩
-
 
 
 lemma vector_sum_singleton (f : { l : List ℤ // l.length = 1 } -> ENNReal) (P : (x : ℤ) -> ([x].length = 1)) :
@@ -626,24 +632,25 @@ def sv4_presample_split [DPSystem ℕ] (ε₁ ε₂ : ℕ+) (point : ℕ) :
   rw [← ENNReal.tsum_prod]
   rw [vector_sum_singleton _ (by simp)]
 
-  have X (x : ℤ): (@tsum.{0, 0} ENNReal _  ENNReal.instTopologicalSpace Int fun (x_1 : Int) =>
-                     @ite.{1} ENNReal (@Eq.{1} Int x_1 x) (Classical.propDecidable (@Eq.{1} Int x_1 x))
-                       (@OfNat.ofNat.{0} ENNReal 0 (@Zero.toOfNat0.{0} ENNReal instENNRealZero))
-                       (@ite.{1} ENNReal (@Eq.{1} Int x x_1) (Int.instDecidableEq x x_1)
-                         (@SLang.privNoiseZero _ ε₁
-                           (@HMul.hMul.{0, 0, 0} PNat PNat PNat (@instHMul.{0} PNat instPNatMul)
-                             (@OfNat.ofNat.{0} PNat 4 (@instOfNatPNatOfNeZeroNat 4 SLang.sv4_presample.proof_5)) ε₂)
-                           x_1)
-                         0)) = 0 := by
-    simp
-    aesop
+  have X (x : ℤ): (@tsum.{0, 0} ENNReal
+    (@NonUnitalNonAssocSemiring.toAddCommMonoid.{0} ENNReal
+      (@NonAssocSemiring.toNonUnitalNonAssocSemiring.{0} ENNReal
+        (@Semiring.toNonAssocSemiring.{0} ENNReal
+          (@OrderedSemiring.toSemiring.{0} ENNReal
+            (@OrderedCommSemiring.toOrderedSemiring.{0} ENNReal
+              (@CanonicallyOrderedCommSemiring.toOrderedCommSemiring.{0} ENNReal
+                ENNReal.instCanonicallyOrderedCommSemiring))))))
+    ENNReal.instTopologicalSpace Int fun (x_1 : Int) =>
+    @ite.{1} ENNReal (@Eq.{1} Int x_1 x) (Classical.propDecidable (@Eq.{1} Int x_1 x))
+      (@OfNat.ofNat.{0} ENNReal 0 (@Zero.toOfNat0.{0} ENNReal instENNRealZero))
+      (@ite.{1} ENNReal (@Eq.{1} Int x x_1) (Int.instDecidableEq x x_1) (@SLang.privNoiseGuess _ ε₁ ε₂ x_1)
+        0)) = 0 := by simp; aesop
   conv =>
     enter [2, 1, x, 1]
     simp
     rw [ENNReal.tsum_eq_add_tsum_ite x]
     simp
     enter [2]
-    skip
     rw [X]
   clear X
   simp
@@ -723,12 +730,12 @@ def sv3_sv4_loop_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : Li
     -- Doing it this way because I can't conv under the @ite?
     let ApplyIH :
       (do
-        let vk1 ← privNoiseZero ε₁ (4 * ε₂)
+        let vk1 ← privNoiseGuess ε₁ ε₂
         if sv1_privMaxC τ l init = true
           then sv3_loop ε₁ ε₂ τ l point (init.1 ++ [init.2], vk1)
           else probPure init) =
       (do
-        let vk1 ← privNoiseZero ε₁ (4 * ε₂)
+        let vk1 ← privNoiseGuess ε₁ ε₂
         if sv1_privMaxC τ l init = true
           then sv4_loop ε₁ ε₂ τ l point (init.1 ++ [init.2], vk1)
           else probPure init) := by
@@ -747,7 +754,7 @@ def sv3_sv4_loop_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : Li
 
     have ToPresample :
         (do
-          let vk1 ← privNoiseZero ε₁ (4 * ε₂)
+          let vk1 ← privNoiseGuess ε₁  ε₂
           if sv1_privMaxC τ l init = true then sv4_loop ε₁ ε₂ τ l point (init.1 ++ [init.2], vk1) else probPure init) =
         (do
           let vps ← sv4_presample ε₁ ε₂ 1
@@ -765,18 +772,22 @@ def sv3_sv4_loop_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : Li
       rw [ENNReal.tsum_eq_add_tsum_ite x]
       simp
 
-      have X : ( @tsum.{0, 0} ENNReal _
-           ENNReal.instTopologicalSpace Int fun (x_1 : Int) =>
-           @ite.{1} ENNReal (@Eq.{1} Int x_1 x) (Classical.propDecidable (@Eq.{1} Int x_1 x))
-             (@OfNat.ofNat.{0} ENNReal 0 (@Zero.toOfNat0.{0} ENNReal instENNRealZero))
-             (@ite.{1} ENNReal (@Eq.{1} Int x x_1) (Int.instDecidableEq x x_1)
-               (@SLang.privNoiseZero dps ε₁
-                 (@HMul.hMul.{0, 0, 0} PNat PNat PNat (@instHMul.{0} PNat instPNatMul)
-                   (@OfNat.ofNat.{0} PNat 4 (@instOfNatPNatOfNeZeroNat 4 SLang.sv4_presample.proof_5)) ε₂)
-                 x_1)
-               0)) = (0 : ENNReal) := by
+
+      have X : (@tsum.{0, 0} ENNReal
+    (@NonUnitalNonAssocSemiring.toAddCommMonoid.{0} ENNReal
+      (@NonAssocSemiring.toNonUnitalNonAssocSemiring.{0} ENNReal
+        (@Semiring.toNonAssocSemiring.{0} ENNReal
+          (@OrderedSemiring.toSemiring.{0} ENNReal
+            (@OrderedCommSemiring.toOrderedSemiring.{0} ENNReal
+              (@CanonicallyOrderedCommSemiring.toOrderedCommSemiring.{0} ENNReal
+                ENNReal.instCanonicallyOrderedCommSemiring))))))
+    ENNReal.instTopologicalSpace Int fun (x_1 : Int) =>
+    @ite.{1} ENNReal (@Eq.{1} Int x_1 x) (Classical.propDecidable (@Eq.{1} Int x_1 x))
+      (@OfNat.ofNat.{0} ENNReal 0 (@Zero.toOfNat0.{0} ENNReal instENNRealZero))
+      (@ite.{1} ENNReal (@Eq.{1} Int x x_1) (Int.instDecidableEq x x_1) (@SLang.privNoiseGuess dps ε₁ ε₂ x_1) 0)) = 0 := by
         simp
         aesop
+
       conv =>
         enter [2, 1, 2]
         rw [X]
@@ -858,8 +869,8 @@ def sv3_sv4_loop_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : Li
 def sv4_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
-    let τ <- @privNoiseZero dps ε₁ (2 * ε₂)
-    let v0 <- @privNoiseZero dps ε₁ (4 * ε₂)
+    let τ <- @privNoiseThresh dps ε₁ ε₂
+    let v0 <- @privNoiseGuess dps ε₁ ε₂
     let sk <- @sv4_loop dps ε₁ ε₂ τ l point ([], v0)
     return (sv1_threshold sk)
   computation point
@@ -887,8 +898,8 @@ def sv5_loop (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv4_state) : SLang 
 def sv5_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
-    let τ <- @privNoiseZero dps ε₁ (2 * ε₂)
-    let v0 <- @privNoiseZero dps ε₁ (4 * ε₂)
+    let τ <- @privNoiseThresh dps ε₁ ε₂
+    let v0 <- @privNoiseGuess dps ε₁ ε₂
     let presamples <- @sv4_presample dps ε₁ ε₂ point
     @sv5_loop τ l point (([], v0), presamples)
   computation point
@@ -1107,8 +1118,8 @@ lemma sv5_loop_ind (τ : ℤ) (l : List ℕ) (eval point : ℕ) (past ff: List �
 def sv6_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
-    let τ <- @privNoiseZero dps ε₁ (2 * ε₂)
-    let v0 <- @privNoiseZero dps ε₁ (4 * ε₂)
+    let τ <- @privNoiseThresh dps ε₁ ε₂
+    let v0 <- @privNoiseGuess dps ε₁ ε₂
     let presamples <- @sv4_presample dps ε₁ ε₂ point
     @sv6_loop τ l point (([], v0), presamples)
   computation point
@@ -1186,8 +1197,8 @@ Separates out the zero case
 def sv7_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
-    let τ <- @privNoiseZero dps ε₁ (2 * ε₂)
-    let v0 <- @privNoiseZero dps ε₁ (4 * ε₂)
+    let τ <- @privNoiseThresh dps ε₁ ε₂
+    let v0 <- @privNoiseGuess dps ε₁ ε₂
     match point with
     | 0 =>
       if (¬ (sv4_privMaxC τ l (([], v0), [])))
@@ -1195,7 +1206,7 @@ def sv7_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang
         else probZero
     | (Nat.succ point') => do
       let presamples <- @sv4_presample dps ε₁ ε₂ point'
-      let vk <- @privNoiseZero dps ε₁ (4 * ε₂)
+      let vk <- @privNoiseGuess dps ε₁ ε₂
       if (sv6_cond τ l (([], v0), presamples ++ [vk]))
         then probPure point
         else probZero
@@ -1268,8 +1279,8 @@ def sv8_G  (l : List ℕ) (past : List ℤ) (pres : ℤ) (future : List ℤ) : �
 def sv8_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
-    let τ <- @privNoiseZero dps ε₁ (2 * ε₂)
-    let v0 <- @privNoiseZero dps ε₁ (4 * ε₂)
+    let τ <- @privNoiseThresh dps ε₁ ε₂
+    let v0 <- @privNoiseGuess dps ε₁ ε₂
     match point with
     | 0 =>
       if (sv8_sum l [] v0 ≥ τ)
@@ -1277,7 +1288,7 @@ def sv8_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang
         else probZero
     | (Nat.succ point') => do
       let presamples <- @sv4_presample dps ε₁ ε₂ point'
-      let vk <- @privNoiseZero dps ε₁ (4 * ε₂)
+      let vk <- @privNoiseGuess dps ε₁ ε₂
       if (sv8_cond τ l [] v0 presamples vk)
         then probPure point
         else probZero
@@ -1325,321 +1336,3 @@ def sv7_sv8_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
   simp only []
   repeat (apply tsum_congr; intro _; congr 1)
   simp only [sv7_sv8_cond_eq, sv6_cond]
-
-
-
-
-
-
-
-
-
-
-
-
-
-/-
-
--- Evaluate the nth conditional starting at state s
--- Evaluate the loop conditional n steps in the future
--- false if the tape runs out
-def sv6_privMax_nth (τ : ℤ) (l : List ℕ) (s : sv4_state) (n : ℕ) : Bool :=
-  match n with
-  | 0 =>
-      -- Terminates on the 0th iteration if initial state causes the checck to fail
-      ¬ sv4_privMaxC τ l s
-  | Nat.succ n' =>
-    match s with
-    -- If there is more samples on the tape, call recursively
-    | ((past, present), (future_next :: future_rest)) =>
-      -- sv4_privMaxC τ l ((past, present), (future_next :: future_rest)) ∧        -- Should not terminate here
-      sv6_privMax_nth τ l ((past ++ [present], future_next), future_rest) n'
-    | (_, []) =>
-      -- Out of samples on the tape
-      false
-
-
-
--- TODO Test some values of sv6_priv_nth
-
-lemma sv6_privMax_0th_true (τ : ℤ) (l : List ℕ) (s : sv4_state) :
-    (sv4_privMaxC τ l s = false) -> (sv6_privMax_nth τ l s 0 = true) := by
-  simp [sv6_privMax_nth]
-
-lemma sv6_privMax_0th_false (τ : ℤ) (l : List ℕ) (s : sv4_state) :
-    (sv4_privMaxC τ l s = true) -> (sv6_privMax_nth τ l s 0 = false) := by
-  simp [sv6_privMax_nth]
-
-lemma sv6_privMax_1th_empty (τ : ℤ) (l : List ℕ) (s : sv1_state) :
-    (sv6_privMax_nth τ l (s, []) 1 = false) := by
-  simp [sv6_privMax_nth]
-
--- Inductive formula for n when the tape is empty (not useful)
-lemma sv6_privMax_ind_empty (τ : ℤ) (l : List ℕ) (s : sv1_state) (n : ℕ):
-    (sv6_privMax_nth τ l (s, []) (n + 1) = false) := by
-  simp [sv6_privMax_nth]
-
--- Inductive formula for n when the tape is not empty (not useful)
-lemma sv6_privMax_ind_nonempty (τ : ℤ) (l : List ℕ) pa pr f fs (n : ℕ):
-    sv6_privMax_nth τ l ((pa, pr), f :: fs) (n + 1) =
-    sv6_privMax_nth τ l ((pa ++ [pr], f), fs) n := by
-  simp [sv6_privMax_nth]
-
-def len_constr (s : sv4_state) (p : ℕ) : Prop := s.1.1.length + s.2.length = p
-
--- These are not true
--- Could change sv4 definition to be monotone so that it is
---
--- -- After its false once, its false forever
--- lemma sv4_constancy_lo τ l P v P' v' (H : sv1_privMaxC τ l (P, v) = false) :
---     (∃ D, P' ++ [v'] = P ++ [v] ++ D) -> (sv1_privMaxC τ l (P', v') = false) := by
---   intro H1
---   rcases H1 with ⟨ D, HD ⟩
---   simp [sv1_privMaxC, sv1_threshold, sv1_noise, exactDiffSum] at H
---   simp [sv1_privMaxC, sv1_threshold, sv1_noise, exactDiffSum]
---   apply (Int.le_trans H)
---   clear H
---
---   sorry
---
--- -- If its true once, its true at all points before
--- lemma sv4_constancy_hi τ l P v P' v' (H : sv1_privMaxC τ l (P, v) = false) :
---     (∃ D, P' ++ [v'] ++ D = P ++ [v]) -> (sv1_privMaxC τ l (P', v') = false) := by
---   sorry
-
--- Inductive formula for tail
-lemma sv6_privMax_ind (τ : ℤ) (l : List ℕ) pa pr f fs (n : ℕ):
-    -- sv4_privMaxC τ l ((pa ++ [pr], f), fs) = true ->
-    -- len_constr ((pa, pr), f :: fs) n ->
-    sv6_privMax_nth τ l ((pa, pr), f :: fs) n =
-    sv6_privMax_nth τ l ((pa ++ [pr], f), fs) n := by
-  revert pa pr f
-  induction fs
-  · intro pa pr f
-    sorry
-  · sorry
-
-
-def sv6_loop (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv4_state) : SLang ℕ :=
-  if (sv6_privMax_nth τ l init point) ∧ ¬ (sv6_privMax_nth τ l init (point + 1))
-    then return point
-    else probZero
-
--- If the sv6 return flag is true (at zero) then... the sv4 loop condition is false (at zero)
-lemma sv6_privMax_loop_cond_true_0 (τ : ℤ) (l : List ℕ) (init : sv4_state) :
-    (len_constr init 0) ->
-    (sv6_privMax_nth τ l init 0 = true ∧ sv6_privMax_nth τ l init 1 = false) →
-    (sv4_privMaxC τ l init = false) := by
-  intro _
-  intro ⟨ H1, _ ⟩ -- We can get nothing out of H2?
-  simp [sv6_privMax_nth] at H1
-  trivial
-
--- If the sv6 return flag is true (at 1) then
---  there is at least one element in the future list
---  The sv4_condition after executing one shift is false
-lemma sv6_privMax_loop_cond_true_1 (τ : ℤ) (l : List ℕ) (init : sv4_state) :
-    (len_constr init 1) ->
-    (sv6_privMax_nth τ l init 1 = true ∧ sv6_privMax_nth τ l init 2 = false) →
-    ∃ init_past init_pres init_fut1 init_futR,
-      (init = ((init_past, init_pres), (init_fut1 :: init_futR)) ∧
-       sv4_privMaxC τ l ((init_past ++ [init_pres], init_fut1), init_futR) = false) := by
-  intro HL
-  rcases init with ⟨ ⟨ init_past, init_present ⟩, init_future ⟩
-  simp [len_constr] at HL
-
-  intro ⟨ H1, H2 ⟩
-
-  cases init_past
-  · -- init_past is [] so init_future is [x]
-    simp at HL
-    cases init_future
-    · exfalso
-      simp at HL
-    rename_i future_1 future_rest
-    cases future_rest
-    · -- Continue...
-      clear HL
-
-      -- What can we get out of H2? Nothing
-      simp [sv6_privMax_nth] at H2
-
-      -- What can we get out of H1?
-      simp [sv6_privMax_nth] at H1
-      -- sv4_privMaxC τ l (sv4_privMaxF (init)) is false
-      -- ∃ x,  sv4_privMaxC τ l (([init_present], future_1), []) = false
-      exists []
-      exists init_present
-      exists future_1
-      exists []
-    · exfalso
-      simp at HL
-  · -- init_past is nonempty so init_future is empty
-    rename_i past_1 past_rest
-    simp at HL
-    -- past_rest is empty
-    cases past_rest
-    · -- init_future is empty
-      cases init_future
-      · -- Continue...
-        clear HL
-
-        -- What can we get out of H2? Nothing
-        simp [sv6_privMax_nth] at H2
-
-        -- What can we get out of H1? Contradiction?
-        simp [sv6_privMax_nth] at H1
-        -- contradiction?
-
-      · exfalso
-        simp at HL
-    · exfalso
-      simp at HL
-      linarith
-
-
--- So if we know that init.future is nonempty, we should be able to make a conclusion
--- about sv4_loop_cond using the s6 loop flag.
-
--- lemma sv6_privMax_loop_cond_true (τ : ℤ) (l : List ℕ) (init : sv4_state) (p : ℕ) :
---     (len_constr init p) ->
---     (sv6_privMax_nth τ l init p = true ∧ sv6_privMax_nth τ l init (p + 1) = false) →
---     False := by
---   sorry
-
-
-
-
-
-
-
-
--- What can we get out of the case where the sv6 flag is false?
-
--- When the sv6 flag is false (at zero) then sv4 loop cond at 1 is true
-lemma sv6_privMax_loop_cond_false_0 (τ : ℤ) (l : List ℕ) (init : sv4_state) :
-    (len_constr init 0) ->
-    ¬ (sv6_privMax_nth τ l init 0 = true ∧ sv6_privMax_nth τ l init 1 = false) →
-    sv4_privMaxC τ l init = true := by
-  intro HL H
-  simp [len_constr] at HL
-  rcases HL with ⟨ HL1, HL2 ⟩
-  rcases init with ⟨ ⟨ init_past, init_present ⟩, init_future ⟩
-  simp_all [HL1, HL2]
-  rw [sv6_privMax_1th_empty] at H
-  simp at H
-  simp [sv6_privMax_nth] at H
-  trivial
-
-
-
-
-
-
-  -- simp [sv6_privMax_nth] at H2
-  -- -- H2 is giving us nothing, this is suspicious
-
-
-  -- sorry
-
-
--- Specify that the total length of past and future samples is equal to point (0)
-def sv5_sv6_loop_eq_point_0_len_constr (τ : ℤ) (l : List ℕ) (init : sv4_state) :
-    len_constr init 0 ->
-    @sv5_loop τ l 0 init 0 = @sv6_loop τ l 0 init 0 := by
-  intro HC
-  simp [sv6_loop]
-  split <;> simp
-  · rename_i h
-    -- rcases h with ⟨ h1, h2 ⟩
-    -- FIXME: See above for general lemmas about the loop conditional and sv4 loop evals
-    -- Don't do this manually
-    sorry
-  · rename_i h
-    simp at h
-    sorry
-
--- sv6 and sv5 both do (decreasing) induction over the "future" field--
---   When the condition is true for sv5, it shifts one sample out of future, and decreases the cut by 1
---   sv6_loop does ...?
-
--- So I want inductive formulas for those, ie,
---    init = (x, y, (a :: as))
---      in terms of
---    init = (x ++ [a], y, a)
---      evaluated at point = length(x) + length(a::as)
-
-
-
-
-
-
-
--- These functions are not equal. However, they are equal at "point" (+- 1?)
-def sv5_sv6_loop_eq_point (τ : ℤ) (l : List ℕ) (point eval_point : ℕ) (init : sv4_state) :
-    point ≤ eval_point ->
-    len_constr init eval_point ->
-    @sv5_loop τ l point init eval_point = @sv6_loop τ l point init eval_point := by
-
-  rcases init with ⟨ ⟨ pa, pr ⟩, fu ⟩
-  revert pa pr point
-  induction fu
-  · intro point pa pr HlenIneq Hlen
-    simp [len_constr] at Hlen
-    -- simp only [sv6_loop]
-    simp only [sv5_loop, probWhileCut, probWhileFunctional]
-    simp only [pure, pure_apply, ↓reduceIte]
-    simp only [sv1_threshold]
-    simp only [sv4_privMaxF]
-    split
-    · simp
-      unfold sv6_loop
-      split
-      · exfalso
-        -- There should be a contradiction in here somewhere
-        -- TODO: Probably change the definition of sv6_cond so that its monotone?
-        sorry
-      · simp
-    · unfold sv4_state
-      unfold sv1_state
-      simp
-      rw [ENNReal.tsum_eq_add_tsum_ite ((pa, pr), [])]
-      conv =>
-        rhs
-        rw [<- add_zero (sv6_loop _ _ _ _ _)]
-      congr
-      · simp
-        simp [sv6_loop]
-        -- ???
-
-        sorry
-      · simp
-        intro _ _ _ _ _ _ _ _
-        rename_i h a b b_1 a_1 a_2 a_3 a_4 a_5
-        subst Hlen a_4 a_5 a_3
-        simp_all only [Bool.not_eq_true, not_true_eq_false, imp_false]
-  · intro point pa pr HlenIneq Hlen
-    rename_i f ff IH
-    cases point
-    · -- point being zero should be a contradiction?
-      simp [sv6_loop]
-      simp [sv5_loop]
-      -- Not sure. Messed up.
-      sorry
-    rename_i point
-    unfold sv5_loop
-    unfold probWhileCut
-    unfold probWhileFunctional
-    sorry
-
-
-def sv6_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
-  fun (point : ℕ) =>
-  let computation : SLang ℕ := do
-    let τ <- @privNoiseZero dps ε₁ (2 * ε₂)
-    let v0 <- @privNoiseZero dps ε₁ (4 * ε₂)
-    let presamples <- @sv4_presample dps ε₁ ε₂ point
-    @sv6_loop τ l point (([], v0), presamples)
-  computation point
-
--/
