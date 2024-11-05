@@ -11,6 +11,9 @@ open Classical
 
 namespace SLang
 
+variable [dps : DPSystem ℕ]
+variable [dpn : DPNoise dps]
+
 def sens_cov_τ : ℕ+ := 1
 def sens_cov_vk : ℕ+ := 1 + sens_cov_τ
 
@@ -66,12 +69,12 @@ Noise the constant 0 value using the abstract noise function.
 
 This looks strange, but will specialize to Lap(ε₁/ε₂, 0) in the pure DP case.
 -/
-def privNoiseZero [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) : SLang ℤ := dps.noise (fun _ => 0) 1 ε₁ ε₂ []
+def privNoiseZero (ε₁ ε₂ : ℕ+) : SLang ℤ := dpn.noise (fun _ => 0) 1 ε₁ ε₂ []
 
 
-def privNoiseGuess [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) : SLang ℤ := @privNoiseZero dps ε₁ (2 * sens_cov_vk * ε₂)
+def privNoiseGuess (ε₁ ε₂ : ℕ+) : SLang ℤ := privNoiseZero ε₁ (2 * sens_cov_vk * ε₂)
 
-def privNoiseThresh [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) : SLang ℤ := @privNoiseZero dps ε₁ (2 * sens_cov_τ * ε₂)
+def privNoiseThresh (ε₁ ε₂ : ℕ+) : SLang ℤ := privNoiseZero ε₁ (2 * sens_cov_τ * ε₂)
 
 
 /-
@@ -135,14 +138,14 @@ def sv0_noise (s : sv0_state) : ℤ := s.2
 def sv0_privMaxC (τ : ℤ) (l : List ℕ) (s : sv0_state) : Bool :=
   decide (exactDiffSum (sv0_threshold s) l + (sv0_noise s) < τ)
 
-def sv0_privMaxF [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (s : sv0_state) : SLang sv0_state := do
-  let vn <- @privNoiseGuess dps ε₁ ε₂
+def sv0_privMaxF (ε₁ ε₂ : ℕ+) (s : sv0_state) : SLang sv0_state := do
+  let vn <- privNoiseGuess ε₁ ε₂
   let n := (sv0_threshold s) + 1
   return (n, vn)
 
-def sv0_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ := do
-  let τ <- @privNoiseThresh dps ε₁ ε₂
-  let v0 <- @privNoiseGuess dps ε₁ ε₂
+def sv0_privMax (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ := do
+  let τ <- privNoiseThresh ε₁ ε₂
+  let v0 <- privNoiseGuess ε₁ ε₂
   let sk <- probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (0, v0)
   return (sv0_threshold sk)
 
@@ -161,20 +164,20 @@ def sv1_noise (s : sv1_state) : ℤ := s.2
 def sv1_privMaxC (τ : ℤ) (l : List ℕ) (s : sv1_state) : Bool :=
   decide (exactDiffSum (sv1_threshold s) l + (sv1_noise s) < τ)
 
-def sv1_privMaxF [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (s : sv1_state) : SLang sv1_state := do
-  let vn <- @privNoiseGuess dps ε₁ ε₂
+def sv1_privMaxF (ε₁ ε₂ : ℕ+) (s : sv1_state) : SLang sv1_state := do
+  let vn <- privNoiseGuess ε₁ ε₂
   return (s.1 ++ [s.2], vn)
 
-def sv1_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ := do
-  let τ <- @privNoiseThresh dps ε₁ ε₂
-  let v0 <- @privNoiseGuess dps ε₁ ε₂
+def sv1_privMax (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ := do
+  let τ <- privNoiseThresh ε₁ ε₂
+  let v0 <- privNoiseGuess ε₁ ε₂
   let sk <- probWhile (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) ([], v0)
   return (sv1_threshold sk)
 
 /--
 History-aware progam computes the same as the history-agnostic program
 -/
-lemma sv0_eq_sv1 [dps : DPSystem ℕ] ε₁ ε₂ l : sv0_privMax ε₁ ε₂ l = sv1_privMax ε₁ ε₂ l := by
+lemma sv0_eq_sv1 ε₁ ε₂ l : sv0_privMax ε₁ ε₂ l = sv1_privMax ε₁ ε₂ l := by
   apply SLang.ext
 
   -- Initial setup is equal
@@ -230,16 +233,16 @@ lemma sv0_eq_sv1 [dps : DPSystem ℕ] ε₁ ε₂ l : sv0_privMax ε₁ ε₂ l 
   - Only moves the loop into a non-executable form, ie. explicitly defines the PMF
 -/
 
-def sv2_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv2_privMax (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
-    let τ <- @privNoiseThresh dps ε₁ ε₂
-    let v0 <- @privNoiseGuess dps ε₁ ε₂
+    let τ <- privNoiseThresh ε₁ ε₂
+    let v0 <- privNoiseGuess ε₁ ε₂
     let sk <- probWhile (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) ([], v0)
     return (sv1_threshold sk)
   computation point
 
-lemma sv1_eq_sv2 [dps : DPSystem ℕ] ε₁ ε₂ l : sv1_privMax ε₁ ε₂ l = sv2_privMax ε₁ ε₂ l := by
+lemma sv1_eq_sv2 ε₁ ε₂ l : sv1_privMax ε₁ ε₂ l = sv2_privMax ε₁ ε₂ l := by
   apply SLang.ext
   intro result
   simp [sv1_privMax, sv2_privMax]
@@ -252,15 +255,15 @@ lemma sv1_eq_sv2 [dps : DPSystem ℕ] ε₁ ε₂ l : sv1_privMax ε₁ ε₂ l 
   - Truncates the loop
 -/
 
-def sv3_loop [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv1_state) : SLang sv1_state := do
-  probWhileCut (sv1_privMaxC τ l) (@sv1_privMaxF dps ε₁ ε₂) (point + 1) init
+def sv3_loop (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv1_state) : SLang sv1_state := do
+  probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) (point + 1) init
 
-def sv3_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv3_privMax (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
-    let τ <- @privNoiseThresh dps ε₁ ε₂
-    let v0 <- @privNoiseGuess dps ε₁ ε₂
-    let sk <- @sv3_loop dps ε₁ ε₂ τ l point ([], v0)
+    let τ <- privNoiseThresh ε₁ ε₂
+    let v0 <- privNoiseGuess ε₁ ε₂
+    let sk <- sv3_loop ε₁ ε₂ τ l point ([], v0)
     return (sv1_threshold sk)
   computation point
 
@@ -268,13 +271,13 @@ def sv3_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang
 def cone_of_possibility (cut : ℕ) (initial hist : List ℤ) : Prop :=
   (hist.length < cut + initial.length) ∧ (initial.length ≤ hist.length)
 
-def constancy_at [DPSystem ℕ] {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List ℕ} {v0 vk : ℤ} (cut : ℕ) (initial hist : List ℤ) : Prop :=
+def constancy_at {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List ℕ} {v0 vk : ℤ} (cut : ℕ) (initial hist : List ℤ) : Prop :=
   probWhileCut (sv1_privMaxC τ data) (sv1_privMaxF ε₁ ε₂) (1 + cut) (initial, v0) (hist, vk) =
   probWhileCut (sv1_privMaxC τ data) (sv1_privMaxF ε₁ ε₂) cut       (initial, v0) (hist, vk)
 
 
 -- All points outside of the cone are zero
-lemma external_to_cone_zero [DPSystem ℕ] :
+lemma external_to_cone_zero :
     (¬ cone_of_possibility cut initial hist) ->
     probWhileCut (sv1_privMaxC τ data) (sv1_privMaxF ε₁ ε₂) cut (initial, v0) (hist, vk) = 0 := by
   revert initial v0 vk
@@ -310,10 +313,10 @@ lemma external_to_cone_zero [DPSystem ℕ] :
       simp_all [cone_of_possibility]
 
 -- Base case: left edge of the cone satisfies constancy
-lemma cone_left_edge_constancy [DPSystem ℕ] {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List ℕ} {v0 vk : ℤ} (cut : ℕ) (initial hist : List ℤ) :
+lemma cone_left_edge_constancy {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List ℕ} {v0 vk : ℤ} (cut : ℕ) (initial hist : List ℤ) :
     hist.length = initial.length ->
     cone_of_possibility cut initial hist ->
-    @constancy_at _ ε₁ ε₂ τ data v0 vk cut initial hist := by
+    @constancy_at _ _ ε₁ ε₂ τ data v0 vk cut initial hist := by
   intro Hlen Hcone
   -- cut > 0 due to cone
   cases cut
@@ -364,9 +367,9 @@ lemma cone_left_edge_constancy [DPSystem ℕ] {ε₁ ε₂ : ℕ+} {τ : ℤ} {d
     rw [external_to_cone_zero (by simp_all [cone_of_possibility])]
 
 
-lemma cone_constancy [DPSystem ℕ] {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List ℕ} {v0 vk : ℤ} (cut : ℕ) (initial hist : List ℤ) :
+lemma cone_constancy {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List ℕ} {v0 vk : ℤ} (cut : ℕ) (initial hist : List ℤ) :
     cone_of_possibility cut initial hist ->
-    @constancy_at _ ε₁ ε₂ τ data v0 vk cut initial hist := by
+    @constancy_at _ _ ε₁ ε₂ τ data v0 vk cut initial hist := by
   -- Need theorem to be true for all initial states, since this will increase during the induction
   -- v0 and vk will also change in ways which don't matter
   revert initial v0 vk
@@ -449,7 +452,7 @@ lemma cone_constancy [DPSystem ℕ] {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List
     · trivial
 
 
-lemma sv2_eq_sv3 [dps : DPSystem ℕ] ε₁ ε₂ l : sv2_privMax ε₁ ε₂ l = sv3_privMax ε₁ ε₂ l := by
+lemma sv2_eq_sv3 ε₁ ε₂ l : sv2_privMax ε₁ ε₂ l = sv3_privMax ε₁ ε₂ l := by
   apply SLang.ext
 
   -- Step through equal headers
@@ -499,7 +502,7 @@ lemma sv2_eq_sv3 [dps : DPSystem ℕ] ε₁ ε₂ l : sv2_privMax ε₁ ε₂ l 
         rename_i Hcont _
         apply Hcont
         linarith
-    have HK := @cone_constancy dps ε₁ ε₂ τ l v0 vk i [] hist
+    have HK := @cone_constancy _ _ ε₁ ε₂ τ l v0 vk i [] hist
     unfold constancy_at at HK
     conv =>
       enter [1, 3]
@@ -519,10 +522,10 @@ lemma sv2_eq_sv3 [dps : DPSystem ℕ] ε₁ ε₂ l : sv2_privMax ε₁ ε₂ l 
 
 
 -- Commute out a single sample from the loop
-lemma sv3_loop_unroll_1 [dps : DPSystem ℕ] (τ : ℤ) (ε₁ ε₂ : ℕ+) l point L vk :
+lemma sv3_loop_unroll_1 (τ : ℤ) (ε₁ ε₂ : ℕ+) l point L vk :
     sv3_loop ε₁ ε₂ τ l (point + 1) (L, vk) =
     (do
-      let vk1 <- @privNoiseGuess dps ε₁ ε₂
+      let vk1 <- privNoiseGuess ε₁ ε₂
       if (sv1_privMaxC τ l (L, vk))
         then (sv3_loop ε₁ ε₂ τ l point (L ++ [vk], vk1))
         else probPure (L, vk)) := by
@@ -569,7 +572,8 @@ lemma sv3_loop_unroll_1 [dps : DPSystem ℕ] (τ : ℤ) (ε₁ ε₂ : ℕ+) l p
     split <;> try simp
     unfold privNoiseGuess
     unfold privNoiseZero
-    exact Eq.symm (PMF.tsum_coe (DPSystem.noise (fun x => 0) 1 ε₁ (2 * sens_cov_vk * ε₂) []))
+    symm
+    apply PMF.tsum_coe
 
 /-
 ## Program version 4
@@ -580,12 +584,12 @@ lemma sv3_loop_unroll_1 [dps : DPSystem ℕ] (τ : ℤ) (ε₁ ε₂ : ℕ+) l p
 -- An sv4 state is an sv1 state plus a list of presamples
 def sv4_state : Type := sv1_state × List ℤ
 
-def sv4_presample [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (n : ℕ) : SLang { l : List ℤ // List.length l = n } :=
+def sv4_presample (ε₁ ε₂ : ℕ+) (n : ℕ) : SLang { l : List ℤ // List.length l = n } :=
   match n with
   | Nat.zero => return ⟨ [], by simp ⟩
   | Nat.succ n' => do
-    let vk1 <- @privNoiseGuess dps ε₁ ε₂
-    let vks  <- @sv4_presample dps ε₁ ε₂ n'
+    let vk1 <- privNoiseGuess ε₁ ε₂
+    let vks  <- sv4_presample ε₁ ε₂ n'
     return ⟨ vks ++ [vk1], by simp ⟩
 
 
@@ -596,15 +600,15 @@ def sv4_privMaxF (s : sv4_state) : SLang sv4_state :=
 
 def sv4_privMaxC (τ : ℤ) (l : List ℕ) (st : sv4_state) : Bool := sv1_privMaxC τ l st.1
 
-def sv4_loop [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv1_state) : SLang sv1_state := do
-  let presamples <- @sv4_presample dps ε₁ ε₂ point
+def sv4_loop (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv1_state) : SLang sv1_state := do
+  let presamples <- sv4_presample ε₁ ε₂ point
   let v <- probWhileCut (sv4_privMaxC τ l) sv4_privMaxF (point + 1) (init, presamples)
   return v.1
 
-lemma sv3_loop_unroll_1_alt [dps : DPSystem ℕ] (τ : ℤ) (ε₁ ε₂ : ℕ+) l point (initial_state : sv1_state) :
+lemma sv3_loop_unroll_1_alt (τ : ℤ) (ε₁ ε₂ : ℕ+) l point (initial_state : sv1_state) :
     sv3_loop ε₁ ε₂ τ l (point + 1) initial_state =
     (do
-      let vk1 <- @privNoiseGuess dps ε₁ ε₂
+      let vk1 <- privNoiseGuess ε₁ ε₂
       if (sv1_privMaxC τ l initial_state)
         then (sv3_loop ε₁ ε₂ τ l point (initial_state.1 ++ [initial_state.2], vk1))
         else probPure initial_state) := by
@@ -614,12 +618,11 @@ lemma sv3_loop_unroll_1_alt [dps : DPSystem ℕ] (τ : ℤ) (ε₁ ε₂ : ℕ+)
 def len_list_append_rev {m n : ℕ} (x : { l : List ℤ // l.length = m }) (y: { l : List ℤ // l.length = n }) : { l : List ℤ // l.length = n + m } :=
   ⟨ x.1 ++ y.1 , by simp  [add_comm] ⟩
 
-
 lemma vector_sum_singleton (f : { l : List ℤ // l.length = 1 } -> ENNReal) (P : (x : ℤ) -> ([x].length = 1)) :
     (∑'(x : { l // l.length =  1 }), f x) = (∑' (x : ℤ), f ⟨ [x], P x⟩) := by
   sorry
 
-def sv4_presample_split [DPSystem ℕ] (ε₁ ε₂ : ℕ+) (point : ℕ) :
+def sv4_presample_split (ε₁ ε₂ : ℕ+) (point : ℕ) :
     sv4_presample ε₁ ε₂ (point + 1) =
     (do
       let presample_1 <- sv4_presample ε₁ ε₂ 1
@@ -634,6 +637,7 @@ def sv4_presample_split [DPSystem ℕ] (ε₁ ε₂ : ℕ+) (point : ℕ) :
   rw [← ENNReal.tsum_prod]
   rw [vector_sum_singleton _ (by simp)]
 
+  /-
   have X (x : ℤ): (@tsum.{0, 0} ENNReal
     (@NonUnitalNonAssocSemiring.toAddCommMonoid.{0} ENNReal
       (@NonAssocSemiring.toNonUnitalNonAssocSemiring.{0} ENNReal
@@ -661,6 +665,7 @@ def sv4_presample_split [DPSystem ℕ] (ε₁ ε₂ : ℕ+) (point : ℕ) :
     rw [<- ENNReal.tsum_mul_left]
   rw [← ENNReal.tsum_prod]
   simp_all [len_list_append_rev]
+  -/
   -- Can do this by bijection (not congruence)
 
   -- By bijection
@@ -675,14 +680,13 @@ def len_1_list_to_val (x : { l : List ℤ // l.length = 1 }) : ℤ :=
   match xl with
   | (v :: _) => v
 
-
 -- When we do induction on point,
 -- We will want to generalize over all init
 -- Unfolding this loop just moves the first presample into init
 -- Which can apply the IH-- since it's some arbitrary init state and a presamples state generated by one fewer point
 
-def sv3_sv4_loop_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv1_state) :
-    @sv3_loop dps ε₁ ε₂ τ l point init = @sv4_loop dps ε₁ ε₂ τ l point init := by
+def sv3_sv4_loop_eq (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv1_state) :
+    sv3_loop ε₁ ε₂ τ l point init = sv4_loop ε₁ ε₂ τ l point init := by
   revert init
   induction point
   · -- It's a mess but it works
@@ -773,27 +777,35 @@ def sv3_sv4_loop_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : Li
       simp [sv4_presample]
       rw [ENNReal.tsum_eq_add_tsum_ite x]
       simp
-
-
-      have X : (@tsum.{0, 0} ENNReal
-    (@NonUnitalNonAssocSemiring.toAddCommMonoid.{0} ENNReal
-      (@NonAssocSemiring.toNonUnitalNonAssocSemiring.{0} ENNReal
-        (@Semiring.toNonAssocSemiring.{0} ENNReal
-          (@OrderedSemiring.toSemiring.{0} ENNReal
-            (@OrderedCommSemiring.toOrderedSemiring.{0} ENNReal
-              (@CanonicallyOrderedCommSemiring.toOrderedCommSemiring.{0} ENNReal
-                ENNReal.instCanonicallyOrderedCommSemiring))))))
-    ENNReal.instTopologicalSpace Int fun (x_1 : Int) =>
-    @ite.{1} ENNReal (@Eq.{1} Int x_1 x) (Classical.propDecidable (@Eq.{1} Int x_1 x))
-      (@OfNat.ofNat.{0} ENNReal 0 (@Zero.toOfNat0.{0} ENNReal instENNRealZero))
-      (@ite.{1} ENNReal (@Eq.{1} Int x x_1) (Int.instDecidableEq x x_1) (@SLang.privNoiseGuess dps ε₁ ε₂ x_1) 0)) = 0 := by
-        simp
-        aesop
+      have X : ( @tsum.{0, 0} ENNReal
+                (@NonUnitalNonAssocSemiring.toAddCommMonoid.{0} ENNReal
+                  (@NonAssocSemiring.toNonUnitalNonAssocSemiring.{0} ENNReal
+                    (@Semiring.toNonAssocSemiring.{0} ENNReal
+                      (@OrderedSemiring.toSemiring.{0} ENNReal
+                        (@OrderedCommSemiring.toOrderedSemiring.{0} ENNReal
+                          (@CanonicallyOrderedCommSemiring.toOrderedCommSemiring.{0} ENNReal
+                            ENNReal.instCanonicallyOrderedCommSemiring))))))
+                ENNReal.instTopologicalSpace Int fun (x_1 : Int) =>
+                @ite.{1} ENNReal (@Eq.{1} Int x_1 x) (Classical.propDecidable (@Eq.{1} Int x_1 x))
+                  (@OfNat.ofNat.{0} ENNReal 0 (@Zero.toOfNat0.{0} ENNReal instENNRealZero))
+                  (@ite.{1} ENNReal (@Eq.{1} Int x x_1) (Int.instDecidableEq x x_1) (@SLang.privNoiseGuess dps dpn ε₁ ε₂ x_1)
+                    (@OfNat.ofNat.{0} ENNReal 0
+                      (@Zero.toOfNat0.{0} ENNReal
+                        (@MulZeroClass.toZero.{0} ENNReal
+                          (@NonUnitalNonAssocSemiring.toMulZeroClass.{0} ENNReal
+                            (@NonAssocSemiring.toNonUnitalNonAssocSemiring.{0} ENNReal
+                              (@Semiring.toNonAssocSemiring.{0} ENNReal
+                                (@OrderedSemiring.toSemiring.{0} ENNReal
+                                  (@OrderedCommSemiring.toOrderedSemiring.{0} ENNReal
+                                    (@CanonicallyOrderedCommSemiring.toOrderedCommSemiring.{0} ENNReal
+                                      ENNReal.instCanonicallyOrderedCommSemiring))))))))))) = 0 := by simp; aesop
 
       conv =>
         enter [2, 1, 2]
+        skip
         rw [X]
       simp
+
     rw [ToPresample]
     clear ToPresample
 
@@ -868,17 +880,17 @@ def sv3_sv4_loop_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : Li
       · simp
 
 
-def sv4_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv4_privMax (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
-    let τ <- @privNoiseThresh dps ε₁ ε₂
-    let v0 <- @privNoiseGuess dps ε₁ ε₂
-    let sk <- @sv4_loop dps ε₁ ε₂ τ l point ([], v0)
+    let τ <- privNoiseThresh ε₁ ε₂
+    let v0 <- privNoiseGuess ε₁ ε₂
+    let sk <- sv4_loop ε₁ ε₂ τ l point ([], v0)
     return (sv1_threshold sk)
   computation point
 
-def sv3_eq_sv4 [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
-    @sv3_privMax dps ε₁ ε₂ l = @sv4_privMax dps ε₁ ε₂ l := by
+def sv3_eq_sv4 (ε₁ ε₂ : ℕ+) (l : List ℕ) :
+    sv3_privMax ε₁ ε₂ l = sv4_privMax ε₁ ε₂ l := by
     unfold sv3_privMax
     unfold sv4_privMax
     simp
@@ -897,17 +909,17 @@ def sv5_loop (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv4_state) : SLang 
   let sk <- probWhileCut (sv4_privMaxC τ l) sv4_privMaxF (point + 1) init
   return (sv1_threshold sk.1)
 
-def sv5_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv5_privMax (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
-    let τ <- @privNoiseThresh dps ε₁ ε₂
-    let v0 <- @privNoiseGuess dps ε₁ ε₂
-    let presamples <- @sv4_presample dps ε₁ ε₂ point
+    let τ <- privNoiseThresh ε₁ ε₂
+    let v0 <- privNoiseGuess ε₁ ε₂
+    let presamples <- sv4_presample ε₁ ε₂ point
     @sv5_loop τ l point (([], v0), presamples)
   computation point
 
-def sv4_eq_sv5 [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
-    @sv4_privMax dps ε₁ ε₂ l = @sv5_privMax dps ε₁ ε₂ l := by
+def sv4_eq_sv5 (ε₁ ε₂ : ℕ+) (l : List ℕ) :
+    sv4_privMax ε₁ ε₂ l = sv5_privMax ε₁ ε₂ l := by
   unfold sv4_privMax
   unfold sv5_privMax
   unfold sv4_loop
@@ -922,33 +934,23 @@ def sv4_eq_sv5 [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
   - Changes the loop from a probWhileCut into a single, deterministic, check
 -/
 
--- When you look at exactly n loops in the future, the check evaluates to true
-def sv6_privMax_check (τ : ℤ) (l : List ℕ) (s : sv4_state) (n : ℕ) : Bool :=
-  match n with
-  | 0 => true
-  | Nat.succ n' =>
-    match s with
-    -- If there is more samples on the tape, call recursively
-    | ((past, present), (future_next :: future_rest)) =>
-      sv4_privMaxC τ l ((past, present), (future_next :: future_rest)) ∧
-      sv6_privMax_check τ l ((past ++ [present], future_next), future_rest) n'
-    | (_, []) =>
-      -- Out of samples on the tape
-      false
+-- -- When you look at exactly n loops in the future, the check evaluates to true
+-- def sv6_privMax_check (τ : ℤ) (l : List ℕ) (s : sv4_state) (n : ℕ) : Bool :=
+--   match n with
+--   | 0 => true
+--   | Nat.succ n' =>
+--     match s with
+--     -- If there is more samples on the tape, call recursively
+--     | ((past, present), (future_next :: future_rest)) =>
+--       sv4_privMaxC τ l ((past, present), (future_next :: future_rest)) ∧
+--       sv6_privMax_check τ l ((past ++ [present], future_next), future_rest) n'
+--     | (_, []) =>
+--       -- Out of samples on the tape
+--       false
 
 -- The state sp is a "past configuration" of sc, ie. one we already checked
 def is_past_configuration (sp sc : sv4_state) : Prop :=
   (sp.1.1.length ≤ sc.1.1.length) ∧ sp.1.1 ++ [sp.1.2] ++ sp.2 = sc.1.1 ++ [sc.1.2] ++ sc.2
-
-lemma is_past_configuration_ex1 : is_past_configuration (([], 0), []) (([], 0), []) := by
-  simp [is_past_configuration]
-
-lemma is_past_configuration_ex2 : is_past_configuration (([], 0), [1]) (([0], 1), []) := by
-  simp [is_past_configuration]
-
-lemma is_past_configuration_ex3 : is_past_configuration (([], 0), [1, 2]) (([0], 1), [2]) := by
-  simp [is_past_configuration]
-
 
 -- All past configurations had their loop check execute to True
 def sv6_privMax_hist (τ : ℤ) (l : List ℕ) (s : sv4_state) : Prop :=
@@ -1117,12 +1119,12 @@ lemma sv5_loop_ind (τ : ℤ) (l : List ℕ) (eval point : ℕ) (past ff: List �
     trivial
 
 
-def sv6_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv6_privMax (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
-    let τ <- @privNoiseThresh dps ε₁ ε₂
-    let v0 <- @privNoiseGuess dps ε₁ ε₂
-    let presamples <- @sv4_presample dps ε₁ ε₂ point
+    let τ <- privNoiseThresh ε₁ ε₂
+    let v0 <- privNoiseGuess ε₁ ε₂
+    let presamples <- sv4_presample ε₁ ε₂ point
     @sv6_loop τ l point (([], v0), presamples)
   computation point
 
@@ -1169,8 +1171,8 @@ def sv5_sv6_loop_eq_point (τ : ℤ) (l : List ℕ) (point eval : ℕ) (past fut
     simp_all [sv1_threshold]
 
 
-def sv5_sv6_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
-    @sv5_privMax dps ε₁ ε₂ l = @sv6_privMax dps ε₁ ε₂ l := by
+def sv5_sv6_eq (ε₁ ε₂ : ℕ+) (l : List ℕ) :
+    sv5_privMax ε₁ ε₂ l = sv6_privMax ε₁ ε₂ l := by
   unfold sv5_privMax
   unfold sv6_privMax
   apply SLang.ext
@@ -1196,27 +1198,27 @@ Not executable
 Separates out the zero case
 -/
 
-def sv7_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv7_privMax (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
-    let τ <- @privNoiseThresh dps ε₁ ε₂
-    let v0 <- @privNoiseGuess dps ε₁ ε₂
+    let τ <- privNoiseThresh ε₁ ε₂
+    let v0 <- privNoiseGuess ε₁ ε₂
     match point with
     | 0 =>
       if (¬ (sv4_privMaxC τ l (([], v0), [])))
         then probPure point
         else probZero
     | (Nat.succ point') => do
-      let presamples <- @sv4_presample dps ε₁ ε₂ point'
-      let vk <- @privNoiseGuess dps ε₁ ε₂
+      let presamples <- sv4_presample ε₁ ε₂ point'
+      let vk <- privNoiseGuess ε₁ ε₂
       if (sv6_cond τ l (([], v0), presamples ++ [vk]))
         then probPure point
         else probZero
   computation point
 
 
-def sv6_sv7_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
-    @sv6_privMax dps ε₁ ε₂ l = @sv7_privMax dps ε₁ ε₂ l := by
+def sv6_sv7_eq (ε₁ ε₂ : ℕ+) (l : List ℕ) :
+    sv6_privMax ε₁ ε₂ l = sv7_privMax ε₁ ε₂ l := by
   apply SLang.ext
   intro point
   unfold sv6_privMax
@@ -1278,19 +1280,19 @@ def sv8_G  (l : List ℕ) (past : List ℤ) (pres : ℤ) (future : List ℤ) : �
  def sv8_cond (τ : ℤ) (l : List ℕ) (past : List ℤ) (pres : ℤ) (future : List ℤ) (last : ℤ) : Bool :=
    (sv8_G l past pres future < τ) ∧ (sv8_sum l (past ++ [pres] ++ future) last ≥ τ)
 
-def sv8_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv8_privMax (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
-    let τ <- @privNoiseThresh dps ε₁ ε₂
-    let v0 <- @privNoiseGuess dps ε₁ ε₂
+    let τ <- privNoiseThresh ε₁ ε₂
+    let v0 <- privNoiseGuess ε₁ ε₂
     match point with
     | 0 =>
       if (sv8_sum l [] v0 ≥ τ)
         then probPure point
         else probZero
     | (Nat.succ point') => do
-      let presamples <- @sv4_presample dps ε₁ ε₂ point'
-      let vk <- @privNoiseGuess dps ε₁ ε₂
+      let presamples <- sv4_presample ε₁ ε₂ point'
+      let vk <- privNoiseGuess ε₁ ε₂
       if (sv8_cond τ l [] v0 presamples vk)
         then probPure point
         else probZero
@@ -1326,8 +1328,8 @@ lemma sv7_sv8_cond_eq (τ : ℤ) (l : List ℕ) (v0 : ℤ) (vs : List ℤ) (vk :
     cases (decide (sv8_G l (init ++ [vi]) vi_1 rest < τ)) <;> simp
     simp [sv4_privMaxC, sv1_privMaxC, sv8_sum, sv1_threshold, sv1_noise]
 
-def sv7_sv8_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
-    @sv7_privMax dps ε₁ ε₂ l = @sv8_privMax dps ε₁ ε₂ l := by
+def sv7_sv8_eq (ε₁ ε₂ : ℕ+) (l : List ℕ) :
+    sv7_privMax ε₁ ε₂ l = sv8_privMax ε₁ ε₂ l := by
   apply SLang.ext
   intro point
   unfold sv7_privMax
@@ -1349,28 +1351,28 @@ Rewritten so that the randomness we will cancel out is right at the front
 -/
 
 
-def sv9_privMax [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv9_privMax (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
     match point with
     | 0 => do
-      let τ <- @privNoiseThresh dps ε₁ ε₂
-      let v0 <- @privNoiseGuess dps ε₁ ε₂
+      let τ <- privNoiseThresh ε₁ ε₂
+      let v0 <- privNoiseGuess ε₁ ε₂
       if (sv8_sum l [] v0 ≥ τ)
         then probPure point
         else probZero
     | (Nat.succ point') => do
-      let v0 <- @privNoiseGuess dps ε₁ ε₂
-      let presamples <- @sv4_presample dps ε₁ ε₂ point'
-      let τ <- @privNoiseThresh dps ε₁ ε₂
-      let vk <- @privNoiseGuess dps ε₁ ε₂
+      let v0 <- privNoiseGuess ε₁ ε₂
+      let presamples <- sv4_presample ε₁ ε₂ point'
+      let τ <- privNoiseThresh ε₁ ε₂
+      let vk <- privNoiseGuess ε₁ ε₂
       if (sv8_cond τ l [] v0 presamples vk)
         then probPure point
         else probZero
   computation point
 
-def sv8_sv9_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
-    @sv8_privMax dps ε₁ ε₂ l = @sv8_privMax dps ε₁ ε₂ l := by
+def sv8_sv9_eq (ε₁ ε₂ : ℕ+) (l : List ℕ) :
+    sv8_privMax ε₁ ε₂ l = sv8_privMax ε₁ ε₂ l := by
   apply SLang.ext
   intro point
   sorry
@@ -1379,5 +1381,5 @@ def sv8_sv9_eq [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) :
 /--
 sv9 normalizes because sv1 normalizes
 -/
-def sv9_privMax_pmf [dps : DPSystem ℕ] (ε₁ ε₂ : ℕ+) (l : List ℕ) : PMF ℕ :=
-  ⟨ @sv9_privMax dps ε₁ ε₂ l, sorry ⟩
+def sv9_privMax_pmf (ε₁ ε₂ : ℕ+) (l : List ℕ) : PMF ℕ :=
+  ⟨ sv9_privMax ε₁ ε₂ l, sorry ⟩

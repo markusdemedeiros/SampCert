@@ -204,8 +204,8 @@ lemma DS0 (H : Neighbour L1 L2) : ((exactDiffSum 0 L1) : ℝ) - (exactDiffSum 0 
     sorry
 
 
-
-lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) : PureDPSystem.prop (@sv9_privMax_pmf PureDPSystem ε₁ ε₂) ε := by
+lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) :
+    PureDPSystem.prop (@sv9_privMax_pmf PureDPSystem laplace_pureDPSystem ε₁ ε₂) ε := by
   -- Unfold DP definitions
   simp [DPSystem.prop]
   apply singleton_to_event
@@ -264,7 +264,7 @@ lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) : PureDPSystem
       simp [cov_τ]
       rw [mul_assoc]
       apply ENNReal.mul_left_mono
-      simp [privNoiseGuess, privNoiseZero, DPSystem.noise, privNoisedQueryPure]
+      simp [privNoiseGuess, privNoiseZero, DPNoise.noise, privNoisedQueryPure]
       apply le_trans
       · apply laplace_inequality_sub
       rw  [mul_comm]
@@ -470,8 +470,7 @@ lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) : PureDPSystem
         have _ := @exactDiffSum_nonpos (point + 1) [n2]
         linarith
 
-    simp [privNoiseThresh, privNoiseGuess,
-         privNoiseZero, DPSystem.noise, privNoisedQueryPure]
+    simp [privNoiseThresh, privNoiseGuess, privNoiseZero, DPNoise.noise, privNoisedQueryPure]
 
     -- Apply the Laplace inequalities
     apply le_trans
