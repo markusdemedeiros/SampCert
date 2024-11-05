@@ -27,7 +27,7 @@ def numBins : ℕ+ := 64
 /-
 Bin the infinite type ℕ with clipping
 -/
-def bin (n : ℕ) : Fin numBins :=
+def example_bin (n : ℕ) : Fin numBins :=
   { val := min (Nat.log 2 n) (PNat.natPred numBins),
     isLt := by
       apply min_lt_iff.mpr
@@ -41,7 +41,7 @@ Return an upper bound on the bin value, clipped to 2^(1 + numBins)
 def unbin (n : Fin numBins) : ℕ+ := 2 ^ (1 + n.val)
 
 def combineMeanHistogram : Mechanism ℕ (Option ℚ) :=
-  privMeanHistogram PureDPSystem laplace_pureDPSystem numBins { bin } unbin 1 20 2 1 20
+  privMeanHistogram PureDPSystem laplace_pureDPSystem numBins { bin := example_bin } unbin 1 20 2 1 20
 
 end histogramMeanExample
 

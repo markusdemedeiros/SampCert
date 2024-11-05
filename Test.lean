@@ -6,6 +6,7 @@ Authors: Jean-Baptiste Tristan
 import SampCert
 import SampCert.SLang
 import SampCert.Samplers.Gaussian.Properties
+import Init.Data.Float
 
 open SLang Std Int Array PMF
 
@@ -173,7 +174,61 @@ def test (num den : ℕ+) (mix numSamples : ℕ) (threshold : Float) : IO Unit :
   IO.println s!"Kolmogorov distance = {D}"
 
 
-def main : IO Unit := do
+def query_tests : IO Unit := do
+  -- Generate list of 1000 numbers from 0 to 15
+  let samples := 10000
+  let unif_ub := 10
+  let data : List ℕ <- List.mapM (fun _ => run <| (SLang.UniformSample_PMF unif_ub)) (List.replicate samples 0)
+
+  let num : ℕ+ := 9
+  let den : ℕ+ := 2
+  let num_trials := 5
+
+  IO.println s!"[query] testing pure ({(num : ℕ)} / {(den : ℕ)})-DP queries"
+  IO.println s!"data := {samples} uniform samples of [0, {(unif_ub : ℕ)}): {(data.take 20)}..."
+  IO.println ""
+
+  for i in [:num_trials] do
+    let ct <- run <| @privNoisedCount _ PureDPSystem laplace_pureDPSystem num den data
+    IO.println s!"#{i} count: {ct}"
+  IO.println ""
+
+  let sum_bound : ℕ+ := 10
+  for i in [:num_trials] do
+    let bs <- run <| @privNoisedBoundedSum PureDPSystem laplace_pureDPSystem sum_bound num den data
+    IO.println s!"#{i} bounded sum (bound = {(sum_bound : ℕ)}): {bs}"
+  IO.println ""
+
+  for i in [:num_trials] do
+    let bs <- run <| @privNoisedBoundedMean PureDPSystem laplace_pureDPSystem sum_bound num den data
+    let float_bs := Float.div (Float.ofInt bs.1) (Float.ofInt bs.2)
+    IO.println s!"#{i} bounded mean (bound = {(sum_bound : ℕ)}): {bs} (~{float_bs})"
+  IO.println ""
+
+  for i in [:num_trials] do
+    let h <- run <| @privNoisedHistogram numBins _ { bin := example_bin } PureDPSystem laplace_pureDPSystem num den data
+    let h' : List ℤ := h.count.toList.take 25
+    IO.println s!"#{i} histogram : {h'}..."
+  IO.println ""
+
+  let thresh := 100
+  for i in [:num_trials] do
+    let m <- run <| @privMaxBinAboveThreshold numBins _ { bin := example_bin } PureDPSystem laplace_pureDPSystem num den thresh data
+    IO.println s!"#{i} max bin above threshold (threshold = {(thresh : ℤ)}): {m}"
+  IO.println ""
+
+  let τ := 100
+  for i in [:num_trials] do
+    let m <- run <| @privMeanHistogram PureDPSystem laplace_pureDPSystem numBins { bin := example_bin } unbin num den τ num den data
+    let m_float :=
+      match m with
+      | none => none
+      | some bs => some (Float.div (Float.ofInt bs.1) (Float.ofInt bs.2))
+    IO.println s!"#{i} (0.5x-privacy) histogram mean, τ = {τ}: {m} (~{m_float})"
+  IO.println ""
+
+def statistical_tests : IO Unit := do
+  IO.println s!"[samplers] statistical tests"
   let tests : List (ℕ+ × ℕ+ × ℕ) := [
     -- (1,1,0),
     (1,1,7),
@@ -188,3 +243,8 @@ def main : IO Unit := do
   for (num,den,mix) in tests do
     IO.println s!"num = {(num : ℕ)}, den = {(den : ℕ)}, mix = {mix}"
     test num den mix 100000 0.1
+
+
+def main : IO Unit := do
+  query_tests
+  statistical_tests

@@ -249,7 +249,7 @@ theorem UniformSample_HasSum_1  (n : PNat) :
 /--
 Conversion of ``UniformSample`` from a ``SLang`` term to a ``PMF``.
 -/
-noncomputable def UniformSample_PMF (n : PNat) : PMF ℕ := ⟨ UniformSample n , UniformSample_HasSum_1 n⟩
+def UniformSample_PMF (n : PNat) : SPMF ℕ := ⟨ UniformSample n , UniformSample_HasSum_1 n⟩
 
 /--
 Evaluation of ``UniformSample`` on ``ℕ`` guarded by its support, when inside the support.
