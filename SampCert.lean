@@ -40,7 +40,7 @@ Return an upper bound on the bin value, clipped to 2^(1 + numBins)
 -/
 def unbin (n : Fin numBins) : ℕ+ := 2 ^ (1 + n.val)
 
-noncomputable def combineMeanHistogram : Mechanism ℕ (Option ℚ) :=
+def combineMeanHistogram : Mechanism ℕ (Option ℚ) :=
   privMeanHistogram PureDPSystem laplace_pureDPSystem numBins { bin } unbin 1 20 2 1 20
 
 end histogramMeanExample

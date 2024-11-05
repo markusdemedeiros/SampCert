@@ -20,8 +20,6 @@ Implementation for
 ## Compute the mean using a histogram to compute the noisy max
 -/
 
-noncomputable section
-
 variable (dps : SLang.DPSystem ℕ)
 variable (dpn : SLang.DPNoise dps)
 variable (numBins : ℕ+)

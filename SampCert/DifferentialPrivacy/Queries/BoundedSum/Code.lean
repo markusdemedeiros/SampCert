@@ -14,8 +14,6 @@ import Init.Data.Int.Order
 This file defines a differentially private bounded sum query.
 -/
 
-noncomputable section
-
 namespace SLang
 
 variable [dps : DPSystem ℕ]

@@ -11,8 +11,6 @@ import SampCert.DifferentialPrivacy.Abstract
 This file defines a differentially private noising of an exact length query.
 -/
 
-noncomputable section
-
 namespace SLang
 
 variable {T : Type}

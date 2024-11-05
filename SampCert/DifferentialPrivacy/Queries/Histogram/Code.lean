@@ -24,8 +24,6 @@ structure Bins (T : Type) (num_bins : ℕ) where
 ## Private Histograms
 -/
 
-noncomputable section
-
 variable (numBins : ℕ+)
 
 def predBins : ℕ := numBins.natPred
