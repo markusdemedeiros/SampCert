@@ -244,7 +244,32 @@ def statistical_tests : IO Unit := do
     IO.println s!"num = {(num : ℕ)}, den = {(den : ℕ)}, mix = {mix}"
     test num den mix 100000 0.1
 
+def sparseVector_tests : IO Unit := do
+  let samples := 10000
+  let unif_ub := 10
+  let data : List ℕ <- List.mapM (fun _ => run <| (SLang.UniformSample_PMF unif_ub)) (List.replicate samples 0)
+
+  let num : ℕ+ := 9
+  let den : ℕ+ := 2
+  let num_trials := 5
+
+  IO.println s!"[query] testing sparse vector max, ({(num : ℕ)} / {(den : ℕ)})-DP"
+  IO.println s!"data := {samples} uniform samples of [0, {(unif_ub : ℕ)}): {(data.take 20)}..."
+  IO.println ""
+
+  for i in [:num_trials] do
+    let ct <- run <| @sv0_privMax_PMF PureDPSystem laplace_pureDPSystem num den data
+    IO.println s!"#{i} sv0 max: {ct}"
+  IO.println ""
+
+  for i in [:num_trials] do
+    let ct <- run <| @sv1_privMax_PMF PureDPSystem laplace_pureDPSystem num den data
+    IO.println s!"#{i} sv1 max: {ct}"
+  IO.println ""
+
+
 
 def main : IO Unit := do
+  sparseVector_tests
   query_tests
   statistical_tests

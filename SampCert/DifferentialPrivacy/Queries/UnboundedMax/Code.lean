@@ -82,6 +82,10 @@ def sv0_privMax (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ := do
   let sk <- probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (0, v0)
   return (sv0_threshold sk)
 
+def sv0_privMax_PMF (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
+  ⟨ sv0_privMax ε₁ ε₂ l,
+    by sorry ⟩
+
 /-
 ## Program version 1
   - Executable
@@ -108,6 +112,9 @@ def sv1_privMax (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ := do
   return (sv1_threshold sk)
 
 
+def sv1_privMax_PMF (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
+  ⟨ sv1_privMax ε₁ ε₂ l,
+    by sorry ⟩
 
 
 end SLang
