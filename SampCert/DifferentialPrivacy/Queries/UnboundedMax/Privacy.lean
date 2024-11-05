@@ -179,6 +179,32 @@ lemma exactDiffSum_singleton_le_1 : -1 ≤ exactDiffSum point [v] := by
     · linarith
 
 
+-- Coercions nonsense
+lemma DS0 (H : Neighbour L1 L2) : ((exactDiffSum 0 L1) : ℝ) - (exactDiffSum 0 L2) ≤ 1 := by
+  cases H
+  · rename_i A B C H1 H2
+    rw [H1, H2]
+    repeat rw [exactDiffSum_append]
+    simp
+    apply neg_le.mp
+    have _ := @exactDiffSum_singleton_le_1 0 C
+    sorry
+
+  · rename_i A B C H1 H2
+    rw [H1, H2]
+    repeat rw [exactDiffSum_append]
+    simp
+    have _ := @exactDiffSum_nonpos 0 C
+    sorry
+
+  · rename_i A B C D H1 H2
+    rw [H1, H2]
+    repeat rw [exactDiffSum_append]
+    simp only [Int.cast_add, add_sub_add_right_eq_sub, add_sub_add_left_eq_sub]
+    sorry
+
+
+
 lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) : PureDPSystem.prop (@sv9_privMax_pmf PureDPSystem ε₁ ε₂) ε := by
   -- Unfold DP definitions
   simp [DPSystem.prop]
@@ -191,10 +217,111 @@ lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) : PureDPSystem
 
   cases point
   · -- point = 0
-    simp only [sv9_privMax]
+    simp [sv9_privMax]
 
-    sorry
+    -- Put sums on outside
+    conv =>
+      enter [2]
+      rw [← ENNReal.tsum_mul_left]
+      enter [1, i]
+      rw [← ENNReal.tsum_mul_left]
+      rw [← ENNReal.tsum_mul_left]
+      enter [1, i_1]
+      repeat rw [<- mul_assoc]
+      enter [1]
+      rw [mul_comm (ENNReal.ofReal _)]
+      repeat rw [mul_assoc]
+      rw [mul_comm (ENNReal.ofReal _)]
+    conv =>
+      enter [2, 1, i, 1, i_1]
+      repeat rw [mul_assoc]
+    conv =>
+      enter [1, 1, i]
+      rw [← ENNReal.tsum_mul_left]
 
+    -- Change of variables
+    let cov_τ : ℤ := 0
+    let cov_vk : ℤ := exactDiffSum 0 l₂ - exactDiffSum 0 l₁ + cov_τ
+    conv =>
+      lhs
+      rw [tsum_shift cov_τ]
+      enter [1, τ]
+      rw [tsum_shift cov_vk]
+      enter [1, vk]
+    conv =>
+      rhs
+      enter [1, τ, 1, vk]
+    apply ENNReal.tsum_le_tsum
+    intro τ
+    apply ENNReal.tsum_le_tsum
+    intro vk
+
+    rw [<- mul_assoc]
+    rw [<- mul_assoc]
+    rw [<- mul_assoc]
+    apply mul_le_mul
+    · -- Laplace bound
+      simp [cov_τ]
+      rw [mul_assoc]
+      apply ENNReal.mul_left_mono
+      simp [privNoiseGuess, privNoiseZero, DPSystem.noise, privNoisedQueryPure]
+      apply le_trans
+      · apply laplace_inequality_sub
+      rw  [mul_comm]
+      apply ENNReal.mul_left_mono
+      rw [Hε]
+      apply ENNReal.ofReal_le_ofReal
+      apply Real.exp_monotone
+      simp [sens_cov_vk, sens_cov_τ]
+
+      have X : |((exactDiffSum 0 l₂) : ℝ) - (exactDiffSum 0 l₁)| ≤ 1 := by
+        -- simp [exactDiffSum, exactClippedSum, List.map_const']
+        rw [abs_le]
+        apply And.intro
+        · apply neg_le.mp
+          simp only [neg_sub]
+          apply DS0
+          apply Hneighbour
+        · apply DS0
+          apply Neighbour_symm
+          apply Hneighbour
+
+      ring_nf
+      rw [InvolutiveInv.inv_inv]
+      conv =>
+        lhs
+        rw [mul_comm]
+        rw [<- mul_assoc]
+        rw [<- mul_assoc]
+        rw [mul_comm]
+        enter [2]
+        rw [mul_comm]
+      simp
+      apply le_trans _ X
+      conv =>
+        rhs
+        rw [<- one_mul (abs _)]
+      apply mul_le_mul
+      · apply inv_le_one
+        simp
+      · rfl
+      · apply abs_nonneg
+      · simp
+
+
+
+
+    · -- Conditionals should be equal
+      suffices (τ + cov_τ ≤ sv8_sum l₁ [] (vk + cov_vk)) = (τ ≤ sv8_sum l₂ [] vk) by
+        split <;> simp_all
+      apply propext
+      simp [sv8_sum, cov_vk]
+      apply Iff.intro
+      · intro _ ; linarith
+      · intro _ ; linarith
+
+    · apply zero_le
+    · apply zero_le
 
 
   · rename_i point
