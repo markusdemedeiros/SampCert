@@ -29,6 +29,7 @@ instance : Coe (SPMF α) (PMF α) where
 
 
 
+@[simp]
 def SPMF_pure (a : α) : SPMF α :=
   ⟨ probPure a,
     by
@@ -40,6 +41,7 @@ def SPMF_pure (a : α) : SPMF α :=
       simp [DFunLike.coe, PMF.instFunLike]
       trivial ⟩
 
+@[simp]
 def SPMF_bind (p : SPMF α) (q : α -> SPMF β) : SPMF β :=
   ⟨ probBind p (fun x => q x),
     by
@@ -55,13 +57,37 @@ instance : Monad SPMF where
   pure := SPMF_pure
   bind := SPMF_bind
 
+
+
 abbrev Query (T U : Type) := List T → U
 
-abbrev Mechanism (T U : Type) := List T → PMF U
+abbrev Mechanism (T U : Type) := List T → SPMF U
 
+/--
+General (value-dependent) composition of mechanisms
+-/
+def privComposeAdaptive (nq1 : Mechanism T U) (nq2 : U -> Mechanism T V) (l : List T) : SPMF (U × V) := do
+  let A <- nq1 l
+  let B <- nq2 A l
+  return (A, B)
 
+/--
+Product of mechanisms.
+-/
+def privCompose (nq1 : Mechanism T U) (nq2 : Mechanism T V) (l : List T) : SPMF (U × V) :=
+  privComposeAdaptive nq1 (fun _ => nq2) l
 
+/--
+Mechanism obtained by applying a post-processing function to a mechanism.
+-/
+def privPostProcess (nq : Mechanism T U) (pp : U → V) (l : List T) : SPMF V := do
+  let A ← nq l
+  return pp A
 
+/--
+Constant mechanism
+-/
+def privConst (u : U) : Mechanism T U := fun _ => SPMF_pure u
 
 
 
@@ -70,15 +96,12 @@ noncomputable section
 
 open Classical Nat Int Real ENNReal
 
-/--
-General (value-dependent) composition of mechanisms
--/
-def privComposeAdaptive (nq1 : Mechanism T U) (nq2 : U -> Mechanism T V) (l : List T) : PMF (U × V) := do
-  let A <- nq1 l
-  let B <- nq2 A l
-  return (A, B)
+instance SPMF.instFunLike : FunLike (SPMF α) α ℝ≥0∞ where
+  coe p a := p.1 a
+  coe_injective' _ _ h := Subtype.eq h
 
-lemma compose_sum_rw_adaptive (nq1 : List T → PMF U) (nq2 : U -> List T → PMF V) (u : U) (v : V) (l : List T) :
+
+lemma compose_sum_rw_adaptive (nq1 : List T → SPMF U) (nq2 : U -> List T → SPMF V) (u : U) (v : V) (l : List T) :
   (∑' (a : U), nq1 l a * ∑' (a_1 : V), if u = a ∧ v = a_1 then nq2 a l a_1 else 0) = nq1 l u * nq2 u l v := by
   have hrw1 : ∀ (a : U), nq1 l a * (∑' (a_1 : V), if u = a ∧ v = a_1 then nq2 a l a_1 else 0) = if (u = a) then (nq1 l a * ∑' (a_1 : V), if u = a ∧ v = a_1 then nq2 a l a_1 else 0) else 0 := by
     intro a
@@ -117,24 +140,8 @@ lemma privComposeChainRule (nq1 : Mechanism T U) (nq2 : U -> Mechanism T V) (l :
   intros u v
   rw [<- compose_sum_rw_adaptive]
   simp [privComposeAdaptive]
+  simp [SPMF.instFunLike]
 
-/--
-Product of mechanisms.
--/
-def privCompose (nq1 : Mechanism T U) (nq2 : Mechanism T V) (l : List T) : PMF (U × V) :=
-  privComposeAdaptive nq1 (fun _ => nq2) l
-
-/--
-Mechanism obtained by applying a post-processing function to a mechanism.
--/
-def privPostProcess (nq : Mechanism T U) (pp : U → V) (l : List T) : PMF V := do
-  let A ← nq l
-  return pp A
-
-/--
-Constant mechanism
--/
-def privConst (u : U) : Mechanism T U := fun _ => PMF.pure u
 
 
 -- @[simp]
