@@ -58,4 +58,19 @@ theorem probWhile_apply (cond : T → Bool) (body : T → SLang T) (init : T) (x
   · apply probWhileCut_monotonic
   · apply H
 
+
+-- A version of probWhile that proves normalization, when its arguments are all normal
+def SPMF_while (cond : T → Bool) (body : T → SPMF T) (init : T) : SPMF T :=
+  ⟨ probWhile cond (fun x => body x) init,
+    by
+      unfold probWhile
+      sorry ⟩
+
+lemma SPMF_while_eq (cond : T → Bool) (body : T → SPMF T) (init : T) :
+    ((SPMF_while cond body init) : SLang T) = (probWhile cond (fun x => body x) init) := by
+  simp [SPMF_while]
+
+
+
+
 end SLang
