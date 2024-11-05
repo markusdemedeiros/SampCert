@@ -246,11 +246,11 @@ def statistical_tests : IO Unit := do
 
 def sparseVector_tests : IO Unit := do
   let samples := 10000
-  let unif_ub := 10
+  let unif_ub := 100
   let data : List ℕ <- List.mapM (fun _ => run <| (SLang.UniformSample_PMF unif_ub)) (List.replicate samples 0)
 
-  let num : ℕ+ := 9
-  let den : ℕ+ := 2
+  let num : ℕ+ := 1
+  let den : ℕ+ := 4
   let num_trials := 5
 
   IO.println s!"[query] testing sparse vector max, ({(num : ℕ)} / {(den : ℕ)})-DP"
