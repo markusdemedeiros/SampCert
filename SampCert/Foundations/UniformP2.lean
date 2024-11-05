@@ -80,4 +80,10 @@ theorem UniformPowerOfTwoSample_normalizes (n : PNat) :
     · simp
   exact ENNReal.summable
 
+
+def has_cmp_UniformPowerOfTwoSample : has_cmp (UniformPowerOfTwoSample n) :=
+  ⟨ _, by
+    unfold UniformPowerOfTwoSample
+    apply has_cmp_probUniformP2.2 ⟩
+
 end SLang

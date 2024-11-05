@@ -274,4 +274,22 @@ theorem UniformSample_apply' (n : PNat) (x : Nat) :
     apply UniformSample_apply_out
     exact Nat.not_lt.mp h
 
+
+
+def has_cmp_UniformSample : has_cmp (UniformSample n) :=
+  ⟨ _,
+    by
+      unfold UniformSample
+      apply exec.exec_bind
+      · apply (has_cmp_probUntil _).2
+        apply (has_cmp_UniformPowerOfTwoSample)
+      intro _
+      apply exec.exec_pure ⟩
+
+def has_cmp_UniformSamplePMF : has_cmp (UniformSample_PMF n) :=
+  ⟨ _, by
+    unfold UniformSample_PMF
+    simp [DFunLike.coe, PMF.instFunLike]
+    apply (has_cmp_UniformSample).2 ⟩
+
 end SLang

@@ -451,4 +451,49 @@ def probUniformP2_eval_zero {i x : ℕ} (Hx : x ≥ 2 ^ i):
       have W := (euclidean_division_uniquness _ _ _ _ (by simp) Hq (by simp)).mp Heuc'
       simp_all
 
+
+def has_cmp_probUniformByteUpperBits : has_cmp (probUniformByteUpperBits i) :=
+  ⟨ _,
+    by
+      unfold probUniformByteUpperBits
+      apply (has_cmp_bind _ _).2
+      · apply has_cmp_byte
+      · intro _
+        apply has_cmp_pure ⟩
+
+
+-- Bumps the universe level in strong induction
+def Nat.strong_induction_on {p : Nat → Type _} (n : Nat)
+    (h : ∀ n, (∀ m, m < n → p m) → p n) : p n :=
+  Nat.strongRecOn n h
+
+def has_cmp_probUniformP2 : has_cmp (probUniformP2 i) := sorry
+  -- ⟨if i < 8 then _ else _,
+  --   by
+  --     induction' i using Nat.strong_induction_on with i ih
+  --     unfold probUniformP2
+  --     split
+  --     · apply has_cmp_probUniformByteUpperBits.2
+  --     ·
+  --       -- have ih' := ih (i - 8) (by simp; trivial)
+  --       apply exec.exec_bind
+  --       · apply has_cmp_byte.2
+  --       intro b
+  --       apply exec.exec_bind
+  --       · sorry -- apply (ih (i - 8) _ _)
+  --       sorry ⟩
+  --       -- simp only [Pure.pure, Bind.bind]
+  --       -- exact
+  --       --   ⟨_, by
+  --       --         apply (has_cmp_bind _ _).2
+  --       --         ·
+  --       --           sorry
+  --       --         sorry ⟩⟩
+
+  --     -- induction H
+  --     -- · simp
+  --     --   apply has_cmp_probUniformByteUpperBits.2
+  --     -- ·
+  --     --   sorry ⟩
+
 end SLang

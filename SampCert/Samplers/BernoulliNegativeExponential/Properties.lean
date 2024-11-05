@@ -1283,4 +1283,72 @@ theorem BernoulliExpNegSample_apply_false (num : Nat) (den : PNat) :
   rw [← A]
   simp
 
+
+
+def has_cmp_BernoulliExpNegSampleUnitAux : has_cmp (BernoulliExpNegSampleUnitAux num den wf) := sorry
+
+def has_cmp_BernoulliExpNegSampleUnit_lemma : has_cmp (if b % 2 = 0 then Pure.pure true else Pure.pure false) :=
+  ⟨ if (b % 2 = 0) then _ else _ ,
+    by
+      split
+      · apply exec.exec_pure
+      · apply exec.exec_pure ⟩
+
+def has_cmp_BernoulliExpNegSampleUnit : has_cmp (BernoulliExpNegSampleUnit num den wf) :=
+  ⟨ _, by
+         unfold BernoulliExpNegSampleUnit
+         apply exec.exec_bind
+         · apply has_cmp_BernoulliExpNegSampleUnitAux.2
+         intro
+         apply (has_cmp_BernoulliExpNegSampleUnit_lemma).2
+         ⟩
+
+
+def has_cmp_BernoulliExpNegSample_lemma (num : Nat) (den : PNat) (b : Bool) (wf : num % ↑den ≤ ↑den) :
+    has_cmp (if (b = true)
+              then do
+                let X ← BernoulliExpNegSampleUnit (num % den) den wf
+                Pure.pure X
+              else Pure.pure false) :=
+    ⟨ if (b = true) then _ else _ ,
+      by
+        split
+        · apply exec.exec_bind
+          · apply has_cmp_BernoulliExpNegSampleUnit.2
+          · intro _
+            apply exec.exec_pure
+        · apply exec.exec_pure ⟩
+
+def has_cmp_BernoulliExpNegSampleGenLoop (num : Nat) (den : PNat) :
+    has_cmp (BernoulliExpNegSampleGenLoop (num / ↑den)) :=
+  ⟨ sorry, by
+         unfold BernoulliExpNegSampleGenLoop
+         sorry ⟩
+
+
+
+def has_cmp_BernoulliExpNegSample : has_cmp (BernoulliExpNegSample num den) :=
+  sorry
+  /-
+  ⟨ if (num ≤ den) then _ else _, by
+         unfold BernoulliExpNegSample
+         split
+         · apply exec.exec_bind
+           · rename_i wf
+             unfold BernoulliExpNegSampleUnit
+             apply exec.exec_bind
+             · sorry
+               -- apply has_cmp_BernoulliExpNegSampleUnitAux
+             intro
+             apply (has_cmp_BernoulliExpNegSampleUnit_lemma).2
+           · intro _
+             apply exec.exec_pure
+         · simp only []
+           apply exec.exec_bind
+           · sorry
+           · intro _
+             apply (has_cmp_BernoulliExpNegSample_lemma _ _ _ _).2 ⟩
+    -/
+
+
 end SLang

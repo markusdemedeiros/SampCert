@@ -298,4 +298,16 @@ theorem probUntil_apply_norm (body : SLang T) (cond : T → Bool) (x : T) (norm 
   rw [← B]
   rw [ENNReal.add_sub_cancel_right F]
 
+
+def has_cmp_probUntil {cond : T → Bool} (H : has_cmp body) : has_cmp (probUntil body cond) :=
+  ⟨_,
+   by
+     unfold probUntil
+     apply exec.exec_bind
+     · apply H.2
+     intro b
+     apply exec.exec_loop
+     intro _
+     apply H.2 ⟩
+
 end SLang

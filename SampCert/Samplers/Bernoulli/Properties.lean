@@ -88,4 +88,21 @@ theorem BernoulliSample_apply (num : Nat) (den : PNat) (wf : num ≤ den) (b : B
 -/
 def BernoulliSamplePMF (num : Nat) (den : PNat) (wf : num ≤ den) : PMF Bool := PMF.ofFintype (BernoulliSample num den wf) (BernoulliSample_normalizes' num den wf)
 
-namespace SLang
+
+
+def has_cmp_BernoulliSample : has_cmp (BernoulliSample num den wf) :=
+  ⟨_,
+    by
+      unfold BernoulliSample
+      apply exec.exec_bind
+      · apply has_cmp_UniformSample.2
+      · intro _
+        apply exec.exec_pure ⟩
+
+def has_cmp_BernoulliSamplePMF : has_cmp (BernoulliSamplePMF num den wf) :=
+  ⟨_, by
+    unfold BernoulliSamplePMF
+    unfold PMF.ofFintype
+    unfold PMF.ofFinset
+    simp only [PMF.instFunLike, DFunLike.coe]
+    apply (has_cmp_BernoulliSample).2 ⟩
