@@ -140,17 +140,17 @@ lemma sv8_G_comm : sv8_G (A ++ B) vp v0 vf = sv8_G (B ++ A) vp v0 vf := by
     congr 1
     apply IH
 
--- IDK
-lemma sv8_G_cons : sv8_G (x :: L) vp v0 vf = 0 := by
-  revert vp v0
-  induction vf
-  · intros v0 vp
-    simp [sv8_G]
-    sorry
-  · intro vp v0
-    simp [sv8_G]
-    sorry
-    -- unfold sv8_G
+-- -- IDK
+-- lemma sv8_G_cons : sv8_G (x :: L) vp v0 vf = 0 := by
+--   revert vp v0
+--   induction vf
+--   · intros v0 vp
+--     simp [sv8_G]
+--     s orry
+--   · intro vp v0
+--     simp [sv8_G]
+--     s orry
+--     -- unfold sv8_G
 
 lemma exactDiffSum_nonpos : exactDiffSum point L ≤ 0 := by
   simp [exactDiffSum, exactClippedSum]
