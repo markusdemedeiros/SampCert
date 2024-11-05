@@ -4,10 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
 
--- import SampCert.DifferentialPrivacy.Queries.UnboundedMax.Code
-
 import SampCert.DifferentialPrivacy.Queries.UnboundedMax.Properties
 import SampCert.DifferentialPrivacy.Queries.UnboundedMax.Privacy
-
--- import SampCert.DifferentialPrivacy.Queries.UnboundedMax.Pure
--- import SampCert.DifferentialPrivacy.Queries.UnboundedMax.ZeroConcentrated
+import SampCert.DifferentialPrivacy.Queries.UnboundedMax.Code
