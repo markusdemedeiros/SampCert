@@ -16,48 +16,6 @@ This file defines an abstract system of differentially private operators.
 
 namespace SLang
 
-/-
-A SPMF is a SLang program that is a also proper distribution
--/
-abbrev SPMF.{u} (α : Type u) : Type u := { f : SLang α // HasSum f 1 }
-
-instance : Coe (SPMF α) (SLang α) where
-  coe a := a.1
-
-instance : Coe (SPMF α) (PMF α) where
-  coe a := ⟨ a.1, a.2 ⟩
-
-
-
-@[simp]
-def SPMF_pure (a : α) : SPMF α :=
-  ⟨ probPure a,
-    by
-      have H : PMF.pure a = probPure a := by
-        unfold probPure
-        simp [DFunLike.coe, PMF.instFunLike, PMF.pure]
-      rw [<- H]
-      cases (PMF.pure a)
-      simp [DFunLike.coe, PMF.instFunLike]
-      trivial ⟩
-
-@[simp]
-def SPMF_bind (p : SPMF α) (q : α -> SPMF β) : SPMF β :=
-  ⟨ probBind p (fun x => q x),
-    by
-      have H : (probBind p (fun x => q x)) = (PMF.bind p q) := by
-        unfold probBind
-        simp [DFunLike.coe, PMF.instFunLike, PMF.bind]
-      rw [H]
-      cases (PMF.bind p q)
-      simp [DFunLike.coe, PMF.instFunLike]
-      trivial ⟩
-
-instance : Monad SPMF where
-  pure := SPMF_pure
-  bind := SPMF_bind
-
-
 
 abbrev Query (T U : Type) := List T → U
 
