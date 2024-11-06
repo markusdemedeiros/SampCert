@@ -9,8 +9,7 @@ import SampCert.DifferentialPrivacy.Queries.UnboundedMax.Properties
 import SampCert.DifferentialPrivacy.Pure.System
 
 noncomputable section
-set_option pp.coercions false
--- set_option pp.all true
+
 open Classical
 
 namespace SLang
@@ -269,7 +268,6 @@ lemma DSN (N : ℕ) (H : Neighbour L1 L2) : ((exactDiffSum N L1) : ℝ) - (exact
         simp only [not_le] at hd
         rw [min_eq_right_iff.mpr ?G1]
         case G1 =>
-          -- #check Nat.add_one_le_iff
           have X : (1 : ℝ) = ((1 : ℕ) : ℝ) := by simp
           rw [X]
           rw [← Nat.cast_add]
