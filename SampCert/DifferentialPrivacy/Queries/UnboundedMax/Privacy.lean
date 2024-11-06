@@ -246,7 +246,6 @@ lemma DSN (N : ℕ) (H : Neighbour L1 L2) : ((exactDiffSum N L1) : ℝ) - (exact
         cases (Classical.em (N.cast ≤ (D.cast : ℝ)))
         · rw [min_eq_right_iff.mpr ?G1]
           case G1 => linarith
-          skip
           linarith
         · rw [min_eq_left_iff.mpr ?G1]
           case G1 => linarith
@@ -280,106 +279,46 @@ lemma DSN (N : ℕ) (H : Neighbour L1 L2) : ((exactDiffSum N L1) : ℝ) - (exact
           apply Nat.cast_lt.mp at hd
           trivial
 
-        skip
         rw [min_eq_right_iff.mpr (by linarith)]
         right
         linarith
 
-
+lemma Hsens_cov_τ_lemma (HN : Neighbour l₁ l₂) : sv8_sum l₁ H v0 - sv8_sum l₂ H v0 ≤ OfNat.ofNat 1 := by
+  simp only [sv8_sum]
+  rw [add_tsub_add_eq_tsub_right]
+  have X := @DSN l₁ l₂ H.length HN
+  rw [← Int.cast_sub] at X
+  have Y : (@OfNat.ofNat.{0} Real 1 (@One.toOfNat1.{0} Real Real.instOne)) = (@OfNat.ofNat.{0} Int (@OfNat.ofNat.{0} Nat 1 (instOfNatNat 1)) (@instOfNat (@OfNat.ofNat.{0} Nat 1 (instOfNatNat 1)))) :=
+    by simp
+  rw [Y] at X
+  apply Int.cast_le.mp at X
+  apply le_trans X
+  simp
 
 lemma Hsens_cov_τ (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) (Hneighbour : Neighbour l₁ l₂) : cov_τ_def v0 vs l₁ l₂ ≤ sens_cov_τ := by
-  dsimp [cov_τ_def]
-  cases Hneighbour
-  · rename_i A B n H1 H2
-    rw [H1, H2]; clear H1 H2
-    conv =>
-      enter [1, 2, 1]
-      rw [List.append_assoc]
-    rw [@sv8_G_comm A ([n] ++ B)]
-    conv =>
-      enter [1, 2]
-      rw [List.append_assoc]
-      rw [sv8_G_comm]
-    conv =>
-      enter [1, 1]
-      rw [sv8_G_comm]
-    generalize HL : (B ++ A) = L
-    clear HL
+  dsimp [cov_τ_def, sens_cov_τ]
 
+  suffices (∀ H v0, sv8_G l₁ H v0 vs - sv8_G l₂ H v0 vs ≤ sens_cov_τ.val.cast) by
+    apply this
 
+  induction vs
+  · intro H v0
+    dsimp [sens_cov_τ]
+    simp only [sv8_G]
+    apply Hsens_cov_τ_lemma
+    trivial
 
+  · rename_i next fut IH
+    intro H v0
+    simp only [sv8_G]
+    apply le_trans (max_sub_max_le_max _ _ _ _)
+    -- Do both cases separately
+    apply Int.max_le.mpr
+    apply And.intro
+    · apply Hsens_cov_τ_lemma
+      trivial
+    · apply IH
 
-
-
-
-    sorry
-
-    /-
-    suffices (∀ H v0, sv8_G (A ++ B) H v0 vs - sv8_G ([n] ++ B ++ A) H v0 vs ≤ sens_cov_τ.val.cast) by
-      apply this
-    induction vs
-    · -- Base case:
-      intro H v0
-      simp only [sv8_G]
-      conv =>
-        enter [1, 2]
-        rw [List.append_assoc]
-        rw [sv8_sum_append]
-        rw [sv8_sum_comm]
-        enter [1, 1]
-        simp only [sv8_sum]
-      simp
-      have _ := @exactDiffSum_singleton_le_1 0 n
-      have _ := @exactDiffSum_nonpos 0 [n]
-      simp [sens_cov_τ]
-      sorry
-      -- linarith
-
-    · -- Inductive case:
-      intro H v0
-      rename_i head tail IH
-      unfold sv8_G
-      -- Combine the maximums
-      apply le_trans (max_sub_max_le_max _ _ _ _)
-      -- Do both cases separately
-      apply Int.max_le.mpr
-      apply And.intro
-      · conv =>
-          enter [1, 2]
-          rw [List.append_assoc]
-          rw [sv8_sum_append]
-          rw [sv8_sum_comm]
-          enter [1, 1]
-          simp only [sv8_sum, List.length]
-        have _ := @exactDiffSum_singleton_le_1 0 n
-        have _ := @exactDiffSum_nonpos 0 [n]
-        simp [sens_cov_τ]
-        sorry
-        -- linarith
-      · apply IH
-    -/
-
-
-
-  · rename_i A n B H1 H2
-    rw [H1, H2]; clear H1 H2
-    conv =>
-      enter [1, 1, 1]
-      rw [List.append_assoc]
-    rw [@sv8_G_comm A ([n] ++ B)]
-    sorry
-
-  · rename_i A n1 B n2 H1 H2
-    rw [H1, H2]; clear H1 H2
-    conv =>
-      enter [1, 1, 1]
-      rw [List.append_assoc]
-    conv =>
-      enter [1, 2, 1]
-      rw [List.append_assoc]
-    rw [@sv8_G_comm A ([n1] ++ B)]
-    rw [@sv8_G_comm A ([n2] ++ B)]
-    sorry
 
 -- Prove sensitivity bound
 lemma Hsens_cov_vk (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) (point : ℕ) (Hneighbour : Neighbour l₁ l₂) : cov_vk_def v0 vs l₁ l₂ point ≤ sens_cov_vk := by
