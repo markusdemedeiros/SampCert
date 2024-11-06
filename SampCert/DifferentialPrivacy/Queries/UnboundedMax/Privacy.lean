@@ -179,8 +179,6 @@ lemma exactDiffSum_singleton_le_1 : -1 ≤ exactDiffSum point [v] := by
     · linarith
 
 
-set_option pp.coercions false
-
 -- Coercions nonsense
 lemma DS0 (H : Neighbour L1 L2) : ((exactDiffSum 0 L1) : ℝ) - (exactDiffSum 0 L2) ≤ 1 := by
   cases H
