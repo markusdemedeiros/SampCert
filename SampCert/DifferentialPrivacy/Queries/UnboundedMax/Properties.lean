@@ -545,6 +545,7 @@ lemma vector_sum_singleton (f : { l : List ℤ // l.length = 1 } -> ENNReal) (P 
     cases R
     · exists v
     · simp at HL
+  · simp [Function.support, DFunLike.coe]
 
 def sv4_presample_split (ε₁ ε₂ : ℕ+) (point : ℕ) :
     sv4_presample ε₁ ε₂ (point + 1) =
@@ -561,7 +562,6 @@ def sv4_presample_split (ε₁ ε₂ : ℕ+) (point : ℕ) :
   rw [← ENNReal.tsum_prod]
   rw [vector_sum_singleton _ (by simp)]
 
-  /-
   have X (x : ℤ): (@tsum.{0, 0} ENNReal
     (@NonUnitalNonAssocSemiring.toAddCommMonoid.{0} ENNReal
       (@NonAssocSemiring.toNonUnitalNonAssocSemiring.{0} ENNReal
@@ -573,7 +573,7 @@ def sv4_presample_split (ε₁ ε₂ : ℕ+) (point : ℕ) :
     ENNReal.instTopologicalSpace Int fun (x_1 : Int) =>
     @ite.{1} ENNReal (@Eq.{1} Int x_1 x) (Classical.propDecidable (@Eq.{1} Int x_1 x))
       (@OfNat.ofNat.{0} ENNReal 0 (@Zero.toOfNat0.{0} ENNReal instENNRealZero))
-      (@ite.{1} ENNReal (@Eq.{1} Int x x_1) (Int.instDecidableEq x x_1) (@SLang.privNoiseGuess _ ε₁ ε₂ x_1)
+      (@ite.{1} ENNReal (@Eq.{1} Int x x_1) (Int.instDecidableEq x x_1) (@SLang.privNoiseGuess _ _ ε₁ ε₂ x_1)
         0)) = 0 := by simp; aesop
   conv =>
     enter [2, 1, x, 1]
@@ -589,7 +589,7 @@ def sv4_presample_split (ε₁ ε₂ : ℕ+) (point : ℕ) :
     rw [<- ENNReal.tsum_mul_left]
   rw [← ENNReal.tsum_prod]
   simp_all [len_list_append_rev]
-  -/
+
   -- Can do this by bijection (not congruence)
 
   -- By bijection
