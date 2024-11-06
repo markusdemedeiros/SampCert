@@ -547,6 +547,118 @@ lemma vector_sum_singleton (f : { l : List ℤ // l.length = 1 } -> ENNReal) (P 
     · simp at HL
   · simp [Function.support, DFunLike.coe]
 
+
+def vsm_0 (x : {l : List ℤ // l.length = n + 1}) : ℤ :=
+  List.headI x.1
+
+def vsm_rest (x : {l : List ℤ // l.length = n + 1}) : {l : List ℤ // l.length = n } :=
+  ⟨ List.tail x.1, by simp ⟩
+
+def vsm_last (x : {l : List ℤ // l.length = n + 1}) : ℤ :=
+  List.getLastI x.1
+
+def vsm_init (x : {l : List ℤ // l.length = n + 1}) : {l : List ℤ // l.length = n } :=
+  ⟨ List.dropLast x.1, by simp ⟩
+
+
+
+
+lemma vector_sum_merge n (f : ℤ × { l : List ℤ // l.length = n } -> ENNReal) :
+    (∑'p, f p) = ∑'(p : {l : List ℤ // l.length = n + 1}), f (vsm_0 p, vsm_rest p) := by
+  apply @tsum_eq_tsum_of_ne_zero_bij
+  case i =>
+    simp [Function.support, DFunLike.coe]
+    exact fun x => (vsm_0 x.1, vsm_rest x.1)
+  · simp [Function.Injective]
+    simp [vsm_0, vsm_rest]
+    intro L1 HL1 HL1f L2 HL2 HL2f Heq1 Heq2
+    cases L1
+    · simp at HL1
+    cases L2
+    · simp at HL2
+    simp_all
+  · simp [Function.support, Set.range]
+    intro z L HL HF
+    exists (z :: L)
+    simp
+    exists HL
+  · simp [Function.support, DFunLike.coe]
+
+
+
+-- Split in the other order, used as a helper function
+lemma sv4_presample_split' (ε₁ ε₂ : ℕ+) (point : ℕ) (z : ℤ) (p : { l : List ℤ // List.length l = point }) :
+    privNoiseGuess ε₁ ε₂ z * sv4_presample ε₁ ε₂ point p =
+    sv4_presample ε₁ ε₂ (point + 1) ⟨ (p.1 ++ [z]), by simp ⟩ := by
+  rcases p with ⟨ L, HL ⟩
+  revert HL
+  induction L
+  · intro HL
+    simp at HL
+    simp
+    conv =>
+      rhs
+      unfold sv4_presample
+    unfold sv4_presample
+    split
+    · simp
+      rw [ENNReal.tsum_eq_add_tsum_ite z]
+      conv =>
+        lhs
+        rw [<- (add_zero (privNoiseGuess _ _ _))]
+      congr 1
+      · simp
+      · symm
+        simp
+        aesop
+    · exfalso
+      simp at HL
+
+  · rename_i L0 LL _
+    intro HL
+    simp
+    conv =>
+      rhs
+      unfold sv4_presample
+    simp
+    conv =>
+      enter [2, 1, a]
+      rw [← ENNReal.tsum_mul_left]
+      enter [1, b]
+      simp
+    rw [← ENNReal.tsum_prod]
+    rw [ENNReal.tsum_eq_add_tsum_ite (z, ⟨ L0 :: LL, HL ⟩)]
+    conv =>
+      lhs
+      rw [<- (add_zero (_ * _))]
+    congr 1
+    · simp
+    · symm
+      simp
+      intro A B C D E
+      exfalso
+      apply (congrArg List.reverse) at E
+      simp at E
+      cases E
+      apply D
+      · symm
+        trivial
+      rename_i E
+      apply (congrArg List.reverse) at E
+      simp at E
+      symm
+      trivial
+
+
+lemma sv4_presample_perm (ε₁ ε₂ : ℕ+) (point : ℕ) (z : ℤ) (p : { l : List ℤ // List.length l = point }) H1 H2 :
+    sv4_presample ε₁ ε₂ (point + 1) ⟨p.1 ++ [z], H1⟩ = sv4_presample ε₁ ε₂ (point + 1) ⟨z :: p.1, H2⟩ := by
+  sorry
+
+lemma get_last_lemma (L : List ℤ) (H : L.length > 0) H : L.getLastI = L.getLast H := by
+  sorry
+
+
+-- Splits and rearranges the functions
 def sv4_presample_split (ε₁ ε₂ : ℕ+) (point : ℕ) :
     sv4_presample ε₁ ε₂ (point + 1) =
     (do
@@ -590,13 +702,79 @@ def sv4_presample_split (ε₁ ε₂ : ℕ+) (point : ℕ) :
   rw [← ENNReal.tsum_prod]
   simp_all [len_list_append_rev]
 
-  -- Can do this by bijection (not congruence)
+  -- Join the sv4_presamples
+  conv =>
+    enter [1, 1, p]
+    rw [sv4_presample_split']
+  conv =>
+    enter [2, 1, p]
+    rw [sv4_presample_split']
+    rw [sv4_presample_perm _ _ _ _ _ _ (by simp)]
+  rw [vector_sum_merge]
+  rw [vector_sum_merge]
 
-  -- By bijection
-  -- #check tsum_eq_tsum_of_ne_zero_bij
-  -- rw [ENNReal.tsum_eq_add_tsum_ite (Int.ofNat point)]
+  -- Finally, they are equal by bijection
+  apply @tsum_eq_tsum_of_ne_zero_bij
+  case i => exact fun y => ⟨ (vsm_last y.1) :: (vsm_init y.1), by simp ⟩
+  · simp [vsm_rest, vsm_0, DFunLike.coe]
+    simp [Function.Injective]
+    intro L1 HL1 _ _ L2 HL2 _ _ Heq
+    cases L1
+    · simp at HL1
+    cases L2
+    · simp at HL2
+    simp_all [vsm_init]
+  · simp [Function.support, Set.range]
+    intro L1 HL1 _ _
+    cases L1
+    · simp at HL1
+    rename_i l ll H1 H2
+    simp [vsm_0, vsm_rest]
+    simp [vsm_0, vsm_rest] at H1
+    exists (ll ++ [l])
+    have h :  ((ll ++ [l]).length = point + 1) := by
+      simp [List.length] at HL1
+      simp
+      trivial
+    exists h
+    apply And.intro
+    · apply And.intro
+      · rw [H1]
+        cases ll <;> simp [List.headI, List.tail]
+      · intro X
+        apply H2
+        rw [<- X]
+        congr
+        cases ll <;> simp [vsm_rest, vsm_0, List.headI, List.tail]
+    · simp [vsm_last, vsm_init]
+      rw [List.getLastI_eq_getLast?]
+      rw [List.getLast?_concat]
 
-  sorry
+  -- Now the conditionals are equal
+  simp [Function.support, DFunLike.coe, vsm_rest, vsm_0, vsm_init, vsm_last]
+  intro L HL Hf
+  have X : L.headI :: L.tail = L.dropLast ++ [L.getLastI] := by
+    clear Hf
+    cases L
+    · exfalso
+      simp at HL
+    rename_i l ll
+    simp
+    generalize HLL : l :: ll = L
+    symm
+    have HL' : L.length > 0 := by simp_all
+    clear HLL
+    conv =>
+      rhs
+      rw [<- @List.dropLast_append_getLast  _ L (by aesop)]
+    congr
+    apply get_last_lemma
+    trivial
+  congr 1
+  · simp_all
+  congr
+  symm
+  trivial
 
 
 def len_1_list_to_val (x : { l : List ℤ // l.length = 1 }) : ℤ :=
