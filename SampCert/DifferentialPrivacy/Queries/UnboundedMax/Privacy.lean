@@ -9,12 +9,25 @@ import SampCert.DifferentialPrivacy.Queries.UnboundedMax.Properties
 import SampCert.DifferentialPrivacy.Pure.System
 
 noncomputable section
-
+set_option pp.coercions false
+-- set_option pp.all true
 open Classical
 
 namespace SLang
 
 variable (ε₁ ε₂ : ℕ+)
+
+
+def cov_τ_def (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) : ℤ := (sv8_G l₁ [] v0 vs) - (sv8_G l₂ [] v0 vs)
+
+lemma cov_τ_def_neg (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) : cov_τ_def v0 vs l₁ l₂ = -cov_τ_def v0 vs l₂ l₁ := by
+  simp [cov_τ_def]
+
+def cov_vk_def (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) (point : ℕ) : ℤ := exactDiffSum (point + 1) l₂ - exactDiffSum (point + 1) l₁ + cov_τ_def v0 vs l₁ l₂
+
+lemma cov_vk_def_neg (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) : cov_vk_def v0 vs l₁ l₂ point = -cov_vk_def v0 vs l₂ l₁ point := by
+  simp [cov_τ_def, cov_vk_def]
+  linarith
 
 -- FIXME: Move
 lemma tsum_shift (Δ : ℤ) (f : ℤ → ENNReal) : (∑'(x : ℤ), f x = ∑'(x : ℤ), f (x + Δ)) := by
@@ -233,6 +246,79 @@ lemma DS0 (H : Neighbour L1 L2) : ((exactDiffSum 0 L1) : ℝ) - (exactDiffSum 0 
         rw [min_eq_right_iff.mpr (by linarith)]
         linarith
 
+
+lemma Hsens_cov_τ (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) (Hneighbour : Neighbour l₁ l₂) : cov_τ_def v0 vs l₁ l₂ ≤ sens_cov_τ := by
+  dsimp [cov_τ_def]
+  cases vs
+  · sorry
+  rename_i vs Hvs
+  cases Hneighbour
+  · rename_i A B n H1 H2
+    rw [H1, H2]; clear H1 H2
+
+    conv =>
+      enter [1, 2, 1]
+      rw [List.append_assoc]
+    rw [@sv8_G_comm A ([n] ++ B)]
+    sorry
+
+  · rename_i A n B H1 H2
+    rw [H1, H2]; clear H1 H2
+    conv =>
+      enter [1, 1, 1]
+      rw [List.append_assoc]
+    rw [@sv8_G_comm A ([n] ++ B)]
+    sorry
+
+  · rename_i A n1 B n2 H1 H2
+    rw [H1, H2]; clear H1 H2
+    conv =>
+      enter [1, 1, 1]
+      rw [List.append_assoc]
+    conv =>
+      enter [1, 2, 1]
+      rw [List.append_assoc]
+    rw [@sv8_G_comm A ([n1] ++ B)]
+    rw [@sv8_G_comm A ([n2] ++ B)]
+    sorry
+
+-- Prove sensitivity bound
+lemma Hsens_cov_vk (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) (point : ℕ) (Hneighbour : Neighbour l₁ l₂) : cov_vk_def v0 vs l₁ l₂ point ≤ sens_cov_vk := by
+  dsimp [cov_vk_def]
+  have X := Hsens_cov_τ v0 vs l₁ l₂ Hneighbour
+  cases vs
+  · sorry
+  -- simp only [sens_cov_vk]
+  rename_i vs Hvs
+  cases Hneighbour
+  · rename_i _ _ n H1 H2
+    simp_all only [H1, H2]; clear H1 H2
+    repeat rw [exactDiffSum_append]
+    simp_all [sens_cov_vk, sens_cov_τ]
+    have _ := @exactDiffSum_singleton_le_1 (point + 1) n
+    have _ := @exactDiffSum_nonpos (point + 1) [n]
+    linarith
+
+  · rename_i _ n _ H1 H2
+    simp_all only [H1, H2]; clear H1 H2
+    repeat rw [exactDiffSum_append]
+    simp_all [sens_cov_vk, sens_cov_τ]
+    have _ := @exactDiffSum_singleton_le_1 (point + 1) n
+    have _ := @exactDiffSum_nonpos (point + 1) [n]
+    linarith
+
+  · rename_i n1 _ n2 H1 H2
+    simp_all only [H1, H2]; clear H1 H2
+    repeat rw [exactDiffSum_append]
+    simp_all [sens_cov_vk, sens_cov_τ]
+    have _ := @exactDiffSum_singleton_le_1 (point + 1) n1
+    have _ := @exactDiffSum_nonpos (point + 1) [n1]
+    have _ := @exactDiffSum_singleton_le_1 (point + 1) n2
+    have _ := @exactDiffSum_nonpos (point + 1) [n2]
+    linarith
+
+
+
 lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) :
     PureDPSystem.prop (@sv9_privMax_pmf PureDPSystem laplace_pureDPSystem ε₁ ε₂) ε := by
   -- Unfold DP definitions
@@ -401,8 +487,8 @@ lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) :
     simp [sv8_cond, sv8_sum]
 
     -- Perform the changes of variables, so that the sums are pointwise le
-    let cov_τ : ℤ := (sv8_G l₁ [] v0 vs) - (sv8_G l₂ [] v0 vs)
-    let cov_vk : ℤ := exactDiffSum (point + 1) l₂ - exactDiffSum (point + 1) l₁ + cov_τ
+    let cov_τ : ℤ := cov_τ_def v0 vs l₁ l₂
+    let cov_vk : ℤ := cov_vk_def v0 vs l₁ l₂ point
 
     conv =>
       lhs
@@ -425,79 +511,12 @@ lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) :
       apply And.intro
       · -- cov_τ
         apply propext
-        dsimp [cov_τ]
+        dsimp [cov_τ, cov_τ_def]
         apply Iff.intro <;> intro _ <;> linarith
       · -- cov_vk
         apply propext
-        dsimp [cov_vk]
+        dsimp [cov_vk, cov_vk_def]
         apply Iff.intro <;> intro _ <;> linarith
-
-    -- Prove sensitivity bound
-    have Hsens_cov_τ : cov_τ ≤ sens_cov_τ := by
-      dsimp [cov_τ]
-      cases vs
-      rename_i vs Hvs
-      simp only []
-      cases Hneighbour
-      · rename_i A B n H1 H2
-        rw [H1, H2]; clear H1 H2
-        conv =>
-          enter [1, 2, 1]
-          rw [List.append_assoc]
-        rw [@sv8_G_comm A ([n] ++ B)]
-        sorry
-
-      · rename_i A n B H1 H2
-        rw [H1, H2]; clear H1 H2
-        conv =>
-          enter [1, 1, 1]
-          rw [List.append_assoc]
-        rw [@sv8_G_comm A ([n] ++ B)]
-        sorry
-
-      · rename_i A n1 B n2 H1 H2
-        rw [H1, H2]; clear H1 H2
-        conv =>
-          enter [1, 1, 1]
-          rw [List.append_assoc]
-        conv =>
-          enter [1, 2, 1]
-          rw [List.append_assoc]
-        rw [@sv8_G_comm A ([n1] ++ B)]
-        rw [@sv8_G_comm A ([n2] ++ B)]
-        sorry
-
-    -- Prove sensitivity bound
-    have Hsens_cov_vk : cov_vk ≤ sens_cov_vk := by
-      dsimp [cov_vk]
-      cases vs
-      rename_i vs Hvs
-      cases Hneighbour
-      · rename_i _ _ n H1 H2
-        rw [H1, H2]; clear H1 H2
-        repeat rw [exactDiffSum_append]
-        simp_all [sens_cov_vk, sens_cov_τ]
-        have _ := @exactDiffSum_singleton_le_1 (point + 1) n
-        have _ := @exactDiffSum_nonpos (point + 1) [n]
-        linarith
-
-      · rename_i _ n _ H1 H2
-        rw [H1, H2]; clear H1 H2
-        repeat rw [exactDiffSum_append]
-        simp_all [sens_cov_vk, sens_cov_τ]
-        have _ := @exactDiffSum_singleton_le_1 (point + 1) n
-        have _ := @exactDiffSum_nonpos (point + 1) [n]
-        linarith
-
-      · rename_i n1 _ n2 H1 H2
-        rw [H1, H2]; clear H1 H2
-        repeat rw [exactDiffSum_append]
-        simp_all [sens_cov_vk, sens_cov_τ]
-        have _ := @exactDiffSum_singleton_le_1 (point + 1) n1
-        have _ := @exactDiffSum_nonpos (point + 1) [n1]
-        have _ := @exactDiffSum_singleton_le_1 (point + 1) n2
-        have _ := @exactDiffSum_nonpos (point + 1) [n2]
-        linarith
 
     simp [privNoiseThresh, privNoiseGuess, privNoiseZero, DPNoise.noise, privNoisedQueryPure]
 
@@ -533,13 +552,45 @@ lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) :
     rw [← Real.exp_add]
     apply Real.exp_monotone
     apply @le_trans _ _ _ ((|sens_cov_τ| : ℝ) / (↑↑(2 * sens_cov_τ) * ↑↑ε₂ / ↑↑ε₁) + (|sens_cov_vk| : ℝ) / (↑↑(2 * sens_cov_vk) * ↑↑ε₂ / ↑↑ε₁))
-    · apply add_le_add
+    · have W : |cov_τ.cast| ≤ (sens_cov_τ.val : ℝ) := by
+        apply abs_le'.mpr
+        apply And.intro
+        · dsimp only [cov_τ]
+          apply Int.cast_le.mpr
+          apply Hsens_cov_τ
+          apply Hneighbour
+        · dsimp only [cov_τ]
+          rw [cov_τ_def_neg]
+          simp
+          apply Int.cast_le.mpr
+          apply Hsens_cov_τ
+          apply Neighbour_symm
+          apply Hneighbour
+
+      have X : |cov_vk.cast| ≤ (sens_cov_vk.val : ℝ) := by
+        apply abs_le'.mpr
+        apply And.intro
+        · dsimp only [cov_vk]
+          apply Int.cast_le.mpr
+          apply Hsens_cov_vk
+          apply Hneighbour
+        · dsimp only [cov_vk]
+          rw [cov_vk_def_neg]
+          simp
+          apply Int.cast_le.mpr
+          apply Hsens_cov_vk
+          apply Neighbour_symm
+          apply Hneighbour
+
+      apply add_le_add
       · simp
         apply div_le_div_of_nonneg_right
-        · -- apply abs_le'.mpr
-          sorry
+        · apply W
         · apply mul_nonneg <;> simp
-      · sorry
+      · apply div_le_div_of_nonneg_right
+        · simp
+          apply X
+        · apply div_nonneg <;> simp
     simp [sens_cov_τ, sens_cov_vk]
     ring_nf
     rw [InvolutiveInv.inv_inv]
