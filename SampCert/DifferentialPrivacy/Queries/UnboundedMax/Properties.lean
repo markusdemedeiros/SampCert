@@ -532,7 +532,19 @@ def len_list_append_rev {m n : ℕ} (x : { l : List ℤ // l.length = m }) (y: {
 
 lemma vector_sum_singleton (f : { l : List ℤ // l.length = 1 } -> ENNReal) (P : (x : ℤ) -> ([x].length = 1)) :
     (∑'(x : { l // l.length =  1 }), f x) = (∑' (x : ℤ), f ⟨ [x], P x⟩) := by
-  sorry
+  apply @tsum_eq_tsum_of_ne_zero_bij
+  case i =>
+    simp [Function.support, DFunLike.coe]
+    exact fun x => ⟨ [x.1], by simp ⟩
+  · simp [Function.Injective]
+  · simp [Function.support, Set.range]
+    intro L HL HN
+    cases L
+    · simp at HL
+    rename_i v R
+    cases R
+    · exists v
+    · simp at HL
 
 def sv4_presample_split (ε₁ ε₂ : ℕ+) (point : ℕ) :
     sv4_presample ε₁ ε₂ (point + 1) =
