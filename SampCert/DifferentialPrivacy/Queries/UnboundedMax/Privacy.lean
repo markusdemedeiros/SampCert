@@ -179,6 +179,8 @@ lemma exactDiffSum_singleton_le_1 : -1 ≤ exactDiffSum point [v] := by
     · linarith
 
 
+set_option pp.coercions false
+
 -- Coercions nonsense
 lemma DS0 (H : Neighbour L1 L2) : ((exactDiffSum 0 L1) : ℝ) - (exactDiffSum 0 L2) ≤ 1 := by
   cases H
@@ -188,21 +190,50 @@ lemma DS0 (H : Neighbour L1 L2) : ((exactDiffSum 0 L1) : ℝ) - (exactDiffSum 0 
     simp
     apply neg_le.mp
     have _ := @exactDiffSum_singleton_le_1 0 C
-    sorry
+    simp [exactDiffSum]
+    simp [exactClippedSum]
 
   · rename_i A B C H1 H2
     rw [H1, H2]
     repeat rw [exactDiffSum_append]
     simp
     have _ := @exactDiffSum_nonpos 0 C
-    sorry
+    simp [exactDiffSum]
+    simp [exactClippedSum]
+    cases (Classical.em ((B : ℝ) ≤ 1))
+    · rename_i h
+      rw [min_eq_left_iff.mpr h]
+      linarith
+    · rename_i h
+      rw [min_eq_right_iff.mpr ?G1]
+      case G1 => linarith
+      simp
 
   · rename_i A B C D H1 H2
     rw [H1, H2]
     repeat rw [exactDiffSum_append]
     simp only [Int.cast_add, add_sub_add_right_eq_sub, add_sub_add_left_eq_sub]
-    sorry
-
+    simp [exactDiffSum]
+    simp [exactClippedSum]
+    cases (Classical.em ((B : ℝ) ≤ 1))
+    · cases (Classical.em ((D : ℝ) ≤ 1))
+      · rename_i hb hd
+        rw [min_eq_left_iff.mpr hb]
+        rw [min_eq_left_iff.mpr hd]
+        linarith
+      · rename_i hb hd
+        rw [min_eq_left_iff.mpr hb]
+        rw [min_eq_right_iff.mpr (by linarith)]
+        linarith
+    · cases (Classical.em ((D : ℝ) ≤ 1))
+      · rename_i hb hd
+        rw [min_eq_left_iff.mpr hd]
+        rw [min_eq_right_iff.mpr (by linarith)]
+        linarith
+      · rename_i hb hd
+        rw [min_eq_right_iff.mpr (by linarith)]
+        rw [min_eq_right_iff.mpr (by linarith)]
+        linarith
 
 lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) :
     PureDPSystem.prop (@sv9_privMax_pmf PureDPSystem laplace_pureDPSystem ε₁ ε₂) ε := by

@@ -806,26 +806,27 @@ lemma presample_norm_lemma  (point : ℕ) (ε₁ ε₂ : ℕ+) :
       rw [<- this]
       symm
       -- FIXME probably the wrong bijection
-      apply @tsum_eq_tsum_of_ne_zero_bij
-      case i =>
-        simp [Function.support, DFunLike.coe]
-        exact fun x => (vsm_0 x.1, vsm_rest x.1)
-      · simp [Function.Injective]
-        simp [vsm_0, vsm_rest]
-        intro L1 HL1 HL1f L2 HL2 HL2f Heq1 Heq2
-        cases L1
-        · simp at HL1
-        cases L2
-        · simp at HL2
-        simp_all
-      · simp [Function.support, Set.range]
-        intro z L HL HF
-        exists (z :: L)
-        simp
-        exists HL
-        sorry
-      · simp [Function.support, DFunLike.coe]
-        sorry
+      sorry
+      -- apply @tsum_eq_tsum_of_ne_zero_bij
+      -- case i =>
+      --   simp [Function.support, DFunLike.coe]
+      --   exact fun x => (vsm_0 x.1, vsm_rest x.1)
+      -- · simp [Function.Injective]
+      --   simp [vsm_0, vsm_rest]
+      --   intro L1 HL1 HL1f L2 HL2 HL2f Heq1 Heq2
+      --   cases L1
+      --   · simp at HL1
+      --   cases L2
+      --   · simp at HL2
+      --   simp_all
+      -- · simp [Function.support, Set.range]
+      --   intro z L HL HF
+      --   exists (z :: L)
+      --   simp
+      --   exists HL
+      --   sorry
+      -- · simp [Function.support, DFunLike.coe]
+      --   sorry
 
     rw [ENNReal.tsum_prod']
     conv =>
