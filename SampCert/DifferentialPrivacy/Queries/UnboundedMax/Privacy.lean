@@ -277,7 +277,9 @@ lemma DSN (N : ℕ) (H : Neighbour L1 L2) : ((exactDiffSum N L1) : ℝ) - (exact
           apply Nat.cast_le.mpr
           apply Nat.le_of_lt_succ
           simp
-          apply Nat.cast_le.mp
+          apply Nat.cast_lt.mp at hd
+          trivial
+
         skip
         rw [min_eq_right_iff.mpr (by linarith)]
         right
