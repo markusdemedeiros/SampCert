@@ -286,10 +286,6 @@ lemma Hsens_cov_τ (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) (Hneighbour
 lemma Hsens_cov_vk (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) (point : ℕ) (Hneighbour : Neighbour l₁ l₂) : cov_vk_def v0 vs l₁ l₂ point ≤ sens_cov_vk := by
   dsimp [cov_vk_def]
   have X := Hsens_cov_τ v0 vs l₁ l₂ Hneighbour
-  cases vs
-  · sorry
-  -- simp only [sens_cov_vk]
-  rename_i vs Hvs
   cases Hneighbour
   · rename_i _ _ n H1 H2
     simp_all only [H1, H2]; clear H1 H2
@@ -298,7 +294,6 @@ lemma Hsens_cov_vk (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) (point : �
     have _ := @exactDiffSum_singleton_le_1 (point + 1) n
     have _ := @exactDiffSum_nonpos (point + 1) [n]
     linarith
-
   · rename_i _ n _ H1 H2
     simp_all only [H1, H2]; clear H1 H2
     repeat rw [exactDiffSum_append]
@@ -306,7 +301,6 @@ lemma Hsens_cov_vk (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) (point : �
     have _ := @exactDiffSum_singleton_le_1 (point + 1) n
     have _ := @exactDiffSum_nonpos (point + 1) [n]
     linarith
-
   · rename_i n1 _ n2 H1 H2
     simp_all only [H1, H2]; clear H1 H2
     repeat rw [exactDiffSum_append]
