@@ -130,7 +130,7 @@ lemma exactDiffSum_append : exactDiffSum i (A ++ B) = exactDiffSum i A + exactDi
   rw [exactClippedSum_append]
   linarith
 
-lemma sv8_sum_append : sv8_sum (A ++ B) [] v0 = sv8_sum A [] v0 + sv8_sum B [] v0 - v0 := by
+lemma sv8_sum_append : sv8_sum (A ++ B) vp v0 = sv8_sum A vp v0 + sv8_sum B vp v0 - v0 := by
   simp [sv8_sum]
   simp [exactDiffSum_append]
   linarith
@@ -193,7 +193,7 @@ lemma exactDiffSum_singleton_le_1 : -1 ≤ exactDiffSum point [v] := by
 
 
 -- Coercions nonsense
-lemma DS0 (H : Neighbour L1 L2) : ((exactDiffSum 0 L1) : ℝ) - (exactDiffSum 0 L2) ≤ 1 := by
+lemma DSN (N : ℕ) (H : Neighbour L1 L2) : ((exactDiffSum N L1) : ℝ) - (exactDiffSum N L2) ≤ 1 := by
   cases H
   · rename_i A B C H1 H2
     rw [H1, H2]
@@ -203,6 +203,14 @@ lemma DS0 (H : Neighbour L1 L2) : ((exactDiffSum 0 L1) : ℝ) - (exactDiffSum 0 
     have _ := @exactDiffSum_singleton_le_1 0 C
     simp [exactDiffSum]
     simp [exactClippedSum]
+    cases (Classical.em (C.cast ≤ (N.cast : ℝ)))
+    · rename_i h
+      rw [min_eq_left_iff.mpr h]
+      left
+      simp
+    · right
+      simp_all
+      linarith
 
   · rename_i A B C H1 H2
     rw [H1, H2]
@@ -211,14 +219,16 @@ lemma DS0 (H : Neighbour L1 L2) : ((exactDiffSum 0 L1) : ℝ) - (exactDiffSum 0 
     have _ := @exactDiffSum_nonpos 0 C
     simp [exactDiffSum]
     simp [exactClippedSum]
-    cases (Classical.em ((B : ℝ) ≤ 1))
+    cases (Classical.em ((B : ℝ) ≤ N + 1))
     · rename_i h
       rw [min_eq_left_iff.mpr h]
-      linarith
+      left
+      simp
     · rename_i h
       rw [min_eq_right_iff.mpr ?G1]
       case G1 => linarith
-      simp
+      right
+      linarith
 
   · rename_i A B C D H1 H2
     rw [H1, H2]
@@ -226,41 +236,128 @@ lemma DS0 (H : Neighbour L1 L2) : ((exactDiffSum 0 L1) : ℝ) - (exactDiffSum 0 
     simp only [Int.cast_add, add_sub_add_right_eq_sub, add_sub_add_left_eq_sub]
     simp [exactDiffSum]
     simp [exactClippedSum]
-    cases (Classical.em ((B : ℝ) ≤ 1))
-    · cases (Classical.em ((D : ℝ) ≤ 1))
+    cases (Classical.em ((B : ℝ) ≤ N + 1))
+    · cases (Classical.em ((D : ℝ) ≤ N + 1))
       · rename_i hb hd
         rw [min_eq_left_iff.mpr hb]
         rw [min_eq_left_iff.mpr hd]
-        linarith
+        simp
+        left
+        cases (Classical.em (N.cast ≤ (D.cast : ℝ)))
+        · rw [min_eq_right_iff.mpr ?G1]
+          case G1 => linarith
+          skip
+          linarith
+        · rw [min_eq_left_iff.mpr ?G1]
+          case G1 => linarith
+          simp
       · rename_i hb hd
         rw [min_eq_left_iff.mpr hb]
         rw [min_eq_right_iff.mpr (by linarith)]
+        rw [min_eq_right_iff.mpr (by linarith)]
+        left
         linarith
-    · cases (Classical.em ((D : ℝ) ≤ 1))
+    · cases (Classical.em ((D : ℝ) ≤ N))
       · rename_i hb hd
         rw [min_eq_left_iff.mpr hd]
+        rw [min_eq_left_iff.mpr (by linarith)]
         rw [min_eq_right_iff.mpr (by linarith)]
+        simp
+        right
         linarith
       · rename_i hb hd
         rw [min_eq_right_iff.mpr (by linarith)]
+        simp only [not_le] at hd
+        rw [min_eq_right_iff.mpr ?G1]
+        case G1 =>
+          -- #check Nat.add_one_le_iff
+          have X : (1 : ℝ) = ((1 : ℕ) : ℝ) := by simp
+          rw [X]
+          rw [← Nat.cast_add]
+          apply Nat.cast_le.mpr
+          apply Nat.le_of_lt_succ
+          simp
+          apply Nat.cast_le.mp
+        skip
         rw [min_eq_right_iff.mpr (by linarith)]
+        right
         linarith
+
 
 
 lemma Hsens_cov_τ (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) (Hneighbour : Neighbour l₁ l₂) : cov_τ_def v0 vs l₁ l₂ ≤ sens_cov_τ := by
   dsimp [cov_τ_def]
-  cases vs
-  · sorry
-  rename_i vs Hvs
   cases Hneighbour
   · rename_i A B n H1 H2
     rw [H1, H2]; clear H1 H2
-
     conv =>
       enter [1, 2, 1]
       rw [List.append_assoc]
     rw [@sv8_G_comm A ([n] ++ B)]
+    conv =>
+      enter [1, 2]
+      rw [List.append_assoc]
+      rw [sv8_G_comm]
+    conv =>
+      enter [1, 1]
+      rw [sv8_G_comm]
+    generalize HL : (B ++ A) = L
+    clear HL
+
+
+
+
+
+
+
     sorry
+
+    /-
+    suffices (∀ H v0, sv8_G (A ++ B) H v0 vs - sv8_G ([n] ++ B ++ A) H v0 vs ≤ sens_cov_τ.val.cast) by
+      apply this
+    induction vs
+    · -- Base case:
+      intro H v0
+      simp only [sv8_G]
+      conv =>
+        enter [1, 2]
+        rw [List.append_assoc]
+        rw [sv8_sum_append]
+        rw [sv8_sum_comm]
+        enter [1, 1]
+        simp only [sv8_sum]
+      simp
+      have _ := @exactDiffSum_singleton_le_1 0 n
+      have _ := @exactDiffSum_nonpos 0 [n]
+      simp [sens_cov_τ]
+      sorry
+      -- linarith
+
+    · -- Inductive case:
+      intro H v0
+      rename_i head tail IH
+      unfold sv8_G
+      -- Combine the maximums
+      apply le_trans (max_sub_max_le_max _ _ _ _)
+      -- Do both cases separately
+      apply Int.max_le.mpr
+      apply And.intro
+      · conv =>
+          enter [1, 2]
+          rw [List.append_assoc]
+          rw [sv8_sum_append]
+          rw [sv8_sum_comm]
+          enter [1, 1]
+          simp only [sv8_sum, List.length]
+        have _ := @exactDiffSum_singleton_le_1 0 n
+        have _ := @exactDiffSum_nonpos 0 [n]
+        simp [sens_cov_τ]
+        sorry
+        -- linarith
+      · apply IH
+    -/
+
+
 
   · rename_i A n B H1 H2
     rw [H1, H2]; clear H1 H2
@@ -389,9 +486,9 @@ lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) :
         apply And.intro
         · apply neg_le.mp
           simp only [neg_sub]
-          apply DS0
+          apply DSN
           apply Hneighbour
-        · apply DS0
+        · apply DSN
           apply Neighbour_symm
           apply Hneighbour
 
