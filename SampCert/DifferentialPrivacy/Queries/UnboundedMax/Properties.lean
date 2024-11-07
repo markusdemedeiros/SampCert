@@ -219,7 +219,8 @@ lemma sv0_eq_sv1 ε₁ ε₂ l : sv0_privMax ε₁ ε₂ l = sv1_privMax ε₁ �
 
   -- RHS: sum over all lists of length "result"?
   -- rw [tsum_ite_eq]
-  -- simp [sv1_threshold]
+  simp [sv1_threshold]
+
 
   sorry
 
@@ -743,10 +744,6 @@ lemma sv4_presample_split'' (ε₁ ε₂ : ℕ+) (point : ℕ) (z : ℤ) (p : { 
     sv4_presample ε₁ ε₂ (point + 1) ⟨ (p.1 ++ [z]), HP ⟩ := by rw [sv4_presample_split']
 
 
-lemma sv4_presample_perm (ε₁ ε₂ : ℕ+) (point : ℕ) (z : ℤ) (p : { l : List ℤ // List.length l = point }) H1 H2 :
-    sv4_presample ε₁ ε₂ (point + 1) ⟨p.1 ++ [z], H1⟩ = sv4_presample ε₁ ε₂ (point + 1) ⟨z :: p.1, H2⟩ := by
-  sorry
-
 lemma get_last_lemma (L : List ℤ) H : L.getLastI = L.getLast H := by
   rw [List.getLastI_eq_getLast?]
   rw [List.getLast?_eq_getLast_of_ne_nil H]
@@ -754,6 +751,80 @@ lemma get_last_lemma (L : List ℤ) H : L.getLastI = L.getLast H := by
 lemma drop_init_lemma (L : List ℤ) (H : L ≠ []) : L.dropLast ++ [L.getLastI] = L := by
   rw [get_last_lemma _ H]
   apply List.dropLast_append_getLast H
+
+
+lemma sv4_presample_perm (ε₁ ε₂ : ℕ+) (point : ℕ) (z : ℤ) (p : { l : List ℤ // List.length l = point }) H1 H2 :
+    sv4_presample ε₁ ε₂ (point + 1) ⟨p.1 ++ [z], H1⟩ = sv4_presample ε₁ ε₂ (point + 1) ⟨z :: p.1, H2⟩ := by
+  simp [sv4_presample]
+  conv =>
+    lhs
+    enter [1, a]
+    rw [<- ENNReal.tsum_mul_left]
+    enter [1, i]
+    rw [mul_ite]
+    simp
+  conv =>
+    rhs
+    enter [1, a]
+    rw [<- ENNReal.tsum_mul_left]
+    enter [1, i]
+    rw [mul_ite]
+    simp
+  rw [<- ENNReal.tsum_prod]
+  rw [<- ENNReal.tsum_prod]
+  rw [vector_sum_merge]
+  rw [vector_sum_merge]
+  -- Is this even right?
+  sorry
+
+
+  /-
+  apply @tsum_eq_tsum_of_ne_zero_bij
+  case i => exact fun x => ⟨ vsm_last x.1 :: vsm_init x.1, by simp ⟩
+  · simp [Function.Injective, vsm_rest, vsm_init, vsm_0, vsm_last]
+    intros
+    rename_i A B C D E F G H I J K L
+    rw [H] at C
+    apply (congrArg List.reverse) at C
+    simp at C
+    have HA : A = A.headI :: A.tail := by sorry
+    have HF : F = F.headI :: F.tail := by sorry
+    rw [HA, HF]
+    cases C
+    rename_i C1 C2
+    rw [C1, C2]
+  · simp [Function.support, Set.range]
+    intro A B C D E
+    -- exists (?G1 :: ?G2)
+
+    sorry
+  · sorry
+  -/
+
+
+  -- rw [<- sv4_presample_split'']
+  -- conv =>
+  --   rhs
+  --   simp [sv4_presample]
+  --   enter [1, a]
+  --   rw [<- ENNReal.tsum_mul_left]
+  --   enter [1, i]
+  --   rw [mul_ite]
+  -- rw [<- ENNReal.tsum_prod]
+  -- -- Bijection? Or equality?
+  -- let L : {l : List ℤ // l.length = point + 1} := ⟨z :: p, by simp ⟩
+  -- rw [ENNReal.tsum_eq_add_tsum_ite (vsm_last L, vsm_init L)]
+  -- conv =>
+  --   lhs
+  --   rw [<- (add_zero (_ * _))]
+  -- congr 1
+  -- · simp [vsm_init]
+  --
+  --   sorry
+  -- · sorry
+
+
+
 
 
 
