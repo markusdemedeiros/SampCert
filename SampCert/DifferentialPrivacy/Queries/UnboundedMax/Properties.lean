@@ -587,6 +587,7 @@ lemma vector_sum_merge n (f : ℤ × { l : List ℤ // l.length = n } -> ENNReal
 
 
 -- Split in the other order, used as a helper function
+-- REFACTOR: Get rid of this, use sv4_presample_split''
 lemma sv4_presample_split' (ε₁ ε₂ : ℕ+) (point : ℕ) (z : ℤ) (p : { l : List ℤ // List.length l = point }) :
     privNoiseGuess ε₁ ε₂ z * sv4_presample ε₁ ε₂ point p =
     sv4_presample ε₁ ε₂ (point + 1) ⟨ (p.1 ++ [z]), by simp ⟩ := by
@@ -650,6 +651,11 @@ lemma sv4_presample_split' (ε₁ ε₂ : ℕ+) (point : ℕ) (z : ℤ) (p : { l
       trivial
 
 
+lemma sv4_presample_split'' (ε₁ ε₂ : ℕ+) (point : ℕ) (z : ℤ) (p : { l : List ℤ // List.length l = point }) HP :
+    privNoiseGuess ε₁ ε₂ z * sv4_presample ε₁ ε₂ point p =
+    sv4_presample ε₁ ε₂ (point + 1) ⟨ (p.1 ++ [z]), HP ⟩ := by rw [sv4_presample_split']
+
+
 lemma sv4_presample_perm (ε₁ ε₂ : ℕ+) (point : ℕ) (z : ℤ) (p : { l : List ℤ // List.length l = point }) H1 H2 :
     sv4_presample ε₁ ε₂ (point + 1) ⟨p.1 ++ [z], H1⟩ = sv4_presample ε₁ ε₂ (point + 1) ⟨z :: p.1, H2⟩ := by
   sorry
@@ -657,6 +663,11 @@ lemma sv4_presample_perm (ε₁ ε₂ : ℕ+) (point : ℕ) (z : ℤ) (p : { l :
 lemma get_last_lemma (L : List ℤ) H : L.getLastI = L.getLast H := by
   rw [List.getLastI_eq_getLast?]
   rw [List.getLast?_eq_getLast_of_ne_nil H]
+
+lemma drop_init_lemma (L : List ℤ) (H : L ≠ []) : L.dropLast ++ [L.getLastI] = L := by
+  rw [get_last_lemma _ H]
+  apply List.dropLast_append_getLast H
+
 
 
 -- Splits and rearranges the functions
@@ -770,11 +781,7 @@ def sv4_presample_split (ε₁ ε₂ : ℕ+) (point : ℕ) :
       rw [<- @List.dropLast_append_getLast  _ L (by aesop)]
     congr
     apply get_last_lemma
-  congr 1
-  · simp_all
-  congr
-  symm
-  trivial
+  congr <;> symm <;> trivial
 
 
 def len_1_list_to_val (x : { l : List ℤ // l.length = 1 }) : ℤ :=
@@ -806,29 +813,48 @@ lemma presample_norm_lemma  (point : ℕ) (ε₁ ε₂ : ℕ+) :
         rw [sv4_presample_split']
       rw [<- this]
       symm
-      -- FIXME probably the wrong bijection
-      sorry
-      -- apply @tsum_eq_tsum_of_ne_zero_bij
-      -- case i =>
-      --   simp [Function.support, DFunLike.coe]
-      --   exact fun x => (vsm_0 x.1, vsm_rest x.1)
-      -- · simp [Function.Injective]
-      --   simp [vsm_0, vsm_rest]
-      --   intro L1 HL1 HL1f L2 HL2 HL2f Heq1 Heq2
-      --   cases L1
-      --   · simp at HL1
-      --   cases L2
-      --   · simp at HL2
-      --   simp_all
-      -- · simp [Function.support, Set.range]
-      --   intro z L HL HF
-      --   exists (z :: L)
-      --   simp
-      --   exists HL
-      --   sorry
-      -- · simp [Function.support, DFunLike.coe]
-      --   sorry
-
+      rw [vector_sum_merge]
+      simp only []
+      simp [vsm_0, vsm_rest]
+      symm
+      apply @tsum_eq_tsum_of_ne_zero_bij
+      case i =>
+        simp [Function.support, DFunLike.coe]
+        exact fun x => ⟨ ↑(vsm_rest x.1) ++ [vsm_0 x.1], by simp ⟩
+      · simp [Function.Injective]
+        simp [vsm_0, vsm_rest]
+        intro L1 HL1 HL1f L2 HL2 HL2f
+        cases L1
+        · simp at HL1
+        cases L2
+        · simp at HL2
+        simp_all
+        intro X
+        rename_i A B C D
+        have X1 : List.reverse (B ++ [A]) = List.reverse (D ++ [C]) := by exact congrArg List.reverse X
+        simp at X1
+        apply X1
+      · simp [Function.support, Set.range]
+        intro L1 HL1 Hf1
+        exists ((vsm_last ⟨ L1, HL1 ⟩) :: (vsm_init ⟨ L1, HL1 ⟩))
+        simp
+        apply And.intro
+        · simp [vsm_0, vsm_rest, vsm_init, vsm_last]
+          intro K
+          apply Hf1
+          rw [<- K]
+          congr
+          symm
+          apply drop_init_lemma
+          intro K
+          simp [K] at HL1
+        · simp [vsm_0, vsm_rest, vsm_init, vsm_last]
+          apply drop_init_lemma
+          intro K
+          simp [K] at HL1
+      · simp [Function.support, DFunLike.coe]
+        intros
+        congr
     rw [ENNReal.tsum_prod']
     conv =>
       enter [1, 1, a]
@@ -838,7 +864,8 @@ lemma presample_norm_lemma  (point : ℕ) (ε₁ ε₂ : ℕ+) :
     simp
 
     -- Change noise to SPMF
-    sorry
+    have S := (privNoiseGuess ε₁ ε₂).2
+    apply HasSum.tsum_eq S
 
 
 def sv3_sv4_loop_eq (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv1_state) :
@@ -890,17 +917,18 @@ def sv3_sv4_loop_eq (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (point : ℕ)
 
     -- Apply the IH on the left
     -- Doing it this way because I can't conv under the @ite?
+
     let ApplyIH :
-      (do
+      ((do
         let vk1 ← privNoiseGuess ε₁ ε₂
         if sv1_privMaxC τ l init = true
           then sv3_loop ε₁ ε₂ τ l point (init.1 ++ [init.2], vk1)
-          else probPure init) =
-      (do
+          else (SLang.probPure init) : SLang _) =
+      ((do
         let vk1 ← privNoiseGuess ε₁ ε₂
         if sv1_privMaxC τ l init = true
           then sv4_loop ε₁ ε₂ τ l point (init.1 ++ [init.2], vk1)
-          else probPure init) := by
+          else probPure init) : SLang _)) := by
       simp
       apply SLang.ext
       intro final_state
@@ -911,6 +939,7 @@ def sv3_sv4_loop_eq (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (point : ℕ)
       split
       · rw [IH]
       · rfl
+
     rw [ApplyIH]
     clear ApplyIH IH
 

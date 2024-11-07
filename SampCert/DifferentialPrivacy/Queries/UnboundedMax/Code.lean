@@ -49,12 +49,12 @@ Noise the constant 0 value using the abstract noise function.
 
 This looks strange, but will specialize to Lap(ε₁/ε₂, 0) in the pure DP case.
 -/
-def privNoiseZero (ε₁ ε₂ : ℕ+) : SLang ℤ := dpn.noise (fun _ => 0) 1 ε₁ ε₂ []
+def privNoiseZero (ε₁ ε₂ : ℕ+) : SPMF ℤ := dpn.noise (fun _ => 0) 1 ε₁ ε₂ []
 
 
-def privNoiseGuess (ε₁ ε₂ : ℕ+) : SLang ℤ := privNoiseZero ε₁ (2 * sens_cov_vk * ε₂)
+def privNoiseGuess (ε₁ ε₂ : ℕ+) : SPMF ℤ := privNoiseZero ε₁ (2 * sens_cov_vk * ε₂)
 
-def privNoiseThresh (ε₁ ε₂ : ℕ+) : SLang ℤ := privNoiseZero ε₁ (2 * sens_cov_τ * ε₂)
+def privNoiseThresh (ε₁ ε₂ : ℕ+) : SPMF ℤ := privNoiseZero ε₁ (2 * sens_cov_τ * ε₂)
 
 /-
 ## Program version 0
