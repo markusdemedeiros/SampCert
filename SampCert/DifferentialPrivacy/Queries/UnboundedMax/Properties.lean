@@ -1527,11 +1527,52 @@ def sv9_privMax (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   computation point
 
 def sv8_sv9_eq (ε₁ ε₂ : ℕ+) (l : List ℕ) :
-    sv8_privMax ε₁ ε₂ l = sv8_privMax ε₁ ε₂ l := by
+    sv8_privMax ε₁ ε₂ l = sv9_privMax ε₁ ε₂ l := by
   apply SLang.ext
   intro point
+  unfold sv8_privMax
+  unfold sv9_privMax
+  simp
+  split
+  · simp
+  · simp
+    conv =>
+      lhs
+      conv =>
+        enter [1, a]
+        rw [<- ENNReal.tsum_mul_left]
+        conv =>
+          enter [1, b]
+          rw [<- mul_assoc]
+          conv =>
+            enter [1]
+            rw [mul_comm]
+          rw [mul_assoc]
+      rw [ENNReal.tsum_comm]
+      conv =>
+        enter [1, b]
+        rw [ENNReal.tsum_mul_left]
 
-  sorry
+    apply tsum_congr
+    intro b
+    congr 1
+
+    conv =>
+      lhs
+      conv =>
+        enter [1, a]
+        rw [<- ENNReal.tsum_mul_left]
+        conv =>
+          enter [1, b]
+          rw [<- mul_assoc]
+          conv =>
+            enter [1]
+            rw [mul_comm]
+          rw [mul_assoc]
+      rw [ENNReal.tsum_comm]
+      conv =>
+        enter [1, b]
+        rw [ENNReal.tsum_mul_left]
 
 
 /--
