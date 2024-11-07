@@ -42,52 +42,6 @@ lemma probBind_congr_strong (p : SLang T) (f : T -> SLang U) (g : T -> SLang U) 
   rw [Hcong]
   apply Hp
 
-
-/-
-Not used for anything, but to give confidence in our definitions
-
-(exactDiffSum l m) is zero if and only if m is an upper bound on the list elements
--/
--- lemma exactDiffSum_eq_0_iff_ge_max (l : List ℕ) (m : ℕ) :
---     l.maximum ≤ m <-> exactDiffSum m l ≤ 0 := by
---   apply Iff.intro
---   · induction l
---     · simp [exactDiffSum, exactClippedSum]
---     · rename_i l0 ls IH
---       intro Hmax
---       simp [List.maximum_cons] at Hmax
---       rcases Hmax with ⟨ Hmax0, Hmax1 ⟩
---       have IH' := IH Hmax1
---       clear IH
---       simp [exactDiffSum, exactClippedSum] at *
---       apply Int.add_le_of_le_neg_add
---       apply le_trans IH'
---       simp
---   · intro H1
---     apply List.maximum_le_of_forall_le
---     revert H1
---     induction l
---     · simp
---     · rename_i l0 ls IH
---       intro Hdiff a Ha
---       rw [List.mem_cons_eq] at Ha
---       cases Ha
---       · rename_i H
---         rw [H]
---         rw [Nat.cast_withBot]
---         apply WithBot.coe_le_coe.mpr
---
---         sorry
---       · apply IH; clear IH
---         · simp only [exactDiffSum, exactClippedSum] at *
---           have H : (min (l0.cast : ℤ) (m.cast : ℤ) - min (l0.cast) ((m.cast : ℤ) + 1)) = 0 := by
---             sorry
---           -- rw [H] at Hdiff
---           -- rw [<- Hdiff]
---           -- simp
---           sorry
---         · trivial
-
 /--
 History-aware progam computes the same as the history-agnostic program
 -/
@@ -1439,10 +1393,70 @@ def sv6_sv7_eq (ε₁ ε₂ : ℕ+) (l : List ℕ) :
       lhs
       unfold sv6_loop
     simp
+    rw [ENNReal.tsum_comm]
     rw [← ENNReal.tsum_prod]
-    -- There is a bijection here
-    sorry
-
+    conv =>
+      rhs
+      enter [1, a]
+      rw [<- mul_assoc]
+      enter [1]
+      rw [mul_comm]
+      rw [sv4_presample_split']
+    apply @tsum_eq_tsum_of_ne_zero_bij
+    case i =>
+      exact fun x => ⟨ x.1.2 ++ [x.1.1], by simp ⟩
+    · simp [Function.Injective]
+      intros
+      rename_i H
+      apply congrArg List.reverse at H
+      simp at H
+      apply H
+    · simp [Function.support, Set.range]
+      intros L HL Hf1 Hf2
+      exists (vsm_last ⟨ L, HL ⟩)
+      exists (vsm_init ⟨ L, HL ⟩)
+      simp
+      apply And.intro
+      · apply And.intro
+        · intro K
+          apply Hf1
+          rw [<- K]
+          congr
+          simp [vsm_init, vsm_last]
+          symm
+          apply drop_init_lemma
+          intro K
+          simp [K] at HL
+        · intro K
+          apply Hf2
+          rw [<- K]
+          split <;> split
+          · rfl
+          · exfalso
+            rename_i h1 h2
+            apply h2
+            rw [<- h1]
+            congr
+            simp [vsm_init, vsm_last]
+            apply drop_init_lemma
+            intro K
+            simp [K] at HL
+          · exfalso
+            rename_i h2 h1
+            apply h2
+            rw [<- h1]
+            congr
+            simp [vsm_init, vsm_last]
+            symm
+            apply drop_init_lemma
+            intro K
+            simp [K] at HL
+          · rfl
+      · simp [vsm_init, vsm_last]
+        apply drop_init_lemma
+        intro K
+        simp [K] at HL
+    · simp
 
 /-
 ## Program v8
