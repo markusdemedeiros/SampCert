@@ -655,7 +655,8 @@ lemma sv4_presample_perm (ε₁ ε₂ : ℕ+) (point : ℕ) (z : ℤ) (p : { l :
   sorry
 
 lemma get_last_lemma (L : List ℤ) H : L.getLastI = L.getLast H := by
-  sorry
+  rw [List.getLastI_eq_getLast?]
+  rw [List.getLast?_eq_getLast_of_ne_nil H]
 
 
 -- Splits and rearranges the functions
@@ -1529,6 +1530,7 @@ def sv8_sv9_eq (ε₁ ε₂ : ℕ+) (l : List ℕ) :
     sv8_privMax ε₁ ε₂ l = sv8_privMax ε₁ ε₂ l := by
   apply SLang.ext
   intro point
+
   sorry
 
 
