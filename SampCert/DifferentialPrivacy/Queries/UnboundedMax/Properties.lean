@@ -717,6 +717,11 @@ lemma sv4_presample_eval (ε₁ ε₂ : ℕ+) (n : ℕ) (s : { l : List ℤ // L
       rw [mul_comm]
     simp
 
+lemma sv4_presample_eval' (ε₁ ε₂ : ℕ+) (n : ℕ) (s : { l : List ℤ // List.length l = n }) :
+    sv4_presample ε₁ ε₂ n s = List.foldl (fun acc b => acc * (privNoiseGuess ε₁ ε₂ b)) 1 (List.reverse s) := by
+  have X := sv4_presample_eval ε₁ ε₂ n ⟨ List.reverse s, by simp ⟩
+  simp only [List.reverse_reverse, Subtype.coe_eta] at X
+  trivial
 
 
 
@@ -886,71 +891,106 @@ def sv4_presample_split (ε₁ ε₂ : ℕ+) (point : ℕ) :
   rw [vector_sum_merge]
   rw [vector_sum_merge]
 
-  -- Bots sums are singletons
-
-
-  sorry
-
-
-  /-
+  -- Both sums are singletons
   simp [vsm_rest, vsm_0]
-
-  -- There is a bijection here
-  apply @tsum_eq_tsum_of_ne_zero_bij
-  case i => exact fun x => ⟨ vsm_last x.1 :: vsm_init x.1 , by simp ⟩
-  · simp [Function.Injective]
-    intro A B C D E F H I J K
-    simp_all [vsm_rest, vsm_init]
-    rw [<- @list_lemma_1 E ?G1]
-    case G1 => intro K; simp [K] at F
-    rw [<- @list_lemma_1 A ?G1]
-    case G1 => intro K; simp [K] at B
-    cases C
-    symm
-    congr 1
-  · simp [Function.support, Set.range, DFunLike.coe]
+  symm
+  rw [ENNReal.tsum_eq_add_tsum_ite final_state]
+  -- rcases final_state with ⟨ f, Hf ⟩
+  -- simp
+  conv =>
+    rhs
+    rw [<- (zero_add (tsum _))]
+  conv =>
+    lhs
+    rw [add_comm]
+  congr 1
+  · simp
     intro A B C D
+    exfalso
     rcases final_state with ⟨ f, Hf ⟩
-    exists f
+    simp_all
+    apply C
+    rw [list_lemma_1 ?G1]
+    intro K
+    simp_all
+
+  rw [ENNReal.tsum_eq_add_tsum_ite ⟨[vsm_last final_state] ++ (vsm_init final_state), by simp ⟩ ]
+  conv =>
+    lhs
+    rw [<- (add_zero (@ite _ _ _ _ _))]
+    rw [add_comm]
+  conv =>
+    rhs
+    rw [add_comm]
+  congr 1
+  · symm
     simp
-    exists Hf
-    apply And.intro
-    · apply And.intro
-      · rw [list_lemma_1]
-        intro K
-        simp_all
-      · intro K
-        apply D
-        sorry
-        -- rw [<- K]
-        -- congr
-        -- cases C
-        -- · sorry
-        -- · sorry
-    · cases C
-      simp [vsm_last, vsm_rest, vsm_init]
-      cases A
-      · simp at B
-      simp
-      rename_i A0 A1
-      rw [List.getLastI_eq_getLast?]
-      rw [List.getLast?_concat]
-  simp [Function.support]
-  intro A B ⟨ C, D ⟩
-  simp [vsm_init, vsm_last]
+    intro A B C D
+    exfalso
+    rcases final_state with ⟨ f, Hf ⟩
+    simp_all [vsm_rest, vsm_0, vsm_last, vsm_init]
+    apply C
+    rw [List.getLastI_eq_getLast?]
+    unfold Option.iget
+    simp
+    rw [list_lemma_1]
+    intro K
+    simp_all
 
+  -- Apply the closed form to evaluate
   rcases final_state with ⟨ f, Hf ⟩
-  simp_all
+  simp [vsm_rest, vsm_0, vsm_last, vsm_init]
+  rw [sv4_presample_eval']
+  rw [sv4_presample_eval']
+  simp only []
 
+  have Hfoldl_eq :
+      (List.foldl (fun acc b => acc * (privNoiseGuess ε₁ ε₂) b) 1 (f.tail ++ [f.headI]).reverse =
+       List.foldl (fun acc b => acc * (privNoiseGuess ε₁ ε₂) b) 1 (f.dropLast ++ [f.getLastI]).reverse):= by
+    apply List.Perm.foldl_eq
+    · intro A B C
+      simp
+      rw [mul_assoc]
+      rw [mul_assoc]
+      congr 1
+      rw [mul_comm]
+    · conv =>
+        lhs
+        simp
+      have H1 : (f.headI :: f.tail.reverse).Perm (f.headI :: f.tail) := by
+        apply List.Perm.cons f.headI
+        apply List.reverse_perm
+      trans
+      · apply H1
+      rw [list_lemma_1 ?G2]
+      case G2 => intro _ ; simp_all
+      rw [list_lemma_2 ?G2]
+      case G2 => intro _ ; simp_all
+      apply List.Perm.symm
+      apply List.reverse_perm
+  rw [Hfoldl_eq]
+  clear Hfoldl_eq
+  generalize HX : List.foldl (fun acc b => acc * (privNoiseGuess ε₁ ε₂) b) 1 (f.dropLast ++ [f.getLastI]).reverse = X
+  clear HX
+
+  -- Both of the conditionals are true
   split
-  · congr 2
-    sorry
-  · sorry
-  -/
-
-
-
-
+  · split
+    · rfl
+    · exfalso
+      rename_i A B
+      apply B
+      rw [list_lemma_2]
+      intro K
+      simp [K] at Hf
+  · split
+    · exfalso
+      rename_i A B
+      apply A
+      rw [list_lemma_1]
+      intro K
+      simp [K] at Hf
+    · rfl
 
 
 
