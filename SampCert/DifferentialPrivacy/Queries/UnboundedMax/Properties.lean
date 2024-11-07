@@ -42,6 +42,105 @@ lemma probBind_congr_strong (p : SLang T) (f : T -> SLang U) (g : T -> SLang U) 
   rw [Hcong]
   apply Hp
 
+
+-- def sv0_privMaxC (τ : ℤ) (l : List ℕ) (s : sv0_state) : Bool :=
+--   decide (exactDiffSum (sv0_threshold s) l + (sv0_noise s) < τ)
+
+-- sv0_privMaxC is eventually just a (geometric) check
+
+lemma exactDiffSum_eventually_constant : ∃ K, ∀ K', K ≤ K' -> exactDiffSum K' l = 0 := by
+  cases l
+  · simp [exactDiffSum, exactClippedSum]
+  · rename_i l0 ll
+    let K := (@List.maximum_of_length_pos _ _ (l0 :: ll) (by simp))
+    exists K
+    intro K' HK'
+    simp [exactDiffSum, exactClippedSum]
+    rw [min_eq_left_iff.mpr ?G1]
+    case G1 =>
+      simp
+      apply le_trans _ HK'
+      apply List.le_maximum_of_length_pos_of_mem
+      apply List.mem_cons_self
+    rw [min_eq_left_iff.mpr ?G1]
+    case G1 =>
+      apply (@le_trans _ _ _ (↑K') _ _ (by simp))
+      simp
+      apply le_trans _ HK'
+      apply List.le_maximum_of_length_pos_of_mem
+      apply List.mem_cons_self
+    conv =>
+      enter [1, 1, 2, 1]
+      rw [(@List.map_inj_left _ _ _ _ (fun n => ↑n)).mpr
+            (by
+              intro a Ha
+              rw [min_eq_left_iff.mpr _]
+              simp
+              apply le_trans _ HK'
+              apply List.le_maximum_of_length_pos_of_mem
+              apply List.mem_cons_of_mem
+              apply Ha)]
+      rfl
+    conv =>
+      enter [1, 2, 2, 1]
+      rw [(@List.map_inj_left _ _ _ _ (fun n => ↑n)).mpr
+            (by
+              intro a Ha
+              rw [min_eq_left_iff.mpr _]
+              apply (@le_trans _ _ _ (↑K') _ _ (by simp))
+              simp
+              apply le_trans _ HK'
+              apply List.le_maximum_of_length_pos_of_mem
+              apply List.mem_cons_of_mem
+              apply Ha)]
+      rfl
+    simp
+
+
+lemma sv0_norm_loop_le ε₁ ε₂ τ : ∑'v0, ∑'n, probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (n, v0) ≤ 1 := by
+  sorry
+
+lemma probWhile_unroll (C : T -> Bool) (F : T -> SLang T) (I : T) :
+      probWhile C F I =
+      (if (C I) then probPure I else (F I) >>= probWhile C F) := by
+    sorry
+  -- (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (n + Δ, v0)
+
+/-
+lemma sv0_norm_loop_ge ε₁ ε₂ v0 τ : 1 ≤ ∑'vf, ∑'n, probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (0, v0) (n, vf) := by
+  -- To establish a lower bound, it suffices to shift the starting point
+  have Hshift : ∀ Δ v0,
+       ∑' (n : ℕ), probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (n, v0) ≤
+       ∑' (n : ℕ), probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (0, v0) := by
+    intro Δ
+    induction Δ
+    · simp
+    · rename_i Δ' IH
+      intro v0
+      apply le_trans _ (IH _)
+      clear IH
+      conv =>
+        rhs
+        enter [1, n]
+        rw [probWhile_unroll]
+      apply ENNReal.tsum_le_tsum
+      intro n
+      split
+      · sorry
+      · sorry
+
+
+      sorry
+  sorry
+-/
+
+lemma sv0_norm ε₁ ε₂ l : ∑'(x : ℕ),  sv0_privMax ε₁ ε₂ l x = 1 := by
+  -- unfold sv0_privMax
+  sorry
+
+
+
+
 /--
 History-aware progam computes the same as the history-agnostic program
 -/
@@ -1616,6 +1715,11 @@ def sv8_sv9_eq (ε₁ ε₂ : ℕ+) (l : List ℕ) :
       conv =>
         enter [1, b]
         rw [ENNReal.tsum_mul_left]
+
+
+
+
+
 
 
 /--
