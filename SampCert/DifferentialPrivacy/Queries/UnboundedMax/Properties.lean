@@ -43,11 +43,6 @@ lemma probBind_congr_strong (p : SLang T) (f : T -> SLang U) (g : T -> SLang U) 
   apply Hp
 
 
--- def sv0_privMaxC (τ : ℤ) (l : List ℕ) (s : sv0_state) : Bool :=
---   decide (exactDiffSum (sv0_threshold s) l + (sv0_noise s) < τ)
-
--- sv0_privMaxC is eventually just a (geometric) check
-
 lemma exactDiffSum_eventually_constant : ∃ K, ∀ K', K ≤ K' -> exactDiffSum K' l = 0 := by
   cases l
   · simp [exactDiffSum, exactClippedSum]
@@ -96,52 +91,89 @@ lemma exactDiffSum_eventually_constant : ∃ K, ∀ K', K ≤ K' -> exactDiffSum
       rfl
     simp
 
-
-lemma sv0_norm_loop_le ε₁ ε₂ τ : ∑'v0, ∑'n, probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (n, v0) ≤ 1 := by
-  sorry
-
 lemma probWhile_unroll (C : T -> Bool) (F : T -> SLang T) (I : T) :
-      probWhile C F I =
+      probWhile C F I  =
       (if (C I) then probPure I else (F I) >>= probWhile C F) := by
     sorry
-  -- (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (n + Δ, v0)
+
+lemma probWhile_mass_unroll_lb (C : T -> Bool) (F : T -> SLang T) (I : T) :
+    ∑'t, (((F I) >>= probWhile C F) t) ≤ ∑'t, probWhile C F I t  := by
+  conv =>
+    rhs
+    enter [1, t]
+    rw [probWhile_unroll]
+  cases (C I)
+  · simp only [Bool.false_eq_true, ↓reduceIte]
+    rfl
+  · conv =>
+      enter [2]
+      simp
+    -- This now uses the upper boudn proof (which we need SPMF for but that's OK)
+    have A : tsum (probPure I) = 1 := by sorry
+    sorry
+
+
+lemma probWhile_mass_unroll_lb_eval {T U : Type} (C : T -> Bool) (F : T -> SLang T) (g : U -> T):
+    ∑'t, ∑'(u : U), (((F (g u)) >>= probWhile C F) t) ≤ ∑'t, ∑'(u : U), probWhile C F (g u) t  := by
+  conv =>
+    lhs
+    rw [ENNReal.tsum_comm]
+  conv =>
+    rhs
+    rw [ENNReal.tsum_comm]
+  apply ENNReal.tsum_le_tsum
+  intro i
+  apply probWhile_mass_unroll_lb
+
+-- Apply this lemma K times to the sv0 loop (sum over v0)
+/-
+lemma sv0_loop_mass_unroll_lb (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (K : ℕ) :
+    ∑'t, ∑'(v0 : ℤ), (probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (K, v0)) t ≤
+    ∑'t, ∑'(v0 : ℤ), (probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (0, v0)) t := by
+  induction K
+  · rfl
+  · rename_i K' IH
+    apply le_trans _ (probWhile_mass_unroll_lb_eval (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (fun v0 => (0, v0)))
+    simp [sv0_privMaxF, sv0_threshold]
+    -- Not sure
+    sorry
+-/
+
+
+-- probWhile sv0_privMaxC (sv0_privMaxF ε₁ ε₂ τ l) (False, (0, v0))
+
+
+-- Intuition: If there is a lower bound on every loop iterate terminating, then the termination probability is 1.
+
+-- Fix l, ε₁, ε₂
+-- Can prove that in any state, the loop has probability at least β to terminate
+-- How to turn this into a lower bound on the termination probability?
+
 
 /-
-lemma sv0_norm_loop_ge ε₁ ε₂ v0 τ : 1 ≤ ∑'vf, ∑'n, probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (0, v0) (n, vf) := by
-  -- To establish a lower bound, it suffices to shift the starting point
-  have Hshift : ∀ Δ v0,
-       ∑' (n : ℕ), probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (n, v0) ≤
-       ∑' (n : ℕ), probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (0, v0) := by
-    intro Δ
-    induction Δ
-    · simp
-    · rename_i Δ' IH
-      intro v0
-      apply le_trans _ (IH _)
-      clear IH
-      conv =>
-        rhs
-        enter [1, n]
-        rw [probWhile_unroll]
-      apply ENNReal.tsum_le_tsum
-      intro n
-      split
-      · sorry
-      · sorry
+def gen_poisson_trial (C : ℕ -> T → Bool) (F : ℕ × T -> SLang T) (I0 : T) : SLang (Bool × (ℕ × T)) :=
+  probWhile
+    (fun (x : Bool × (ℕ × T)) => x.1)
+    (fun v => do
+      let v1 <- F v.2
+      return (C v.2.1 v1, (v.2.1 + 1, v1)))
+    (True, (0, I0))
 
 
-      sorry
+lemma gen_poisson_trial_lb (C : ℕ -> T → Bool) (F : ℕ × T -> SLang T) (I : T) (β : NNReal) :
+    (∀ x, β ≤ (F x >>= fun v => return C x.1 v) True) ->
+    (∀ t, probGeometric (fun b => if b then β else (1 - β)) t.2.1 ≤ gen_poisson_trial C F I t) := by
+  intro H
+  intro t
+  -- rcases t with ⟨ b, ⟨ n, t ⟩ ⟩
+  unfold probGeometric
+  unfold gen_poisson_trial
+  unfold geoLoopCond
   sorry
 -/
 
-lemma sv0_norm ε₁ ε₂ l : ∑'(x : ℕ),  sv0_privMax ε₁ ε₂ l x = 1 := by
-  -- unfold sv0_privMax
-  sorry
 
-
-
-
-/--
+/-
 History-aware progam computes the same as the history-agnostic program
 -/
 lemma sv0_eq_sv1 ε₁ ε₂ l : sv0_privMax ε₁ ε₂ l = sv1_privMax ε₁ ε₂ l := by
@@ -190,6 +222,8 @@ lemma sv0_eq_sv1 ε₁ ε₂ l : sv0_privMax ε₁ ε₂ l = sv1_privMax ε₁ �
   -- simp [sv1_threshold]
 
   sorry
+
+
 
 
 
@@ -1716,14 +1750,84 @@ def sv8_sv9_eq (ε₁ ε₂ : ℕ+) (l : List ℕ) :
         enter [1, b]
         rw [ENNReal.tsum_mul_left]
 
-
-
-
-
-
-
 /--
 sv9 normalizes because sv1 normalizes
 -/
 def sv9_privMax_pmf (ε₁ ε₂ : ℕ+) (l : List ℕ) : PMF ℕ :=
   ⟨ sv9_privMax ε₁ ε₂ l, sorry ⟩
+
+
+
+
+/-
+
+def sv0_eventually_geo_check (ε₁ ε₂ : ℕ+) (τ : ℤ) : SLang Bool := do
+    let v <- privNoiseGuess ε₁ ε₂
+    return v > τ
+
+
+/-
+-- The sv0 loop is eventually geometric
+lemma sv0_loop_eventually_geometric ε₁ ε₂ τ l :
+    ∃ K, ∀ s_eval, ∀ v0,
+        probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (K, v0) s_eval =
+        probGeometric (sv0_eventually_geo_check ε₁ ε₂ τ) s_eval.1 := by
+  rcases (@exactDiffSum_eventually_constant l) with ⟨ K, HK ⟩
+  exists K
+  intro s_eval
+  intro v0
+  unfold probGeometric
+  unfold geoLoopCond
+  unfold geoLoopBody
+  unfold sv0_privMaxC
+  unfold sv0_privMaxF
+  unfold sv0_eventually_geo_check
+ -/
+
+  sorry
+
+
+-- def sv0_privMaxC (τ : ℤ) (l : List ℕ) (s : sv0_state) : Bool :=
+--   decide (exactDiffSum (sv0_threshold s) l + (sv0_noise s) < τ)
+
+-- sv0_privMaxC is eventually just a (geometric) check
+
+lemma sv0_norm_loop_le ε₁ ε₂ τ : ∑'v0, ∑'n, probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (n, v0) ≤ 1 := by
+  sorry
+
+lemma probWhile_unroll (C : T -> Bool) (F : T -> SLang T) (I : T) :
+      probWhile C F I =
+      (if (C I) then probPure I else (F I) >>= probWhile C F) := by
+    sorry
+  -- (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (n + Δ, v0)
+
+lemma sv0_norm_loop_ge ε₁ ε₂ v0 τ : 1 ≤ ∑'vf, ∑'n, probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (0, v0) (n, vf) := by
+  -- To establish a lower bound, it suffices to shift the starting point
+  have Hshift : ∀ Δ v0,
+       ∑' (n : ℕ), probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (n, v0) ≤
+       ∑' (n : ℕ), probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (0, v0) := by
+    intro Δ
+    induction Δ
+    · simp
+    · rename_i Δ' IH
+      intro v0
+      apply le_trans _ (IH _)
+      clear IH
+      conv =>
+        rhs
+        enter [1, n]
+        rw [probWhile_unroll]
+      apply ENNReal.tsum_le_tsum
+      intro n
+      split
+      · sorry
+      · sorry
+
+
+      sorry
+  sorry
+
+lemma sv0_norm ε₁ ε₂ l : ∑'(x : ℕ),  sv0_privMax ε₁ ε₂ l x = 1 := by
+  -- unfold sv0_privMax
+  sorry
+-/
