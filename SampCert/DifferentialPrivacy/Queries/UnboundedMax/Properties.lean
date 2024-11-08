@@ -91,10 +91,11 @@ lemma exactDiffSum_eventually_constant : ∃ K, ∀ K', K ≤ K' -> exactDiffSum
       rfl
     simp
 
+/-
 lemma probWhile_unroll (C : T -> Bool) (F : T -> SLang T) (I : T) :
       probWhile C F I  =
       (if (C I) then probPure I else (F I) >>= probWhile C F) := by
-    sorry
+    s orry
 
 lemma probWhile_mass_unroll_lb (C : T -> Bool) (F : T -> SLang T) (I : T) :
     ∑'t, (((F I) >>= probWhile C F) t) ≤ ∑'t, probWhile C F I t  := by
@@ -109,8 +110,8 @@ lemma probWhile_mass_unroll_lb (C : T -> Bool) (F : T -> SLang T) (I : T) :
       enter [2]
       simp
     -- This now uses the upper boudn proof (which we need SPMF for but that's OK)
-    have A : tsum (probPure I) = 1 := by sorry
-    sorry
+    have A : tsum (probPure I) = 1 := by s orry
+    s orry
 
 
 lemma probWhile_mass_unroll_lb_eval {T U : Type} (C : T -> Bool) (F : T -> SLang T) (g : U -> T):
@@ -136,7 +137,8 @@ lemma sv0_loop_mass_unroll_lb (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (K 
     apply le_trans _ (probWhile_mass_unroll_lb_eval (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (fun v0 => (0, v0)))
     simp [sv0_privMaxF, sv0_threshold]
     -- Not sure
-    sorry
+    s orry
+-/
 -/
 
 
@@ -169,8 +171,17 @@ lemma gen_poisson_trial_lb (C : ℕ -> T → Bool) (F : ℕ × T -> SLang T) (I 
   unfold probGeometric
   unfold gen_poisson_trial
   unfold geoLoopCond
-  sorry
+  s orry
 -/
+
+
+lemma sv1_ub ε₁ ε₂ l : ∑'s, sv1_privMax ε₁ ε₂ l s ≤ 1 := by
+  unfold sv1_privMax
+
+  -- rw [Summable.hasSum_iff ENNReal.summable]
+
+
+  sorry
 
 
 /-
@@ -242,7 +253,7 @@ def sv2_privMax (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
     return (sv1_threshold sk)
   computation point
 
-lemma sv1_eq_sv2 ε₁ ε₂ l : sv1_privMax ε₁ ε₂ l = sv2_privMax ε₁ ε₂ l := by
+lemma sv1_sv2_eq ε₁ ε₂ l : sv1_privMax ε₁ ε₂ l = sv2_privMax ε₁ ε₂ l := by
   apply SLang.ext
   intro result
   simp [sv1_privMax, sv2_privMax]
@@ -452,7 +463,7 @@ lemma cone_constancy {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List ℕ} {v0 vk : 
     · trivial
 
 
-lemma sv2_eq_sv3 ε₁ ε₂ l : sv2_privMax ε₁ ε₂ l = sv3_privMax ε₁ ε₂ l := by
+lemma sv2_sv3_eq ε₁ ε₂ l : sv2_privMax ε₁ ε₂ l = sv3_privMax ε₁ ε₂ l := by
   apply SLang.ext
 
   -- Step through equal headers
@@ -1283,7 +1294,7 @@ def sv4_privMax (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
     return (sv1_threshold sk)
   computation point
 
-def sv3_eq_sv4 (ε₁ ε₂ : ℕ+) (l : List ℕ) :
+def sv3_sv4_eq (ε₁ ε₂ : ℕ+) (l : List ℕ) :
     sv3_privMax ε₁ ε₂ l = sv4_privMax ε₁ ε₂ l := by
     unfold sv3_privMax
     unfold sv4_privMax
@@ -1312,7 +1323,7 @@ def sv5_privMax (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
     @sv5_loop τ l point (([], v0), presamples)
   computation point
 
-def sv4_eq_sv5 (ε₁ ε₂ : ℕ+) (l : List ℕ) :
+def sv4_sv5_eq (ε₁ ε₂ : ℕ+) (l : List ℕ) :
     sv4_privMax ε₁ ε₂ l = sv5_privMax ε₁ ε₂ l := by
   unfold sv4_privMax
   unfold sv5_privMax
@@ -1873,11 +1884,32 @@ def sv8_sv9_eq (ε₁ ε₂ : ℕ+) (l : List ℕ) :
         enter [1, b]
         rw [ENNReal.tsum_mul_left]
 
+
+
+lemma sv9_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv9_privMax ε₁ ε₂ l s  := by
+  sorry
+
+
+
+
 /--
 sv9 normalizes because sv1 normalizes
 -/
-def sv9_privMax_pmf (ε₁ ε₂ : ℕ+) (l : List ℕ) : PMF ℕ :=
-  ⟨ sv9_privMax ε₁ ε₂ l, sorry ⟩
+def sv9_privMax_SPMF (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
+  ⟨ sv9_privMax ε₁ ε₂ l,
+    by
+      rw [Summable.hasSum_iff ENNReal.summable]
+      apply LE.le.antisymm
+      · rw [<- sv8_sv9_eq]
+        rw [<- sv7_sv8_eq]
+        rw [<- sv6_sv7_eq]
+        rw [<- sv5_sv6_eq]
+        rw [<- sv4_sv5_eq]
+        rw [<- sv3_sv4_eq]
+        rw [<- sv2_sv3_eq]
+        rw [<- sv1_sv2_eq]
+        apply sv1_ub
+      · apply sv9_lb ⟩
 
 
 
@@ -1907,7 +1939,7 @@ lemma sv0_loop_eventually_geometric ε₁ ε₂ τ l :
   unfold sv0_eventually_geo_check
  -/
 
-  sorry
+  s orry
 
 
 -- def sv0_privMaxC (τ : ℤ) (l : List ℕ) (s : sv0_state) : Bool :=
@@ -1916,12 +1948,12 @@ lemma sv0_loop_eventually_geometric ε₁ ε₂ τ l :
 -- sv0_privMaxC is eventually just a (geometric) check
 
 lemma sv0_norm_loop_le ε₁ ε₂ τ : ∑'v0, ∑'n, probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (n, v0) ≤ 1 := by
-  sorry
+   s orry
 
 lemma probWhile_unroll (C : T -> Bool) (F : T -> SLang T) (I : T) :
       probWhile C F I =
       (if (C I) then probPure I else (F I) >>= probWhile C F) := by
-    sorry
+    s orry
   -- (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (n + Δ, v0)
 
 lemma sv0_norm_loop_ge ε₁ ε₂ v0 τ : 1 ≤ ∑'vf, ∑'n, probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (0, v0) (n, vf) := by
@@ -1943,14 +1975,14 @@ lemma sv0_norm_loop_ge ε₁ ε₂ v0 τ : 1 ≤ ∑'vf, ∑'n, probWhile (sv0_p
       apply ENNReal.tsum_le_tsum
       intro n
       split
-      · sorry
-      · sorry
+      · s orry
+      · s orry
 
 
-      sorry
-  sorry
+      s orry
+  s orry
 
 lemma sv0_norm ε₁ ε₂ l : ∑'(x : ℕ),  sv0_privMax ε₁ ε₂ l x = 1 := by
   -- unfold sv0_privMax
-  sorry
+  s orry
 -/

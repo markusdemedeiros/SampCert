@@ -350,7 +350,7 @@ lemma Hsens_cov_vk (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) (point : �
 
 
 lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) :
-    PureDPSystem.prop (@sv9_privMax_pmf PureDPSystem laplace_pureDPSystem ε₁ ε₂) ε := by
+    PureDPSystem.prop (@sv9_privMax_SPMF PureDPSystem laplace_pureDPSystem ε₁ ε₂) ε := by
   -- Unfold DP definitions
   simp [DPSystem.prop]
   apply singleton_to_event
@@ -358,7 +358,7 @@ lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) :
   intro l₁ l₂ Hneighbour point
 
   apply ENNReal.div_le_of_le_mul
-  simp [sv9_privMax_pmf, DFunLike.coe, PMF.instFunLike]
+  simp [sv9_privMax_SPMF, DFunLike.coe, PMF.instFunLike]
 
   cases point
   · -- point = 0
