@@ -175,8 +175,18 @@ lemma gen_poisson_trial_lb (C : ℕ -> T → Bool) (F : ℕ × T -> SLang T) (I 
 -/
 
 
-lemma ENNReal.tsum_iSup_comm (f : T -> U -> ENNReal) : ∑' x, ⨆ y, f x y = ⨆ y, ∑' x, f x y := by
-  -- Make it finite
+lemma ENNReal.tsum_iSup_comm (f : T -> U -> ENNReal) : ∑' x, ⨆ y, f x y ≥ ⨆ y, ∑' x, f x y := by
+  apply LE.le.ge
+  rw [iSup_le_iff]
+  intro i
+  apply ENNReal.tsum_le_tsum
+  intro a
+  apply le_iSup
+
+
+lemma iSup_comm_lemma (ε₁ ε₂ : ℕ+) (l : List ℕ) (τ v0 : ℤ):
+     ∑' b, ⨆ i, probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) i ([], v0) b =
+     ⨆ i, ∑' b, probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) i ([], v0) b := by
   rw [ENNReal.tsum_eq_iSup_sum]
   conv =>
     rhs
@@ -185,9 +195,9 @@ lemma ENNReal.tsum_iSup_comm (f : T -> U -> ENNReal) : ∑' x, ⨆ y, f x y = �
   rw [iSup_comm]
   apply iSup_congr
   intro s
-
-  -- Definitely true, may be annoying to prove
-  sorry
+  apply ENNReal.finsetSum_iSup_of_monotone
+  intro a
+  apply probWhileCut_monotonic
 
 
 lemma sv1_ub ε₁ ε₂ l : ∑'s, sv1_privMax ε₁ ε₂ l s ≤ 1 := by
@@ -242,7 +252,7 @@ lemma sv1_ub ε₁ ε₂ l : ∑'s, sv1_privMax ε₁ ε₂ l s ≤ 1 := by
       rw [tsum_ite_eq]
     case G4 =>
       unfold probWhile
-      rw [ENNReal.tsum_iSup_comm]
+      rw [iSup_comm_lemma]
       apply iSup_le_iff.mpr
       intro cut
       suffices (∀ L, ∑' (x : sv1_state), probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) cut (L, v0) x ≤ 1) by
@@ -2005,10 +2015,87 @@ def sv8_sv9_eq (ε₁ ε₂ : ℕ+) (l : List ℕ) :
         rw [ENNReal.tsum_mul_left]
 
 
+lemma ENNReal.tsum_lb_single (x : T) (f : T -> ENNReal)  (l : ENNReal) :
+    l ≤ f x -> l ≤ ∑' (a : T), f a := by
+  intro H
+  apply le_trans H
+  apply ENNReal.le_tsum
+
+lemma ENNReal.tsum_lb_subset (P : T -> Prop) (f : T -> ENNReal)  (l : ENNReal) :
+    l ≤ (∑'(a : {t : T // P t}), f a.1) -> l ≤ ∑' (a : T), f a := by
+  intro H
+  apply le_trans H
+  apply ENNReal.tsum_comp_le_tsum_of_injective
+  simp [Function.Injective]
+
+
+
+
 
 lemma sv9_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv9_privMax ε₁ ε₂ l s  := by
+  -- Special value which makes this sure to terminate
   sorry
 
+  /-
+  let β : ℤ := 0
+  --   match l with
+  --   | [] => 0
+  --   | _ => List.maximum!
+
+  -- Wrong idea:
+  -- Pick τ = 0
+  -- β = l.maximum
+  -- sample "not β" repeatedly  -> (1 - T)^n
+  -- sample β once              -> T
+  --  (wrong) => terminates at the last sample, wp ((1 - T)^n ⬝ T)
+  --
+  --
+  -- Issue: May terminate earlier.
+  -- Therefore: Need to pick β such that
+  --    Total mass of privNoiseGuess below β + τ is at least (1 - T)    --  We can use τ to help make this big!
+  --    Probability that we pick β is T
+  --    It terminates when we pick β
+  -- Each time we even (almost) even odds of sampling a positive or negative value
+  --   We can quantify the probability that we sample a nonnegative value easily: (q = (1 + Prob 0) / 2)
+  -- If we sample a positive value p, EDS + p > τ |
+  -- If we sample zero             p, EDS + p ≥ τ | terminates
+  -- If we sample a negative value n, EDS + n < τ                | doesn't terminate
+
+  -- Prove that when τ = ??
+  --    sv8_G [negatives...] [negative] < τ
+  --    sv8_G [negatives...] [nonnegative] ≥ τ
+
+  -- Uhh-- no. We can't pick τ. That restricts the total mass to be < 1.
+  -- Pick β = ???
+  -- Let s ∈ ℕ
+  -- Want to lower bound the probability mass by ((1-β)^(s-1) β)
+
+  -- What's the probability of termination?
+
+
+
+
+
+
+
+
+  -- Probability of sampling the special value in noise
+  -- T needs to be multiplied by privNoiseThresh (for picking τ to be what we want)
+  let T := (privNoiseThresh ε₁ ε₂ 0) * (privNoiseGuess ε₁ ε₂ β)
+
+  -- Either geo probGeometric will work
+  suffices ∀ (s : ℕ), Geo T s ≤ sv9_privMax ε₁ ε₂ l s by
+    s orry
+  intro s
+  unfold sv9_privMax
+  cases s
+  · simp [Geo]
+    apply ENNReal.tsum_lb_single 0
+    apply ENNReal.mul_left_mono
+
+    s orry
+  · s orry
+  -/
 
 
 
