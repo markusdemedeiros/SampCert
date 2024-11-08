@@ -91,11 +91,103 @@ lemma exactDiffSum_eventually_constant : ∃ K, ∀ K', K ≤ K' -> exactDiffSum
       rfl
     simp
 
-/-
+
+
+
+def sv1_privMax_alt (ε₁ ε₂ : ℕ+) (l : List ℕ) (H : List ℤ) : SLang ℕ := do
+  let τ <- privNoiseThresh ε₁ ε₂
+  let v0 <- privNoiseGuess ε₁ ε₂
+  let sk <- probWhile (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) (H, v0)
+  return (sv1_threshold sk)
+
+lemma sv1_sv1_alt_base_case (ε₁ ε₂ : ℕ+) (l : List ℕ) :
+    sv1_privMax ε₁ ε₂ l = sv1_privMax_alt ε₁ ε₂ l [] := by
+  simp [sv1_privMax, sv1_privMax_alt]
+
 lemma probWhile_unroll (C : T -> Bool) (F : T -> SLang T) (I : T) :
       probWhile C F I  =
       (if (C I) then probPure I else (F I) >>= probWhile C F) := by
-    s orry
+    sorry
+
+lemma probWhile_mass_1_unroll (C : T -> Bool) (F : T -> SLang T)  (I : T) :
+      (∑'(v), F I v = 1) ->
+      (∀ I', F I I' > 0 -> ∑'(v), (probWhile C F I' v) = 1) ->
+      ∑'(v), probWhile C F I v = 1 := by
+  intro H1 H2
+  rw [probWhile_unroll]
+  cases C I <;> simp
+  rw [ENNReal.tsum_comm]
+  conv =>
+    enter [1]
+    enter [1, b]
+    rw [ENNReal.tsum_mul_left]
+  -- doable
+  rw [<- H1]
+  apply Equiv.tsum_eq_tsum_of_support ?S
+  case S =>
+    apply Equiv.Set.ofEq
+    simp [Function.support]
+    apply Set.ext
+    intro x
+    simp
+    intro A
+    apply Classical.by_contradiction
+    intro B
+    simp at B
+    have D : (F I x > 0) := by
+      apply Classical.by_contradiction
+      simp
+      trivial
+    have H2' := H2 _ D
+    simp_all
+  simp
+  intro A B E _
+  rw [H2]
+  · simp
+  · apply Classical.by_contradiction
+    simp
+    trivial
+
+lemma pm_mass_1 (ε₁ ε₂ : ℕ+) (τ : ℤ) (K : ℕ) :
+    (∀ H : List ℤ, K ≤ H.length -> ∑'(v), sv1_privMax_alt ε₁ ε₂ l H v = 1) ->
+    (∑'(v), sv1_privMax ε₁ ε₂ l v = 1) := by
+  -- Unroll K times
+  induction K
+  · intro A
+    rw [sv1_sv1_alt_base_case]
+    apply A
+    simp
+  · rename_i K' IH
+    intro H'
+    -- Otherwise,
+    sorry
+
+def sv1_alt_alt_privMaxC (τ : ℤ)  (s : sv1_state) : Bool :=
+  decide (sv1_noise s < τ)
+
+def sv1_privMax_alt_alt (ε₁ ε₂ : ℕ+) (H : List ℤ) : SLang ℕ := do
+  let τ <- privNoiseThresh ε₁ ε₂
+  let v0 <- privNoiseGuess ε₁ ε₂
+  let sk <- probWhile (sv1_alt_alt_privMaxC τ) (sv1_privMaxF ε₁ ε₂) (H, v0)
+  return (sv1_threshold sk)
+
+lemma sv1_alt_eq_alt_alt (ε₁ ε₂ : ℕ+) (l : List ℕ) (H : List ℤ) (K : ℕ) (HK : ∀ K', H.length ≤ K' -> exactDiffSum K' l = 0) :
+    sv1_privMax_alt ε₁ ε₂ l H = sv1_privMax_alt_alt ε₁ ε₂ H := by
+    -- H is in the regieme where exactDiffSum is constant
+  apply SLang.ext
+  intro x
+  simp [sv1_privMax_alt, sv1_privMax_alt_alt, probBind]
+  sorry
+
+
+-- Finally, we should be able to prove that sv1_alt_alt is geometric
+
+
+
+
+
+
+/-
 
 lemma probWhile_mass_unroll_lb (C : T -> Bool) (F : T -> SLang T) (I : T) :
     ∑'t, (((F I) >>= probWhile C F) t) ≤ ∑'t, probWhile C F I t  := by
@@ -2028,18 +2120,87 @@ lemma ENNReal.tsum_lb_subset (P : T -> Prop) (f : T -> ENNReal)  (l : ENNReal) :
   apply ENNReal.tsum_comp_le_tsum_of_injective
   simp [Function.Injective]
 
+def β_geo (β : ENNReal) : SLang ℕ := (probGeometric (fun x => if x then β else 1 - β))
 
+def β_geo_recurrence (β : ENNReal) (n : ℕ) (H : n > 0) : β_geo β (n + 1) = β * β_geo β n := by
+  simp [β_geo, probGeometric_apply]
+  split
+  · exfalso
+    simp_all
+  · ring_nf
+    rename_i h
+    rw [mul_pow_sub_one h]
+
+
+def β_geo' (β : ENNReal) : SLang ℕ :=
+  fun N =>
+    match N with
+    | 0 => 0
+    | Nat.succ N' => β_geo β N'
+
+
+/--
 lemma sv1_cdf_lb ε₁ ε₂ l (τ : ℤ) (v0 : ℤ):
+      sv1_privMaxC τ l ([], v0) = true ->
       ∃ β : ℝ,
         (0 < β) ∧
-        (β ≤ 1) ∧
+        (β < 1) ∧
         ∀ i : ℕ ,
-          (ENNReal.ofReal (β^i) ≤
+          (β_geo β i ≤
             (∑' (a : sv1_state),
-              probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) i ([], v0) a * probPure (sv1_threshold a) i)) :=
-  sorry
+              probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) i ([], v0) a * probPure (sv1_threshold a) i)) := by
 
+  -- exactDiffSum is negative or zero for all states
+  -- decide (exactDiffSum (sv1_threshold s) l + (sv1_noise s) < τ)
+  intro Htrue
+  have Hβ : ∃ β : ℝ, 0 < β ∧ β < 1 ∧ (∑'(z : ℤ), if z < τ then (privNoiseGuess ε₁ ε₂ z) else 0) ≤ ENNReal.ofReal β := by
+    -- This is true due to CDF of laplace distribution
+    sorry
 
+  rcases Hβ with ⟨ β, ⟨ H1, ⟨ H2, Hsum ⟩ ⟩ ⟩
+  exists β
+  apply And.intro H1
+  apply And.intro H2
+  intro i
+
+  -- Prove this by induction
+  -- #check (probGeometric (fun x => if x then ENNReal.ofReal β else 0))
+
+  suffices
+      ∀ init, sv1_privMaxC τ l init = true ->
+        β_geo β i ≤ ∑' (a : sv1_state), probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) i init a * probPure (sv1_threshold a) i by
+    apply this
+    sorry
+
+  -- FIXME: Does β_geo work? Does β^i work?
+  induction i
+  · simp [β_geo]
+  · rename_i i IH
+    intro init
+    cases i
+    ·
+      sorry
+    · intro H1
+      rename_i i
+      conv =>
+        rhs
+        enter [1, a]
+        unfold probWhileCut
+        unfold probWhileFunctional
+      split
+      · sorry
+      · exfalso
+        aesop
+
+      -- rw [β_geo_recurrence _ _ (by simp)]
+      -- apply le_trans
+      -- · apply ENNReal.mul_left_mono
+      --   · apply IH
+      --     sorry
+
+      -- β_geo_recurrence
+-/
+/-
 lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv1_privMax ε₁ ε₂ l s  := by
   simp only [sv1_privMax, bind, pure, bind_apply]
   -- Push the sum over s inwards
@@ -2103,81 +2264,187 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv1_privMax ε₁ ε₂ l s  := by
     rfl
 
   -- Apply the CDF lower bound
-  rcases (sv1_cdf_lb ε₁ ε₂ l τ v0) with ⟨ β, ⟨ H1, ⟨ H2, Hlb ⟩ ⟩ ⟩
-  apply le_trans _ ?G2
-  case G2 =>
-    apply ENNReal.tsum_le_tsum
-    intro t
-    apply Hlb
-
-  -- Geometric sum has a closed form
-  apply Eq.le
-  symm
   sorry
 
+  -- rcases (sv1_cdf_lb ε₁ ε₂ l τ v0) with ⟨ β, ⟨ H1, ⟨ H2, Hlb ⟩ ⟩ ⟩
+  -- apply le_trans _ ?G2
+  -- case G2 =>
+  --   apply ENNReal.tsum_le_tsum
+  --   intro t
+  --   apply Hlb
+
+  -- -- Geometric sum has a closed form
+  -- apply Eq.le
+  -- symm
+  -- unfold β_geo
+  -- apply probGeometric_normalizes <;> simp
+  -- · sorry
+  -- · sorry
+-/
+
+lemma sv8_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv8_privMax ε₁ ε₂ l s  := by
+  simp [sv8_privMax]
+  -- Factor out the choice of thresh (we will work for all τ)
+  rw [ENNReal.tsum_comm]
+  conv =>
+    enter [2, 1, b]
+    rw [ENNReal.tsum_mul_left]
+  apply @le_trans _ _ _ (∑'(b : ℤ), privNoiseThresh ε₁ ε₂ b * 1)
+  · simp
+    apply Eq.le
+    symm
+    rcases (privNoiseThresh ε₁ ε₂)
+    simp [DFunLike.coe]
+    rw [<- Summable.hasSum_iff ENNReal.summable]
+    trivial
+  apply ENNReal.tsum_le_tsum
+  intro τ
+  apply ENNReal.mul_left_mono
+
+  -- Pick β based on τ, and exactDiffSum
+  have β : ENNReal := 0 -- (∑' (i_1 : { x // x < τ - exactDiffSum (i + 1) l }), (privNoiseGuess ε₁ ε₂) ↑i_1)
+
+  -- Lower bound by probGeometric
+  apply @le_trans _ _ _ (∑'(i : ℕ), β_geo' β i * 1)
+  · apply Eq.le
+    symm
+    simp only [β_geo', β_geo, mul_one]
+    -- rw [ENNReal.tsum_eq_add_tsum_ite Nat.zero]
+    -- simp only [Nat]
+    sorry
+    -- apply probGeometric_normalizes <;> simp
+    -- · -- β fact
+    --   sorry
+    -- · -- β fact
+    --   sorry
+
+  -- Now, prove that it is bounded below by probGeometric
+  apply ENNReal.tsum_le_tsum
+  intro i
+  simp
+  cases i
+  · simp [β_geo']
+  rename_i i
+  simp [β_geo']
+  cases i
+  · simp [β_geo]
+  rename_i i
+  simp [β_geo]
+
+  -- Commute all sums out to the left
+  conv =>
+    enter [2, 1, v0]
+    rw [<- ENNReal.tsum_mul_left]
+    -- enter [1, vs]
+    -- rw [<- ENNReal.tsum_mul_left]
+    -- rw [<- ENNReal.tsum_mul_left]
+  rw [← ENNReal.tsum_prod]
+
+  -- Eval the presample
+  conv =>
+    enter [2, 1, a, 2, 1]
+    rw [sv4_presample_eval']
+  simp
+
+  unfold sv8_cond
+  simp [β_geo]
 
 
 
 
-lemma sv9_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv9_privMax ε₁ ε₂ l s  := by
-  -- Special value which makes this sure to terminate
-  sorry
 
+
+
+
+
+
+  -- rw [← ENNReal.tsum_prod]
+
+  -- simp [β_geo]
   /-
-  let β : ℤ := 0
-  --   match l with
-  --   | [] => 0
-  --   | _ => List.maximum!
 
-  -- Wrong idea:
-  -- Pick τ = 0
-  -- β = l.maximum
-  -- sample "not β" repeatedly  -> (1 - T)^n
-  -- sample β once              -> T
-  --  (wrong) => terminates at the last sample, wp ((1 - T)^n ⬝ T)
-  --
-  --
-  -- Issue: May terminate earlier.
-  -- Therefore: Need to pick β such that
-  --    Total mass of privNoiseGuess below β + τ is at least (1 - T)    --  We can use τ to help make this big!
-  --    Probability that we pick β is T
-  --    It terminates when we pick β
-  -- Each time we even (almost) even odds of sampling a positive or negative value
-  --   We can quantify the probability that we sample a nonnegative value easily: (q = (1 + Prob 0) / 2)
-  -- If we sample a positive value p, EDS + p > τ |
-  -- If we sample zero             p, EDS + p ≥ τ | terminates
-  -- If we sample a negative value n, EDS + n < τ                | doesn't terminate
+  -- Big condition which forces sv8_cond to be true with mass at least β_geo β (i + 1)
+  let P (p : (ℤ × { l : List ℤ // l.length = i }) × ℤ) : Prop :=
+    (τ - exactDiffSum (i + 1) l ≤ p.2) ∧
+    (p.1.1 < τ - exactDiffSum (i + 1) l) ∧
+    (∀ z ∈ p.1.2.1, z < τ - exactDiffSum (i + 1) l)
 
-  -- Prove that when τ = ??
-  --    sv8_G [negatives...] [negative] < τ
-  --    sv8_G [negatives...] [nonnegative] ≥ τ
+  let P_ctor (z1 : ℤ) (z2 : { l : List ℤ // l.length = i }) (z3 : ℤ) :
+      (τ - exactDiffSum (i + 1) l ≤ z3) ->
+      (z1 < τ - exactDiffSum (i + 1) l) ->
+      (∀ z ∈ z2.1, z < τ - exactDiffSum (i + 1) l) ->
+      P ((z1, z2), z3) := by
+    sorry
 
-  -- Uhh-- no. We can't pick τ. That restricts the total mass to be < 1.
-  -- Pick β = ???
-  -- Let s ∈ ℕ
-  -- Want to lower bound the probability mass by ((1-β)^(s-1) β)
-
-  -- What's the probability of termination?
+  have HP (p : (ℤ × { l : List ℤ // l.length = i }) × ℤ) (Hp : P p) :
+          (sv8_cond τ l [] p.1.1 (↑p.1.2) p.2 = true) := by
+    simp [sv8_cond]
+    apply And.intro
+    ·
+      sorry
+    · simp [sv8_sum]
+      cases Hp
+      linarith
+  -- Restrict with one big stupid proposition. Simplify conditional.
+  apply ENNReal.tsum_lb_subset P
+  conv =>
+    enter [2, 1, a, 2, 2, 2]
+    simp [HP a a.2]
 
 
-  -- Probability of sampling the special value in noise
-  -- T needs to be multiplied by privNoiseThresh (for picking τ to be what we want)
-  let T := (privNoiseThresh ε₁ ε₂ 0) * (privNoiseGuess ε₁ ε₂ β)
+  have Hsum_eq (f : { t // P t } -> ENNReal) :
+       (∑'(p : {t // P t}), f p) =
+       (∑'(z1 : {x : ℤ // x < τ - exactDiffSum (i + 1) l }),
+        ∑'(z2 : {x : { l : List ℤ // l.length = i } // (∀ z ∈ x.1, z < τ - exactDiffSum (i + 1) l) } ),
+        ∑'(z3 : {x : ℤ // τ - exactDiffSum (i + 1) l ≤ x } ), f ⟨((z1, z2), z3), P_ctor _ _ _ z3.2 z1.2 z2.2⟩) := by
+    rw [← ENNReal.tsum_prod]
+    rw [← ENNReal.tsum_prod]
 
-  -- Either geo probGeometric will work
-  suffices ∀ (s : ℕ), Geo T s ≤ sv9_privMax ε₁ ε₂ l s by
-    s orry
-  intro s
-  unfold sv9_privMax
-  cases s
-  · simp [Geo]
-    apply ENNReal.tsum_lb_single 0
-    apply ENNReal.mul_left_mono
+    /-
+    apply Equiv.tsum_eq_tsum_of_support ?G1
+    case G1 =>
+      simp [Function.support]
+      apply Set.BijOn.equiv
+      case f =>
+        dsimp [P]
+        intro ⟨ x, ⟨ a, ⟨ b, c ⟩⟩⟩
+        exact ((⟨x.1.1, b⟩, ⟨x.1.2, c⟩), ⟨x.2, a⟩)
+      · simp
+        apply And.intro
+        · simp [Set.MapsTo]
+          intros
+          sorry
+        apply And.intro
+        · sorry
+        · sorry
+    · simp [Function.support]
+      intros
+      congr
+      sorry
+    -/
 
-    s orry
-  · s orry
+  -- Simplify this into a product
+  rw [Hsum_eq]; clear Hsum_eq
+  simp
+  conv =>
+    enter [2, 1, z1]
+    conv =>
+      enter [1, z2]
+      rw [ENNReal.tsum_mul_left]
+    rw [ENNReal.tsum_mul_left]
+  rw [ENNReal.tsum_mul_right]
+  conv =>
+    enter [2, 2]
+    conv =>
+      enter [1, z2]
+      rw [ENNReal.tsum_mul_left]
+    rw [ENNReal.tsum_mul_right]
+
   -/
 
+
+
+  sorry
 
 
 
@@ -2202,7 +2469,8 @@ def sv9_privMax_SPMF (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
         rw [<- sv2_sv3_eq]
         rw [<- sv1_sv2_eq]
         apply sv1_ub
-      · apply sv9_lb ⟩
+      · rw [<- sv8_sv9_eq]
+        apply sv8_lb ⟩
 
 
 
