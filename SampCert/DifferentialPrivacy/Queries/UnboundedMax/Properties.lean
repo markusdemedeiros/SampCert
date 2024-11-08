@@ -175,13 +175,133 @@ lemma gen_poisson_trial_lb (C : ℕ -> T → Bool) (F : ℕ × T -> SLang T) (I 
 -/
 
 
+lemma ENNReal.tsum_iSup_comm (f : T -> U -> ENNReal) : ∑' x, ⨆ y, f x y = ⨆ y, ∑' x, f x y := by
+  -- Make it finite
+  rw [ENNReal.tsum_eq_iSup_sum]
+  conv =>
+    rhs
+    enter [1, y]
+    rw [ENNReal.tsum_eq_iSup_sum]
+  rw [iSup_comm]
+  apply iSup_congr
+  intro s
+
+  -- Definitely true, may be annoying to prove
+  sorry
+
+
 lemma sv1_ub ε₁ ε₂ l : ∑'s, sv1_privMax ε₁ ε₂ l s ≤ 1 := by
   unfold sv1_privMax
+  unfold sv1_threshold
+  simp
+  -- Push the sum over s inwards
+  conv =>
+    rw [ENNReal.tsum_comm]
+    enter [1, 1, b]
+    rw [ENNReal.tsum_mul_left]
+    enter [2]
+    rw [ENNReal.tsum_comm]
+    enter [1, i]
+    rw [ENNReal.tsum_mul_left]
+    enter [2]
+    rw [ENNReal.tsum_comm]
+  apply
+    @le_trans _ _ _
+    (∑' (a : ℤ), (privNoiseThresh ε₁ ε₂) a * ∑' (a_1 : ℤ), (privNoiseGuess ε₁ ε₂) a_1 * 1)
+    _ ?G2 ?G1
+  case G1 =>
+    apply Eq.le
+    simp
+    rw [ENNReal.tsum_mul_right]
+    have R1 : ∑' (a : ℤ), (privNoiseThresh ε₁ ε₂) a = 1 := by
+      rw [<- Summable.hasSum_iff ENNReal.summable]
+      cases (privNoiseThresh ε₁ ε₂)
+      simp [DFunLike.coe, SPMF.instFunLike]
+      trivial
+    have R2 : ∑' (a : ℤ), (privNoiseGuess ε₁ ε₂) a = 1 := by
+      rw [<- Summable.hasSum_iff ENNReal.summable]
+      cases (privNoiseGuess ε₁ ε₂)
+      simp [DFunLike.coe, SPMF.instFunLike]
+      trivial
+    simp_all
+  case G2 =>
+    apply ENNReal.tsum_le_tsum
+    intro τ
+    apply ENNReal.mul_left_mono
+    apply ENNReal.tsum_le_tsum
+    intro v0
+    apply ENNReal.mul_left_mono
 
-  -- rw [Summable.hasSum_iff ENNReal.summable]
+    apply
+      @le_trans _ _ _
+      (∑' (b : sv1_state), probWhile (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) ([], v0) b )
+      _ ?G3 ?G4
+    case G3 =>
+      apply ENNReal.tsum_le_tsum
+      intro a
+      rw [tsum_ite_eq]
+    case G4 =>
+      unfold probWhile
+      rw [ENNReal.tsum_iSup_comm]
+      apply iSup_le_iff.mpr
+      intro cut
+      suffices (∀ L, ∑' (x : sv1_state), probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) cut (L, v0) x ≤ 1) by
+        apply this
+      revert v0
+      induction cut
+      · simp [probWhileCut]
+      · rename_i cut' IH
+        intro v0 L
+        simp [probWhileCut, probWhileFunctional]
+        split
+        · simp
+          simp [sv1_privMaxF]
+          conv =>
+            enter [1, 1, x]
+            conv =>
+              enter [1, a]
+              rw [<- ENNReal.tsum_mul_right]
+              simp
+            rw [ENNReal.tsum_comm]
+            enter [1, b]
 
-
-  sorry
+          apply
+            @le_trans _ _ _
+            (∑' (x : sv1_state) (b : ℤ), (privNoiseGuess ε₁ ε₂) b * probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) cut' (L ++ [v0], b) x)
+            _ ?G5 ?G6
+          case G5 =>
+            apply ENNReal.tsum_le_tsum
+            intro a
+            apply ENNReal.tsum_le_tsum
+            intro b
+            unfold sv1_state
+            rw [ENNReal.tsum_eq_add_tsum_ite (L ++ [v0], b)]
+            simp
+            conv =>
+              rhs
+              rw [<- add_zero (_ * _)]
+            apply add_le_add
+            · simp
+            · simp
+              intros
+              aesop
+          case G6 =>
+            rw [ENNReal.tsum_comm]
+            conv =>
+              enter [1, 1, b]
+              rw [ENNReal.tsum_mul_left]
+            apply @le_trans _ _ _ (∑' (b : ℤ), (privNoiseGuess ε₁ ε₂) b * 1)
+            · apply ENNReal.tsum_le_tsum
+              intro a
+              apply ENNReal.mul_left_mono
+              apply IH
+            · simp
+              apply Eq.le
+              rw [<- Summable.hasSum_iff ENNReal.summable]
+              cases (privNoiseGuess ε₁ ε₂)
+              simp [DFunLike.coe, SPMF.instFunLike]
+              trivial
+        · simp
 
 
 /-
