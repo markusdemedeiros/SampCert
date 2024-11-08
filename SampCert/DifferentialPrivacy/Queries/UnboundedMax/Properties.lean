@@ -2029,6 +2029,93 @@ lemma ENNReal.tsum_lb_subset (P : T -> Prop) (f : T -> ENNReal)  (l : ENNReal) :
   simp [Function.Injective]
 
 
+lemma sv1_cdf_lb ε₁ ε₂ l (τ : ℤ) (v0 : ℤ):
+      ∃ β : ℝ,
+        (0 < β) ∧
+        (β ≤ 1) ∧
+        ∀ i : ℕ ,
+          (ENNReal.ofReal (β^i) ≤
+            (∑' (a : sv1_state),
+              probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) i ([], v0) a * probPure (sv1_threshold a) i)) :=
+  sorry
+
+
+lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv1_privMax ε₁ ε₂ l s  := by
+  simp only [sv1_privMax, bind, pure, bind_apply]
+  -- Push the sum over s inwards
+  conv =>
+    rhs
+    rw [ENNReal.tsum_comm]
+    enter [1, b]
+    rw [ENNReal.tsum_mul_left]
+    enter [2]
+    rw [ENNReal.tsum_comm]
+    enter [1, i]
+    rw [ENNReal.tsum_mul_left]
+
+  -- Reduce to CDF problem
+  apply @le_trans _ _ _ (∑' (b : ℤ), (privNoiseThresh ε₁ ε₂) b * ∑' (i : ℤ), (privNoiseGuess ε₁ ε₂) i * 1) _ ?G1
+  case G1 =>
+    apply Eq.le
+    rw [ENNReal.tsum_mul_right]
+    simp
+    have R1 : ∑' (a : ℤ), (privNoiseThresh ε₁ ε₂) a = 1 := by
+      rw [<- Summable.hasSum_iff ENNReal.summable]
+      cases (privNoiseThresh ε₁ ε₂)
+      simp [DFunLike.coe, SPMF.instFunLike]
+      trivial
+    have R2 : ∑' (a : ℤ), (privNoiseGuess ε₁ ε₂) a = 1 := by
+      rw [<- Summable.hasSum_iff ENNReal.summable]
+      cases (privNoiseGuess ε₁ ε₂)
+      simp [DFunLike.coe, SPMF.instFunLike]
+      trivial
+    simp_all
+  apply ENNReal.tsum_le_tsum
+  intro τ
+  apply ENNReal.mul_left_mono
+  apply ENNReal.tsum_le_tsum
+  intro v0
+  apply ENNReal.mul_left_mono
+
+
+  -- Turn it into a supremum
+  conv =>
+    enter [2, 1, i_1, 1, a]
+    simp only [probWhile]
+    rw [ENNReal.iSup_mul]
+
+  -- Commute the supremum out to the middle, so we can pick the cut number for each one
+  apply @le_trans _ _ _
+    (∑' (i_1 : ℕ), ⨆ i, ∑'(a : sv1_state),
+       probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) i ([], v0) a * probPure (sv1_threshold a) i_1)  _ _ ?G1
+  case G1 =>
+    apply ENNReal.tsum_le_tsum
+    intro i
+    apply ENNReal.tsum_iSup_comm
+  apply @le_trans _ _ _
+    (∑' (i : ℕ), ∑'(a : sv1_state),
+       probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) i ([], v0) a * probPure (sv1_threshold a) i)  _ _ ?G1
+  case G1 =>
+    apply ENNReal.tsum_le_tsum
+    intro i
+    apply le_trans _ ?G3
+    case G3 => apply @le_iSup' _ _ _ _ i
+    rfl
+
+  -- Apply the CDF lower bound
+  rcases (sv1_cdf_lb ε₁ ε₂ l τ v0) with ⟨ β, ⟨ H1, ⟨ H2, Hlb ⟩ ⟩ ⟩
+  apply le_trans _ ?G2
+  case G2 =>
+    apply ENNReal.tsum_le_tsum
+    intro t
+    apply Hlb
+
+  -- Geometric sum has a closed form
+  apply Eq.le
+  symm
+  sorry
+
+
 
 
 
@@ -2073,12 +2160,6 @@ lemma sv9_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv9_privMax ε₁ ε₂ l s  := by
   -- What's the probability of termination?
 
 
-
-
-
-
-
-
   -- Probability of sampling the special value in noise
   -- T needs to be multiplied by privNoiseThresh (for picking τ to be what we want)
   let T := (privNoiseThresh ε₁ ε₂ 0) * (privNoiseGuess ε₁ ε₂ β)
@@ -2096,6 +2177,11 @@ lemma sv9_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv9_privMax ε₁ ε₂ l s  := by
     s orry
   · s orry
   -/
+
+
+
+
+
 
 
 
