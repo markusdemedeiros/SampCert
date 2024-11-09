@@ -177,10 +177,22 @@ lemma sv1_alt_eq_alt_alt (ε₁ ε₂ : ℕ+) (l : List ℕ) (H : List ℤ) (K :
   apply SLang.ext
   intro x
   simp [sv1_privMax_alt, sv1_privMax_alt_alt, probBind]
+  apply tsum_congr
+  intro τ
+  congr 1
+  apply tsum_congr
+  intro v0
+  congr 1
+  apply tsum_congr
+  intro s
+  congr 1
+  unfold sv1_alt_alt_privMaxC
   sorry
 
-
 -- Finally, we should be able to prove that sv1_alt_alt is geometric
+
+
+
 
 
 
@@ -275,6 +287,12 @@ lemma ENNReal.tsum_iSup_comm (f : T -> U -> ENNReal) : ∑' x, ⨆ y, f x y ≥ 
   intro a
   apply le_iSup
 
+lemma ENNReal.tsum_iSup_comm' (f : T -> U -> ENNReal) : ⨆ y, ∑' x, f x y ≤ ∑' x, ⨆ y, f x y  := by
+  rw [iSup_le_iff]
+  intro i
+  apply ENNReal.tsum_le_tsum
+  intro a
+  apply le_iSup
 
 lemma iSup_comm_lemma (ε₁ ε₂ : ℕ+) (l : List ℕ) (τ v0 : ℤ):
      ∑' b, ⨆ i, probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) i ([], v0) b =
@@ -2200,7 +2218,6 @@ lemma sv1_cdf_lb ε₁ ε₂ l (τ : ℤ) (v0 : ℤ):
 
       -- β_geo_recurrence
 -/
-/-
 lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv1_privMax ε₁ ε₂ l s  := by
   simp only [sv1_privMax, bind, pure, bind_apply]
   -- Push the sum over s inwards
@@ -2215,7 +2232,7 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv1_privMax ε₁ ε₂ l s  := by
     rw [ENNReal.tsum_mul_left]
 
   -- Reduce to CDF problem
-  apply @le_trans _ _ _ (∑' (b : ℤ), (privNoiseThresh ε₁ ε₂) b * ∑' (i : ℤ), (privNoiseGuess ε₁ ε₂) i * 1) _ ?G1
+  apply @le_trans _ _ _ (∑' (b : ℤ), (privNoiseThresh ε₁ ε₂) b  * 1) _ ?G1
   case G1 =>
     apply Eq.le
     rw [ENNReal.tsum_mul_right]
@@ -2225,25 +2242,72 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv1_privMax ε₁ ε₂ l s  := by
       cases (privNoiseThresh ε₁ ε₂)
       simp [DFunLike.coe, SPMF.instFunLike]
       trivial
-    have R2 : ∑' (a : ℤ), (privNoiseGuess ε₁ ε₂) a = 1 := by
-      rw [<- Summable.hasSum_iff ENNReal.summable]
-      cases (privNoiseGuess ε₁ ε₂)
-      simp [DFunLike.coe, SPMF.instFunLike]
-      trivial
     simp_all
   apply ENNReal.tsum_le_tsum
   intro τ
   apply ENNReal.mul_left_mono
-  apply ENNReal.tsum_le_tsum
-  intro v0
-  apply ENNReal.mul_left_mono
-
 
   -- Turn it into a supremum
   conv =>
-    enter [2, 1, i_1, 1, a]
+    enter [2, 1, i_1, 2, 1, i ,1, b]
     simp only [probWhile]
     rw [ENNReal.iSup_mul]
+  conv =>
+    enter [2, 1, v0, 2, 1, state_size, 1, state]
+
+  -- Commute out the cut number first
+  apply le_trans _ ?G1
+  case G1 =>
+    apply ENNReal.tsum_le_tsum
+    intro v0
+    apply ENNReal.mul_left_mono
+    apply ENNReal.tsum_le_tsum
+    intro state_size
+    apply ENNReal.tsum_iSup_comm'
+  apply le_trans _ ?G1
+  case G1 =>
+    apply ENNReal.tsum_le_tsum
+    intro v0
+    apply ENNReal.mul_left_mono
+    apply ENNReal.tsum_iSup_comm'
+  simp
+  conv =>
+    enter [2, 1, v0]
+    rw [ENNReal.mul_iSup]
+  apply le_trans _ ?G1
+  case G1 =>
+    apply ENNReal.tsum_iSup_comm'
+
+  -- Now we're in a world of sanity, because the CDF is actually a CDF.
+  let ρ : ENNReal := 0
+
+  apply @le_trans _ _ _ (⨆(y : ℕ), (1 - ρ^y))
+  · -- Math
+    sorry
+  apply iSup_mono
+  intro cut
+
+  -- Since we don't care about the value of exactDiffSum, we can revert the initial value
+  suffices ∀ H, (1 - ρ ^ cut ≤
+                ∑' (x : ℤ),
+                (privNoiseGuess ε₁ ε₂) x *
+                  ∑' (x_1 : ℕ) (x_2 : sv1_state),
+                    if x_1 = sv1_threshold x_2 then probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) cut (H, x) x_2 else 0) by
+    apply this
+
+
+
+  skip
+
+  --
+
+  -- Pick a value for v0 which makes the first conditional false
+
+
+
+
+
+  /-
 
   -- Commute the supremum out to the middle, so we can pick the cut number for each one
   apply @le_trans _ _ _
@@ -2262,6 +2326,7 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv1_privMax ε₁ ε₂ l s  := by
     apply le_trans _ ?G3
     case G3 => apply @le_iSup' _ _ _ _ i
     rfl
+  -/
 
   -- Apply the CDF lower bound
   sorry
@@ -2280,7 +2345,7 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv1_privMax ε₁ ε₂ l s  := by
   -- apply probGeometric_normalizes <;> simp
   -- · sorry
   -- · sorry
--/
+
 
 lemma sv8_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv8_privMax ε₁ ε₂ l s  := by
   simp [sv8_privMax]
@@ -2447,7 +2512,22 @@ lemma sv8_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv8_privMax ε₁ ε₂ l s  := by
   sorry
 
 
+lemma sv1_attempt_3 (ε₁ ε₂ : ℕ+) (l : List ℕ) : 1 ≤ ∑'(n), sv1_privMax ε₁ ε₂ l n := by
+  --  We will prove this separately for each τ
+  simp [sv1_privMax]
+  rw [ENNReal.tsum_comm]
+  conv =>
+    enter [2, 1, b]
+    rw [ENNReal.tsum_mul_left]
+  apply @le_trans _ _ _ ( ∑' (b : ℤ), (privNoiseThresh ε₁ ε₂) b * 1)
+  · simp
+    -- PMF sum is 1
+    sorry
+  apply ENNReal.tsum_le_tsum
+  intro τ
+  apply ENNReal.mul_left_mono
 
+  sorry
 
 
 
