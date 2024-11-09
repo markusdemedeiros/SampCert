@@ -2524,12 +2524,99 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_privMax PureDPSystem laplace_pur
     -- Now, condition on the luckiness of the next value
     rw [ENNReal.tsum_split PLucky]
 
+
     -- Split the sum and the recurrence relation
     rw [geo_cdf_rec _ Hρ_ub]
     apply add_le_add
     · -- Guess is lucky
       -- The loop will terminate and we can show it
-      sorry
+
+      conv =>
+        enter [2, 1, a, 1, b]
+        conv =>
+          enter [1, c]
+          conv =>
+            enter [1, d]
+            rw [<- mul_ite_zero]
+          rw [ENNReal.tsum_mul_left]
+        rw [ENNReal.tsum_mul_left]
+
+      -- Conclude by simplification
+      simp only [sv1_privMaxF, bind, pure, bind_apply, pure_apply, mul_ite, mul_one, mul_zero]
+      unfold probWhileCut
+      unfold probWhileFunctional
+      -- Push the ite inside so that all of the sums are in a row
+      conv =>
+        enter [2, 1, a, 1, b]
+        rw [<- ENNReal.tsum_mul_right]
+        simp
+        enter [1, i]
+        rw [<- mul_ite_zero]
+        enter [2]
+        rw [<- ite_lemma_1]
+        conv =>
+          enter [1, x]
+          rw [<- ite_lemma_1]
+      conv =>
+        enter [2, 1, a, 1, b, 1, i]
+        rw [<- ENNReal.tsum_mul_left]
+        enter [1, c]
+        rw [<- ENNReal.tsum_mul_left]
+      -- Move the lucky sample inwards
+      conv =>
+        rhs
+        rw [ENNReal.tsum_comm]
+        enter [1, b]
+        rw [ENNReal.tsum_comm]
+        enter [1, c]
+        rw [ENNReal.tsum_comm]
+        enter [1, d]
+        rw [ENNReal.tsum_comm]
+      -- Pick elements for each of the other sums to make it terminate
+      apply ENNReal.tsum_lb_single (H ++ [v])
+      rw [ENNReal.tsum_comm]
+      apply ENNReal.tsum_lb_single (List.length H + 1)
+      rw [ENNReal.tsum_comm]
+      rw [ENNReal.tsum_prod']
+      apply ENNReal.tsum_lb_single (H ++ [v])
+      apply le_trans _ ?G1
+      case G1 =>
+        apply ENNReal.tsum_le_tsum
+        intro b
+        apply ENNReal.tsum_le_tsum
+        intro a
+        apply ENNReal.tsum_le_tsum
+        intro c
+        apply ENNReal.mul_left_mono
+        simp [sv1_threshold]
+        simp [sv1_privMaxC]
+        apply ite_mono_left
+        rw [ite_eq_right_iff.mpr (by
+          intro K
+          exfalso
+          rcases c with ⟨ c, Hc ⟩
+          simp [sv1_threshold, sv1_noise] at K
+          have HC' := HLucky c (H.length + 1) Hc
+          apply (LT.lt.not_le K)
+          apply GE.ge.le
+          apply HC')]
+
+      -- Now move the lucky sum out to the front, so that we can constrain the other sum values to equal it
+      conv =>
+        rhs
+        enter [1, a]
+        rw [ENNReal.tsum_comm]
+      rw [ENNReal.tsum_comm]
+
+      apply le_trans _ ?G1
+      case G1 =>
+        apply ENNReal.tsum_le_tsum
+        intro a
+        apply ENNReal.tsum_lb_single a.1
+        apply ENNReal.tsum_lb_single a.1
+        rfl
+      simp
+
     · -- Guess is unlucky
       -- Commute out the samples related to the first sample (which will evenetually become a (1- ρ) factor)
       conv =>
@@ -2560,6 +2647,7 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_privMax PureDPSystem laplace_pur
 
       -- Conclude by simplification
       simp only [sv1_privMaxF, bind, pure, bind_apply, pure_apply, mul_ite, mul_one, mul_zero]
+
 
       sorry
 
