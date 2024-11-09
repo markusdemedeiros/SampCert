@@ -1955,6 +1955,7 @@ lemma ENNReal.tsum_lb_subset (P : T -> Prop) (f : T -> ENNReal)  (l : ENNReal) :
 
 lemma ENNReal.tsum_split (P : T -> Prop) (f : T -> ENNReal) :
     ∑' (a : T), f a = (∑'(a : {t : T // P t}), f a.1) + (∑'(a : {t : T // ¬P t}), f a.1) := by
+
   sorry
 
 
@@ -2214,7 +2215,23 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv1_privMax ε₁ ε₂ l s  := by
         rw [ENNReal.tsum_mul_left]
       unfold sv1_state at IH
 
-      -- Apply the IH
+      apply le_trans _ ?G1
+      case G1 =>
+        apply ENNReal.tsum_le_tsum
+        intro a
+        apply ENNReal.tsum_le_tsum
+        intro b
+        apply ENNReal.mul_left_mono
+        apply IH
+      simp
+      conv =>
+        enter [2, 1, a]
+        rw [ENNReal.tsum_mul_right]
+      rw [ENNReal.tsum_mul_right]
+      apply ENNReal.mul_right_mono
+
+      -- Conclude by simplification
+      simp only [sv1_privMaxF, bind, pure, bind_apply, pure_apply, mul_ite, mul_one, mul_zero]
 
 
       sorry
