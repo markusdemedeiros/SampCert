@@ -12,6 +12,8 @@ open Classical
 
 namespace SLang
 
+section equiv
+
 variable [dps : DPSystem ℕ]
 variable [dpn : DPNoise dps]
 
@@ -124,6 +126,65 @@ lemma iSup_comm_lemma (ε₁ ε₂ : ℕ+) (l : List ℕ) (τ v0 : ℤ):
   apply probWhileCut_monotonic
 
 
+lemma sv1_loop_ub ε₁ ε₂ l : ∀ L : List ℤ, ∀ (v0 : ℤ), (∑' (x : sv1_state), probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) cut (L, v0) x ≤ 1) := by
+  induction cut
+  · simp [probWhileCut]
+  · rename_i cut' IH
+    intro L v0
+    simp [probWhileCut, probWhileFunctional]
+    split
+    · simp
+      simp [sv1_privMaxF]
+      conv =>
+        enter [1, 1, x]
+        conv =>
+          enter [1, a]
+          rw [<- ENNReal.tsum_mul_right]
+          simp
+        rw [ENNReal.tsum_comm]
+        enter [1, b]
+
+      apply
+        @le_trans _ _ _
+        (∑' (x : sv1_state) (b : ℤ), (privNoiseGuess ε₁ ε₂) b * probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) cut' (L ++ [v0], b) x)
+        _ ?G5 ?G6
+      case G5 =>
+        apply ENNReal.tsum_le_tsum
+        intro a
+        apply ENNReal.tsum_le_tsum
+        intro b
+        unfold sv1_state
+        rw [ENNReal.tsum_eq_add_tsum_ite (L ++ [v0], b)]
+        simp
+        conv =>
+          rhs
+          rw [<- add_zero (_ * _)]
+        apply add_le_add
+        · simp
+        · simp
+          intros
+          aesop
+      case G6 =>
+        rw [ENNReal.tsum_comm]
+        conv =>
+          enter [1, 1, b]
+          rw [ENNReal.tsum_mul_left]
+        apply @le_trans _ _ _ (∑' (b : ℤ), (privNoiseGuess ε₁ ε₂) b * 1)
+        · apply ENNReal.tsum_le_tsum
+          intro a
+          apply ENNReal.mul_left_mono
+          apply IH
+        · simp
+          apply Eq.le
+          rw [<- Summable.hasSum_iff ENNReal.summable]
+          cases (privNoiseGuess ε₁ ε₂)
+          simp [DFunLike.coe, SPMF.instFunLike]
+          trivial
+    · simp
+
+
+
+
 lemma sv1_ub ε₁ ε₂ l : ∑'s, sv1_privMax ε₁ ε₂ l s ≤ 1 := by
   unfold sv1_privMax
   unfold sv1_threshold
@@ -179,65 +240,9 @@ lemma sv1_ub ε₁ ε₂ l : ∑'s, sv1_privMax ε₁ ε₂ l s ≤ 1 := by
       rw [iSup_comm_lemma]
       apply iSup_le_iff.mpr
       intro cut
-      suffices (∀ L, ∑' (x : sv1_state), probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) cut (L, v0) x ≤ 1) by
-        apply this
-      revert v0
-      induction cut
-      · simp [probWhileCut]
-      · rename_i cut' IH
-        intro v0 L
-        simp [probWhileCut, probWhileFunctional]
-        split
-        · simp
-          simp [sv1_privMaxF]
-          conv =>
-            enter [1, 1, x]
-            conv =>
-              enter [1, a]
-              rw [<- ENNReal.tsum_mul_right]
-              simp
-            rw [ENNReal.tsum_comm]
-            enter [1, b]
+      apply sv1_loop_ub
 
-          apply
-            @le_trans _ _ _
-            (∑' (x : sv1_state) (b : ℤ), (privNoiseGuess ε₁ ε₂) b * probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) cut' (L ++ [v0], b) x)
-            _ ?G5 ?G6
-          case G5 =>
-            apply ENNReal.tsum_le_tsum
-            intro a
-            apply ENNReal.tsum_le_tsum
-            intro b
-            unfold sv1_state
-            rw [ENNReal.tsum_eq_add_tsum_ite (L ++ [v0], b)]
-            simp
-            conv =>
-              rhs
-              rw [<- add_zero (_ * _)]
-            apply add_le_add
-            · simp
-            · simp
-              intros
-              aesop
-          case G6 =>
-            rw [ENNReal.tsum_comm]
-            conv =>
-              enter [1, 1, b]
-              rw [ENNReal.tsum_mul_left]
-            apply @le_trans _ _ _ (∑' (b : ℤ), (privNoiseGuess ε₁ ε₂) b * 1)
-            · apply ENNReal.tsum_le_tsum
-              intro a
-              apply ENNReal.mul_left_mono
-              apply IH
-            · simp
-              apply Eq.le
-              rw [<- Summable.hasSum_iff ENNReal.summable]
-              cases (privNoiseGuess ε₁ ε₂)
-              simp [DFunLike.coe, SPMF.instFunLike]
-              trivial
-        · simp
-
-
+/-
 /-
 History-aware progam computes the same as the history-agnostic program
 -/
@@ -285,9 +290,8 @@ lemma sv0_eq_sv1 ε₁ ε₂ l : sv0_privMax ε₁ ε₂ l = sv1_privMax ε₁ �
   -- RHS: sum over all lists of length "result"?
   -- rw [tsum_ite_eq]
   simp [sv1_threshold]
-
-
-  sorry
+  s orry
+  -/
 
 
 
@@ -1955,12 +1959,8 @@ lemma ENNReal.tsum_lb_subset (P : T -> Prop) (f : T -> ENNReal)  (l : ENNReal) :
 
 lemma ENNReal.tsum_split (P : T -> Prop) (f : T -> ENNReal) :
     ∑' (a : T), f a = (∑'(a : {t : T // P t}), f a.1) + (∑'(a : {t : T // ¬P t}), f a.1) := by
-
-  sorry
-
-
-
-
+  symm
+  apply tsum_add_tsum_compl <;> apply ENNReal.summable
 
 /-
 def β_geo (β : ENNReal) : SLang ℕ := (probGeometric (fun x => if x then β else 1 - β))
@@ -1984,15 +1984,172 @@ def β_geo' (β : ℝ) : ℕ -> ℝ :=
 def geo_cdf (β : ENNReal) (n : ℕ) : ENNReal := 1 - (1 - β)^n
 
 
-lemma geo_cdf_rec (β : ENNReal) (n : ℕ) :
+-- set_option pp.coercions false
+lemma geo_cdf_rec (β : ENNReal) (Hβ1: β ≤ 1) (n : ℕ) :
       geo_cdf β (n + 1) = β + (1 - β) * geo_cdf β n := by
   unfold geo_cdf
-  sorry
+  /-
+  suffices ENNReal.toEReal (1 - (1 - β) ^ (n + 1)) = ENNReal.toEReal (β + (1 - β) * (1 - (1 - β) ^ n)) by
+    apply EReal.coe_ennreal_injective
+    apply this
+  -/
+
+  suffices ENNReal.toReal (1 - (1 - β) ^ (n + 1)) = ENNReal.toReal (β + (1 - β) * (1 - (1 - β) ^ n)) by
+    apply (ENNReal.toReal_eq_toReal_iff _ _).mp at this
+    cases this
+    · trivial
+    rename_i this
+    cases this
+    · rename_i h
+      rcases h with ⟨ A, B ⟩
+      simp_all
+      exfalso
+      cases B
+      · simp_all
+      · rename_i h
+        apply ENNReal.mul_eq_top.mp at h
+        simp_all
+    · rename_i h
+      rcases h with ⟨ A, _ ⟩
+      simp_all
+  ring_nf
+  have C1 : β ≠ ⊤ := by
+    intro K
+    simp_all
+  have C3 : (1 - β) ^ (n + 1) ≤ 1 := by
+    apply pow_le_one'
+    apply tsub_le_self
+  have C4 : (1 - β) ^ n ≤ 1 := by
+    apply pow_le_one'
+    apply tsub_le_self
+  have C2 : (1 - β) * (1 - (1 - β) ^ n) ≠ ⊤ := by
+    apply ENNReal.mul_ne_top
+    · apply ENNReal.sub_ne_top
+      simp
+    · apply ENNReal.sub_ne_top
+      simp
+  rw [ENNReal.toReal_add C2 C1]
+  rw [ENNReal.toReal_mul]
+  rw [← pow_succ']
+  rw [ENNReal.toReal_sub_of_le C3 (by simp)]
+  rw [ENNReal.toReal_sub_of_le Hβ1 (by simp)]
+  rw [ENNReal.toReal_sub_of_le C4 (by simp)]
+  rw [ENNReal.toReal_pow]
+  rw [ENNReal.toReal_pow]
+  rw [ENNReal.toReal_sub_of_le Hβ1 (by simp)]
+  rw [mul_sub]
+  simp
+  rw [pow_succ]
+  linarith
+
+
+lemma exactClippedSum_append : exactClippedSum i (A ++ B) = exactClippedSum i A + exactClippedSum i B := by
+  simp [exactClippedSum]
+
+lemma exactDiffSum_append : exactDiffSum i (A ++ B) = exactDiffSum i A + exactDiffSum i B := by
+  simp [exactDiffSum]
+  rw [exactClippedSum_append]
+  rw [exactClippedSum_append]
+  linarith
+
+lemma sv8_sum_append : sv8_sum (A ++ B) vp v0 = sv8_sum A vp v0 + sv8_sum B vp v0 - v0 := by
+  simp [sv8_sum]
+  simp [exactDiffSum_append]
+  linarith
+
+lemma sv8_sum_comm : sv8_sum (A ++ B) vp v0 = sv8_sum (B ++ A) vp v0 := by
+  unfold sv8_sum
+  simp
+  simp [exactDiffSum, exactClippedSum]
+  linarith
+
+lemma sv8_G_comm : sv8_G (A ++ B) vp v0 vf = sv8_G (B ++ A) vp v0 vf := by
+  revert vp v0
+  induction vf
+  · intros
+    apply sv8_sum_comm
+  · intro v0 vp
+    rename_i next rest IH
+    unfold sv8_G
+    rw [sv8_sum_comm]
+    congr 1
+    apply IH
+
+-- -- IDK
+-- lemma sv8_G_cons : sv8_G (x :: L) vp v0 vf = 0 := by
+--   revert vp v0
+--   induction vf
+--   · intros v0 vp
+--     simp [sv8_G]
+--     s orry
+--   · intro vp v0
+--     simp [sv8_G]
+--     s orry
+--     -- unfold sv8_G
+
+lemma exactDiffSum_nonpos : exactDiffSum point L ≤ 0 := by
+  simp [exactDiffSum, exactClippedSum]
+  induction L
+  · simp
+  · rename_i l ll IH
+    simp
+    apply le_trans
+    · apply add_le_add
+      · rfl
+      · apply IH
+    simp
+
+lemma exactDiffSum_singleton_le_1 : -1 ≤ exactDiffSum point [v] := by
+  simp [exactDiffSum, exactClippedSum]
+  cases (Classical.em (point ≤ v))
+  · right
+    trivial
+  · left
+    rename_i h
+    simp at h
+    rw [Int.min_def]
+    simp
+    split
+    · linarith
+    · linarith
+
+
 
 -- There is a value such that sampling at least that value implies the loop definitely terminiates
 lemma lucky_guess (τ : ℤ) (l : List ℕ) : ∃ (K : ℤ), ∀ A, ∀ (K' : ℤ), K ≤ K' -> exactDiffSum A l + K' ≥ τ := by
-  sorry
+  exists (List.length l + τ)
+  intro A K' HK'
+  apply ge_iff_le.mpr
+  apply le_trans _ ?G1
+  case G1 =>
+    apply add_le_add
+    · rfl
+    · apply HK'
+  conv =>
+    lhs
+    rw [<- zero_add τ]
+  rw [<- add_assoc]
+  simp
+  clear HK'
 
+  induction l
+  · simp [exactDiffSum, exactClippedSum]
+  · rename_i l0 ll IH
+    simp
+    rw [<- List.singleton_append]
+    rw [exactDiffSum_append]
+    rw [add_comm]
+    repeat rw [<- add_assoc]
+    rw [add_comm]
+    repeat rw [<- add_assoc]
+    rw [add_assoc]
+    conv =>
+      lhs
+      rw [<- add_zero 0]
+    apply add_le_add
+    · apply IH
+    · have H := @exactDiffSum_singleton_le_1 A l0
+      linarith
 
 lemma ite_conv_left {P : Prop} {D} {a b c : ENNReal} (H : a = c) : @ite _ P D a b = @ite _ P D c b := by
   split <;> trivial
@@ -2005,9 +2162,9 @@ lemma ite_lemma_1 {P : Prop} {D} {f : T -> ENNReal} : ∑'(a : T), @ite _ P D (f
   · rfl
   · simp
 
+end equiv
 
-
-lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv1_privMax ε₁ ε₂ l s  := by
+lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_privMax PureDPSystem laplace_pureDPSystem ε₁ ε₂ l s)  := by
   simp only [sv1_privMax, bind, pure, bind_apply]
   -- Push the sum over s inwards
   conv =>
@@ -2079,14 +2236,113 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv1_privMax ε₁ ε₂ l s  := by
 
   -- ρ is the probability of the lucky event
   let ρ : ENNReal := (∑'(a : {t : ℤ // PLucky t}), privNoiseGuess ε₁ ε₂ a.1)
-  have Hρ_lb : 0 < ρ := by sorry
-  have Hρ_ub : ρ ≤ 1 := by sorry
+  have Hρ_1 : (∑'a, privNoiseGuess ε₁ ε₂ a) = 1 := by
+    cases (privNoiseGuess ε₁ ε₂)
+    simp [DFunLike.coe, SPMF.instFunLike]
+    rw [<- Summable.hasSum_iff ENNReal.summable]
+    trivial
+  have Hρ_lb : 0 < ρ := by
+    -- There is at least one lucky element
+    have HU : PLucky K := by simp [PLucky]
+    apply LT.lt.trans_le _ ?G2
+    case G2 => apply ENNReal.le_tsum ⟨ _, HU ⟩
+    simp [privNoiseGuess, privNoiseZero, DPNoise.noise, privNoisedQueryPure, DiscreteLaplaceGenSamplePMF]
+    simp [DFunLike.coe, PMF.instFunLike]
+    apply Real.mul_pos
+    · apply div_pos
+      · simp
+      · apply Right.add_pos'
+        · apply Real.exp_pos
+        · simp
+    · apply Real.exp_pos
+  have Hρ_nz : ρ ≠ 0 := by apply pos_iff_ne_zero.mp Hρ_lb
+  have Hρ_ub : ρ ≤ 1 := by
+    rw [<- Hρ_1]
+    rw [ENNReal.tsum_split PLucky]
+    simp_all only [ge_iff_le, self_le_add_right, PLucky, ρ]
+  have Hρ_ub_strict : ρ < 1 := by
+    rw [<- Hρ_1]
+    rw [ENNReal.tsum_split PLucky]
+    conv =>
+      lhs
+      rw [<- add_zero ρ]
+    apply ENNReal.add_lt_add_of_le_of_lt
+    · intro X; simp_all
+    · rfl
+    · -- There is at least one unlucky element
+      have HU : ¬PLucky (K - 1) := by simp [PLucky]
+      apply LT.lt.trans_le _ ?G2
+      case G2 => apply ENNReal.le_tsum ⟨ _, HU ⟩
+      simp [privNoiseGuess, privNoiseZero, DPNoise.noise, privNoisedQueryPure, DiscreteLaplaceGenSamplePMF]
+      simp [DFunLike.coe, PMF.instFunLike]
+      apply Real.mul_pos
+      · apply div_pos
+        · simp
+        · apply Right.add_pos'
+          · apply Real.exp_pos
+          · simp
+      · apply Real.exp_pos
 
   -- Bound the CDF below by the geometric CDF
   apply @le_trans _ _ _ (⨆(y : ℕ), geo_cdf ρ y)
   · -- Math
-    unfold geo_cdf
-    sorry
+    apply le_iSup_iff.mpr
+    intro b H
+    apply Classical.by_contradiction
+    intro H1
+    simp at H1
+    have Hz : (∃ z, (1 - ρ)^z < 1 - b) := by
+      have W := @exists_pow_lt_of_lt_one NNReal _ _ _ (ENNReal.toNNReal (1 - b)) (ENNReal.toNNReal (1 - ρ))  ?G2 ?G1
+      case G2 =>
+        rw [ENNReal.toNNReal_pos_iff]
+        apply And.intro
+        · simp
+          trivial
+        · apply ENNReal.sub_lt_of_lt_add
+          · exact le_of_lt H1
+          · simp
+      case G1 =>
+        apply ENNReal.toNNReal_lt_of_lt_coe
+        simp
+        apply ENNReal.sub_lt_self
+        · simp
+        · simp
+        · trivial
+      rcases W with ⟨ N, HN ⟩
+      exists N
+      rw [<- ENNReal.toNNReal_pow] at HN
+      apply (ENNReal.toNNReal_lt_toNNReal _ _).mp
+      · trivial
+      · apply ENNReal.pow_ne_top
+        apply ENNReal.sub_ne_top
+        simp
+      · apply ENNReal.sub_ne_top
+        simp
+    rcases Hz with ⟨ z, Hz ⟩
+    have Hz' : 1 - (1 - ρ) ^ z > 1 - (1 - b) := by
+      apply LT.lt.gt
+      apply (ENNReal.sub_lt_iff_lt_right _ _).mpr
+      · apply ENNReal.lt_add_of_sub_lt_left
+        · left
+          simp
+        · apply Eq.trans_lt _ Hz
+          apply ENNReal.sub_sub_cancel
+          · simp
+          apply Right.pow_le_one_of_le
+          apply tsub_le_self
+      · apply ENNReal.sub_ne_top
+        simp
+      · apply tsub_le_self
+    have H' := H z
+    have X : 1 - (1 - b) = b := by
+      apply ENNReal.sub_sub_cancel
+      · simp
+      exact le_of_lt H1
+    rw [X] at Hz'
+    apply LE.le.not_lt at H'
+    apply H'
+    apply GT.gt.lt
+    trivial
   apply iSup_mono
   intro cut
 
@@ -2098,7 +2354,7 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv1_privMax ε₁ ε₂ l s  := by
     simp [probWhileCut, geo_cdf]
   rename_i cut
 
-  rw [geo_cdf_rec]
+  rw [geo_cdf_rec _ Hρ_ub]
   rw [ENNReal.tsum_split PLucky]
   apply add_le_add
   · -- Lucky guess
@@ -2118,8 +2374,15 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv1_privMax ε₁ ε₂ l s  := by
                trivial)]
       rfl
     -- The rightmost sum is 1
-    sorry
-  
+    apply @le_trans _ _ _ (∑' (a : { t // PLucky t }), (privNoiseGuess ε₁ ε₂) ↑a * 1)
+    · simp
+    apply ENNReal.tsum_le_tsum
+    intro x
+    apply ENNReal.mul_left_mono
+    apply ENNReal.tsum_lb_single 0
+    apply ENNReal.tsum_lb_single ([], x.1)
+    simp [sv1_threshold]
+
   -- Unlucky
   suffices (∀ H, ∀ a : {t : ℤ // ¬ PLucky t}, geo_cdf ρ cut ≤
                   ∑' (x : ℕ) (x_1 : sv1_state),
@@ -2135,7 +2398,13 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv1_privMax ε₁ ε₂ l s  := by
     apply ENNReal.mul_right_mono
     apply Eq.le
     -- Math
-    sorry
+    clear this
+    rw [<- Hρ_1]
+    conv =>
+      enter [1, 1]
+      rw [ENNReal.tsum_split PLucky]
+    apply ENNReal.add_sub_cancel_left
+    exact LT.lt.ne_top Hρ_ub_strict
 
   -- Now we have the right inductive structure, I think?
   induction cut
@@ -2146,29 +2415,89 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv1_privMax ε₁ ε₂ l s  := by
     rcases a with ⟨ v, Hv ⟩
     simp
 
-    -- Because the first sample not lucky, we can't say anything about the branch we end up in
-    -- We will bound it separately for both
-    have advance (x : sv1_state) :
-           ((((sv1_privMaxF ε₁ ε₂ (H, v)) >>= (probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) (cut + 1))) x)
-             ≤ (probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) (cut + 1 + 1) (H, v)) x) := by
+    -- Because the first sample is not lucky, we can't say anything about the branch we end up in
+    -- It may terminate, or it may not.
+    have advance :
+      ((∑' (x1 : ℕ) (x2 : sv1_state),
+            if x1 = sv1_threshold x2
+              then (sv1_privMaxF ε₁ ε₂ (H, v)).probBind (fun v => probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) (cut + 1) v) x2
+              else 0)
+        ≤ (∑' (x : ℕ) (x_1 : sv1_state), if x = sv1_threshold x_1 then probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) (cut + 1 + 1) (H, v) x_1 else 0)) := by
       conv =>
         rhs
+        enter [1, x1, 1, x2]
         unfold probWhileCut
         unfold probWhileFunctional
+        simp
       split
       · simp
       · simp
-        -- Uses the upper bound here, but this is provable
-        sorry
-    apply le_trans _ ?G1
-    case G1 =>
-      apply ENNReal.tsum_le_tsum
-      intro x
-      apply ENNReal.tsum_le_tsum
-      intro x_1
-      apply ite_mono_left
-      apply advance
+        -- RHS is 1
+        apply ENNReal.tsum_lb_single (List.length H)
+        apply ENNReal.tsum_lb_single (H, v)
+        conv =>
+          rhs
+          simp [sv1_threshold]
+
+        -- LHS is bounded above by 1 by upper bound lemma
+        have X :
+          (∑' (x1 : ℕ) (x2 : sv1_state),
+            if x1 = sv1_threshold x2 then
+              ∑' (a : sv1_state),
+                sv1_privMaxF ε₁ ε₂ (H, v) a * probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) (cut + 1) a x2
+            else 0) =
+          (∑' (x1 : ℕ) (x2 : sv1_state),
+            if x1 = sv1_threshold x2 then
+              ((sv1_privMaxF ε₁ ε₂ (H, v) >>=  probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) (cut + 1)) x2)
+            else 0) := by
+          simp
+        rw [X]
+        clear X
+        rw [ENNReal.tsum_comm]
+        have X : ∀ b : sv1_state,
+                 (∑' (a : ℕ),
+                   if a = sv1_threshold b then
+                     (sv1_privMaxF ε₁ ε₂ (H, v) >>= probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) (cut + 1)) b
+                 else 0) =
+                 ((sv1_privMaxF ε₁ ε₂ (H, v) >>= probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) (cut + 1)) b) :=  by
+            intro b
+            rw [tsum_ite_eq]
+        conv =>
+          lhs
+          enter [1, b]
+          rw [X b]
+        clear X
+
+        simp [sv1_privMaxF]
+
+        -- Somehow we need it to unfold this tsum. Weird.
+        apply le_trans
+        · apply ENNReal.tsum_le_tsum
+          intro a
+          simp
+          apply ENNReal.tsum_le_tsum
+          intro a1
+          apply ENNReal.mul_left_mono
+          rfl
+
+        rw [ENNReal.tsum_comm]
+        conv =>
+          lhs
+          enter [1, b]
+          rw [ENNReal.tsum_mul_left]
+        apply le_trans
+        · apply ENNReal.tsum_le_tsum
+          intro x
+          apply ENNReal.mul_left_mono
+          apply sv1_loop_ub
+        simp
+        rcases (privNoiseGuess ε₁ ε₂) with ⟨ X, Y ⟩
+        apply Eq.le
+        exact HasSum.tsum_eq Y
+    apply le_trans _ advance
+    simp
     clear advance
+
 
     -- Now we want to commute out the randomness associate to that s1_privMaxF
     apply le_trans _ ?G1
@@ -2177,7 +2506,6 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv1_privMax ε₁ ε₂ l s  := by
       intro x
       apply ENNReal.tsum_le_tsum
       intro x_1
-      simp
       rw [<- ite_lemma_1]
     conv =>
       enter [2]
@@ -2197,7 +2525,7 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv1_privMax ε₁ ε₂ l s  := by
     rw [ENNReal.tsum_split PLucky]
 
     -- Split the sum and the recurrence relation
-    rw [geo_cdf_rec]
+    rw [geo_cdf_rec _ Hρ_ub]
     apply add_le_add
     · -- Guess is lucky
       -- The loop will terminate and we can show it
@@ -2233,15 +2561,17 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, sv1_privMax ε₁ ε₂ l s  := by
       -- Conclude by simplification
       simp only [sv1_privMaxF, bind, pure, bind_apply, pure_apply, mul_ite, mul_one, mul_zero]
 
-
       sorry
+
+
+
 
 
 /--
 sv9 normalizes because sv1 normalizes
 -/
 def sv9_privMax_SPMF (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
-  ⟨ sv9_privMax ε₁ ε₂ l,
+  ⟨ @sv9_privMax PureDPSystem laplace_pureDPSystem ε₁ ε₂ l,
     by
       rw [<- sv8_sv9_eq]
       rw [<- sv7_sv8_eq]

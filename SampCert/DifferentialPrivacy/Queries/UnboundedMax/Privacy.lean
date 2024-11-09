@@ -119,78 +119,6 @@ lemma laplace_inequality_sub (τ τ' : ℤ) (Δ : ℕ+) :
     simp
 
 
-
-lemma exactClippedSum_append : exactClippedSum i (A ++ B) = exactClippedSum i A + exactClippedSum i B := by
-  simp [exactClippedSum]
-
-lemma exactDiffSum_append : exactDiffSum i (A ++ B) = exactDiffSum i A + exactDiffSum i B := by
-  simp [exactDiffSum]
-  rw [exactClippedSum_append]
-  rw [exactClippedSum_append]
-  linarith
-
-lemma sv8_sum_append : sv8_sum (A ++ B) vp v0 = sv8_sum A vp v0 + sv8_sum B vp v0 - v0 := by
-  simp [sv8_sum]
-  simp [exactDiffSum_append]
-  linarith
-
-lemma sv8_sum_comm : sv8_sum (A ++ B) vp v0 = sv8_sum (B ++ A) vp v0 := by
-  unfold sv8_sum
-  simp
-  simp [exactDiffSum, exactClippedSum]
-  linarith
-
-lemma sv8_G_comm : sv8_G (A ++ B) vp v0 vf = sv8_G (B ++ A) vp v0 vf := by
-  revert vp v0
-  induction vf
-  · intros
-    apply sv8_sum_comm
-  · intro v0 vp
-    rename_i next rest IH
-    unfold sv8_G
-    rw [sv8_sum_comm]
-    congr 1
-    apply IH
-
--- -- IDK
--- lemma sv8_G_cons : sv8_G (x :: L) vp v0 vf = 0 := by
---   revert vp v0
---   induction vf
---   · intros v0 vp
---     simp [sv8_G]
---     s orry
---   · intro vp v0
---     simp [sv8_G]
---     s orry
---     -- unfold sv8_G
-
-lemma exactDiffSum_nonpos : exactDiffSum point L ≤ 0 := by
-  simp [exactDiffSum, exactClippedSum]
-  induction L
-  · simp
-  · rename_i l ll IH
-    simp
-    apply le_trans
-    · apply add_le_add
-      · rfl
-      · apply IH
-    simp
-
-lemma exactDiffSum_singleton_le_1 : -1 ≤ exactDiffSum point [v] := by
-  simp [exactDiffSum, exactClippedSum]
-  cases (Classical.em (point ≤ v))
-  · right
-    trivial
-  · left
-    rename_i h
-    simp at h
-    rw [Int.min_def]
-    simp
-    split
-    · linarith
-    · linarith
-
-
 -- Coercions nonsense
 lemma DSN (N : ℕ) (H : Neighbour L1 L2) : ((exactDiffSum N L1) : ℝ) - (exactDiffSum N L2) ≤ 1 := by
   cases H
@@ -350,7 +278,7 @@ lemma Hsens_cov_vk (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) (point : �
 
 
 lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) :
-    PureDPSystem.prop (@sv9_privMax_SPMF PureDPSystem laplace_pureDPSystem ε₁ ε₂) ε := by
+    PureDPSystem.prop (@sv9_privMax_SPMF ε₁ ε₂) ε := by
   -- Unfold DP definitions
   simp [DPSystem.prop]
   apply singleton_to_event
