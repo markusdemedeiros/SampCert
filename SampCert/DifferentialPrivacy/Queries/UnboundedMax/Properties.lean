@@ -2647,13 +2647,26 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_privMax PureDPSystem laplace_pur
 
       -- Conclude by simplification
       simp only [sv1_privMaxF, bind, pure, bind_apply, pure_apply, mul_ite, mul_one, mul_zero]
+      apply le_trans _ ?G1
+      case G1 =>
+        apply ENNReal.tsum_le_tsum
+        intro a
+        apply ENNReal.tsum_lb_single (H ++ [v])
+        apply ENNReal.tsum_lb_single a.1
+        rfl
+      simp
+      rw [<- Hρ_1]
+      rw [ENNReal.tsum_split PLucky]
+      rw [add_comm]
 
 
-      sorry
-
-
-
-
+def sv1_privMax_PMF (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
+  ⟨ sv1_privMax ε₁ ε₂ l,
+    by
+      rw [Summable.hasSum_iff ENNReal.summable]
+      apply LE.le.antisymm
+      · apply sv1_ub
+      · apply sv1_lb ⟩
 
 /--
 sv9 normalizes because sv1 normalizes

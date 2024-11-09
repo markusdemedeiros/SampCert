@@ -59,7 +59,8 @@ def privNoiseThresh (ε₁ ε₂ : ℕ+) : SPMF ℤ := privNoiseZero ε₁ (2 * 
 /-
 ## Program version 0
   - Executable
-  - Tracks single state
+  - Optimization of sv1: Tracks single state
+  (Needs sv0 sv1 equivalence proof)
 -/
 
 def sv0_state : Type := ℕ × ℤ
@@ -81,11 +82,6 @@ def sv0_privMax (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ := do
   let v0 <- privNoiseGuess ε₁ ε₂
   let sk <- probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (0, v0)
   return (sv0_threshold sk)
-
-def sv0_privMax_PMF (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
-  ⟨ sv0_privMax ε₁ ε₂ l,
-    by
-      sorry ⟩
 
 /-
 ## Program version 1
@@ -113,52 +109,4 @@ def sv1_privMax (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ := do
   return (sv1_threshold sk)
 
 
-def sv1_privMax_PMF (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
-  ⟨ sv1_privMax ε₁ ε₂ l,
-    by
-      -- Difficult
-      sorry ⟩
-
 end SLang
-
-/-
-lemma tsum_iSup_comm (f : T -> U -> ENNReal) : ∑' (a : T), ⨆ (b : U), f a b = ⨆ (b : U), ∑' (a : T), f a b := by
-
-  sorry
-
--- A version of probWhile that proves normalization, when its arguments are all normal
-def SPMF_while (cond : T → Bool) (body : T → SPMF T) (init : T) : SPMF T :=
-  ⟨ probWhile cond (fun x => body x) init,
-    by
-      apply (Summable.hasSum_iff ENNReal.summable).mpr
-      unfold probWhile
-      rw [tsum_iSup_comm]
-      conv =>
-        enter [1, 1, cut]
-      -- We can establish the ≤ direction easily
-      -- ≥ is not true
-
-
-
-      -- apply iSup_eq_of_tendsto
-      -- · sorry
-      -- sorry
-
-      -- rw [ENNReal.tsum_eq_iSup_sum]
-      -- apply eq_iff_le_not_lt.mpr
-      -- apply And.intro
-      -- · apply iSup_le_iff.mpr
-      --   sorry
-      -- · simp
-      --   apply le_iSup_iff.mpr
-      --   intro b H
-      --   sorry
-      ⟩
-
-lemma SPMF_while_eq (cond : T → Bool) (body : T → SPMF T) (init : T) :
-    ((SPMF_while cond body init) : SLang T) = (probWhile cond (fun x => body x) init) := by
-  simp [SPMF_while]
-
-
-
--/

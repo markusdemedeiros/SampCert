@@ -257,13 +257,13 @@ def sparseVector_tests : IO Unit := do
   IO.println s!"data := {samples} uniform samples of [0, {(unif_ub : ℕ)}): {(data.take 20)}..."
   IO.println ""
 
-  for i in [:num_trials] do
-    let ct <- run <| @sv0_privMax_PMF PureDPSystem laplace_pureDPSystem num den data
-    IO.println s!"#{i} sv0 max: {ct}"
-  IO.println ""
+  -- for i in [:num_trials] do
+  --   let ct <- run <| @sv0_privMax_PMF PureDPSystem laplace_pureDPSystem num den data
+  --   IO.println s!"#{i} sv0 max: {ct}"
+  -- IO.println ""
 
   for i in [:num_trials] do
-    let ct <- run <| @sv1_privMax_PMF PureDPSystem laplace_pureDPSystem num den data
+    let ct <- run <| sv1_privMax_PMF num den data
     IO.println s!"#{i} sv1 max: {ct}"
   IO.println ""
 
