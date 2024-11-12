@@ -27,7 +27,7 @@ Instance of a DP system for zCDP
 -/
 instance zCDPSystem : DPSystem T where
   prop := zCDP
-  of_adp := zCDP_of_adp
+  of_app_dp := zCDP_of_adp
   prop_adp := by
     intros; apply zCDP_ApproximateDP <;> assumption
   prop_mono := by

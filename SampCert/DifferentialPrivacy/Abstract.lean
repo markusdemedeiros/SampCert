@@ -52,12 +52,12 @@ class DPSystem (T : Type) where
   /--
   Definition of DP is well-formed: Privacy parameter required to obtain (ε', δ)-approximate DP
   -/
-  of_adp : (δ : NNReal) -> (ε' : NNReal) -> NNReal
+  of_app_dp : (δ : NNReal) -> (ε' : NNReal) -> NNReal
   /--
   For any ε', this definition of DP implies (ε', δ)-approximate-DP for all δ
   -/
   prop_adp [Countable Z] {m : Mechanism T Z} : ∀ (δ : NNReal) (_ : 0 < δ) (ε' : NNReal),
-    (prop m (of_adp δ ε') -> ApproximateDP m ε' δ)
+    (prop m (of_app_dp δ ε') -> ApproximateDP m ε' δ)
   /--
   DP is monotonic
   -/

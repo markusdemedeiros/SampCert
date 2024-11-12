@@ -23,7 +23,7 @@ Pure ε-DP with noise drawn from the discrete Laplace distribution.
 -/
 instance PureDPSystem : DPSystem T where
   prop := PureDP
-  of_adp := pure_of_adp
+  of_app_dp := pure_of_adp
   prop_adp := pure_ApproximateDP
   prop_mono := PureDP_mono
   adaptive_compose_prop := by
