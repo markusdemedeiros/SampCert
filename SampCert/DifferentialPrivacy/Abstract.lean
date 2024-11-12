@@ -56,7 +56,7 @@ class DPSystem (T : Type) where
   /--
   For any ε', this definition of DP implies (ε', δ)-approximate-DP for all δ
   -/
-  prop_adp [Countable Z] {m : Mechanism T Z} : ∀ (δ : NNReal) (_ : 0 < δ) (ε' : NNReal),
+  prop_adp [DiscProbSpace Z] {m : Mechanism T Z} : ∀ (δ : NNReal) (_ : 0 < δ) (ε' : NNReal),
     (prop m (of_app_dp δ ε') -> ApproximateDP m ε' δ)
   /--
   DP is monotonic
