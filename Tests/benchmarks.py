@@ -105,18 +105,21 @@ def gaussian_benchmarks(mix, warmup_attempts, measured_attempts, lb ,ub, quantit
 
     color = plt.cm.rainbow(np.linspace(0, 1, len(mix) + 2))
 
-    for m in range(len(mix)): 
+    for m in range(len(mix)):
+        confidence = 1.96 * np.array(stdevs[m]) / np.sqrt(measured_attempts)
         ax1.plot(sigmas, means[m], color=color[2 + m], linewidth=1.0, label='DiscreteGaussianSample' + ' mix = ' + str(mix[m]))
-        ax1.fill_between(sigmas, np.array(means[m])-0.5*np.array(stdevs[m]), np.array(means[m])+0.5*np.array(stdevs[m]),
-                        alpha=0.2, facecolor='k', linewidth=2, linestyle='dashdot', antialiased=True)
+        ax1.fill_between(sigmas, np.array(means[m])-confidence, np.array(means[m])+confidence,
+                        alpha=0.2, facecolor=color[2 + m], linewidth=2, linestyle='dashdot', antialiased=True)
 
+    ibm_confidence = 1.96 * np.array(ibm_dg_mean) / np.sqrt(measured_attempts)
     ax1.plot(sigmas, ibm_dg_mean, color=color[0], linewidth=1.0, label='IBM sample_dgauss')
-    ax1.fill_between(sigmas, np.array(ibm_dg_mean)-0.5*np.array(ibm_dg_stdev), np.array(ibm_dg_mean)+0.5*np.array(ibm_dg_stdev),
-                     alpha=0.2, facecolor='k', linewidth=2, linestyle='dashdot', antialiased=True)
+    ax1.fill_between(sigmas, np.array(ibm_dg_mean)-ibm_confidence, np.array(ibm_dg_mean)+ibm_confidence,
+                     alpha=0.2, facecolor=color[0], linewidth=2, linestyle='dashdot', antialiased=True)
 
+    ibm_dpl_confidence = 1.96 * np.array(ibm_dpl_mean) / np.sqrt(measured_attempts)
     ax1.plot(sigmas, ibm_dpl_mean, color=color[1], linewidth=1.0, label='IBM diffprivlib')
-    ax1.fill_between(sigmas, np.array(ibm_dpl_mean)-0.5*np.array(ibm_dpl_stdev), np.array(ibm_dpl_mean)+0.5*np.array(ibm_dpl_stdev),
-                     alpha=0.2, facecolor='k', linewidth=2, linestyle='dashdot', antialiased=True)
+    ax1.fill_between(sigmas, np.array(ibm_dpl_mean)-ibm_dpl_confidence, np.array(ibm_dpl_mean)+ibm_dpl_confidence,
+                     alpha=0.2, facecolor=color[1], linewidth=2, linestyle='dashdot', antialiased=True)
 
     ax1.set_xlabel("Sigma")
     ax1.set_ylabel("Sampling Time (ms)")
