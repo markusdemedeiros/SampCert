@@ -49,3 +49,5 @@ lean.lean_io_mark_end_initialization()
 if __name__ == "__main__":
     r = samplers.dgs_get(c_uint32(40),c_uint32(1),c_uint32(0))
     print(r)
+    r = samplers.ibm_dgs_get(c_uint32(40),c_uint32(1),c_uint32(0))
+    print(r)

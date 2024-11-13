@@ -74,7 +74,7 @@ def gaussian_benchmarks(mix, warmup_attempts, measured_attempts, lb ,ub, quantit
         for m in range(len(mix)): 
             for i in range(num_attempts):
                 start_time = timeit.default_timer()
-                samplers.dgs_get(sigma_num, sigma_denom, mix[m])
+                samplers.ibm_dgs_get(sigma_num, sigma_denom, mix[m])
                 elapsed = timeit.default_timer() - start_time
                 times[m].append(elapsed)
 

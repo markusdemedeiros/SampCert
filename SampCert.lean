@@ -69,3 +69,14 @@ def DiscreteGaussianSampleGet (num den : UInt32) (mix: UInt32) : UInt32 := Id.ru
   else
     let z : IO ℤ ← run <| DiscreteGaussianPMF ⟨ num.toNat , UInt32.toNa_of_non_zero h₁ ⟩ ⟨ den.toNat , UInt32.toNa_of_non_zero h₂ ⟩ mix.toNat
     return DirtyIOGet z
+
+@[export ibm_dgs_get]
+def IBM_DiscreteGaussianSampleGet (num den : UInt32) (mix: UInt32) : UInt32 := Id.run do
+  if h₁ : num = 0 then
+    panic "IBMDiscreteGaussianSampleGet was called with num = 0"
+  else if h₂ : den = 0 then
+    panic "IBMDiscreteGaussianSampleGet was called with den = 0"
+  else
+    let z : IO ℤ ← run <| ⟨ DiscreteGaussianSample_IBM ⟨ num.toNat , UInt32.toNa_of_non_zero h₁ ⟩ ⟨ den.toNat , UInt32.toNa_of_non_zero h₂ ⟩,
+                             sorry ⟩
+    return DirtyIOGet z
