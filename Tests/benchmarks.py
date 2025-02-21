@@ -12,10 +12,12 @@ import argparse
 
 from diffprivlib.mechanisms import GaussianDiscrete
 
-from IBM.discretegauss import sample_dgauss
+from discretegauss import sample_dgauss
 
-from Load import samplers
+import SampCert
+# from Load import samplers
 
+sampler = SampCert.SLang()
 rng = secrets.SystemRandom()
 
 def gaussian_benchmarks(mix, warmup_attempts, measured_attempts, lb ,ub, quantity, inv):
@@ -74,7 +76,8 @@ def gaussian_benchmarks(mix, warmup_attempts, measured_attempts, lb ,ub, quantit
         for m in range(len(mix)): 
             for i in range(num_attempts):
                 start_time = timeit.default_timer()
-                samplers.dgs_get(sigma_num, sigma_denom, mix[m])
+                sampler.DiscreteGaussianSample(sigma_num, sigma_denom, mix[m])
+                # samplers.dgs_get(sigma_num, sigma_denom, mix[m])
                 elapsed = timeit.default_timer() - start_time
                 times[m].append(elapsed)
 
