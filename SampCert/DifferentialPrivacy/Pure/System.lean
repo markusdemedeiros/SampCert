@@ -9,6 +9,7 @@ import SampCert.DifferentialPrivacy.Pure.Mechanism.Basic
 import SampCert.DifferentialPrivacy.Pure.AdaptiveComposition
 import SampCert.DifferentialPrivacy.Pure.Postprocessing
 import SampCert.DifferentialPrivacy.Pure.Const
+import SampCert.DifferentialPrivacy.Pure.Par
 
 /-!
 # Pure DP system
@@ -38,5 +39,8 @@ instance laplace_pureDPSystem : DPNoise (@PureDPSystem T) where
   noise_priv := laplace_pureDP_noise_priv
   noise_prop := by
     intros; apply privNoisedQueryPure_DP <;> trivial
+
+instance PureDPParSystem : DPPar T where
+  prop_par := pureDP_priv_Par
 
 end SLang

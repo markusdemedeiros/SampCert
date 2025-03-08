@@ -145,6 +145,8 @@ class DPNoise (dps : DPSystem T) where
 --   compute_factor : (ε : NNReal) -> (ℕ+ × ℕ+)
 --   compute_factor_spec : ∀ ε : NNReal, dpn.noise_priv (compute_factor ε).1 (compute_factor ε).2 ε
 
-
+class DPPar (T : Type) extends (DPSystem T) where
+  prop_par {m1 : Mechanism T U} {m2 : Mechanism T V} {ε₁ ε₂ ε : NNReal} :
+    ε = 2 * (max ε₁ ε₂) -> ∀f, prop m1 ε₁ -> prop m2 ε₂ -> prop (privParComp m1 m2 f) ε
 
 end SLang

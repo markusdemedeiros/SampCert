@@ -47,8 +47,67 @@ Constant mechanism
 -/
 def privConst (u : U) : Mechanism T U := fun _ => SPMF_pure u
 
+/--
+Parallel composition mechanism
+-/
+def privParComp (m1 : Mechanism T U) (m2 : Mechanism T V) (f : T -> Bool) : Mechanism T (U × V) :=
+  fun l => do
+    let v1 <- m1 <| List.filter f l
+    let v2 <- m2 <| List.filter ((! ·) ∘ f) l
+    return (v1, v2)
 
 
+section privParComp
+variable (m1 : Mechanism T U) (m2 : Mechanism T V) (f : T -> Bool)
+variable (l l₁ l₂ : List T)
+variable (v₁ v₂ : T)
+
+open Classical
+
+/-
+lemma privParComp_eval xu xv :
+    ((privParComp m1 m2 f l) : SLang (U × V)) (xu, xv) =
+    ∑'(u : U), ∑'(v : V),
+      (if ((u, v) = (xu, xv))
+        then (m1 (List.filter f l) : SLang U) xu * (m2 (List.filter ((! ·) ∘ f) l) : SLang V) xv
+        else 0) := by
+  simp [privParComp]
+  simp_rw [← ENNReal.tsum_mul_left]
+  apply tsum_congr; intro u
+  apply tsum_congr; intro v
+  simp_rw [mul_ite_zero]
+  split <;> split <;> simp_all
+-/
+
+-- FIXME: Cleanup
+lemma privParComp_eval xu xv :
+    ((privParComp m1 m2 f l) : SLang (U × V)) (xu, xv) =
+      (m1 (List.filter f l) : SLang U) xu * (m2 (List.filter ((! ·) ∘ f) l) : SLang V) xv := by
+  simp [privParComp]
+  simp_rw [← ENNReal.tsum_mul_left]
+  conv=>
+    lhs
+    enter [1, a, 1, b]
+    rw [mul_ite]
+  rw [ENNReal.tsum_eq_add_tsum_ite xu, ENNReal.tsum_eq_add_tsum_ite xv]
+  simp
+  conv=>
+    rhs
+    rw [<- add_zero (_ * _)]
+  congr
+  · conv=>
+      rhs
+      rw [<- add_zero (_ * _)]
+    congr
+    simp
+    intro _ H1 H2
+    exfalso; apply H2 ▸ H1; rfl
+  · simp
+    intro _ H1 H2
+    exfalso; apply H2 ▸ H1; rfl
+
+
+end privParComp
 
 noncomputable section
 
