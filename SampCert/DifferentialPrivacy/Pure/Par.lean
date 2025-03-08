@@ -18,11 +18,9 @@ open Classical Nat Int Real ENNReal MeasureTheory Measure
 
 namespace SLang
 
-set_option pp.coercions false
-
 -- FIXME: Cleanup!
-theorem privParComp_DP_Bound {m1 : Mechanism T U} {m2 : Mechanism T V} {ε₁ ε₂ : NNReal} (f)
-    (H1 : DP m1 ε₁) (H2 : DP m2 ε₂) : DP (privParComp m1 m2 f) (2 * max ε₁ ε₂) := by
+theorem privParCompose_DP_Bound {m1 : Mechanism T U} {m2 : Mechanism T V} {ε₁ ε₂ : NNReal} (f)
+    (H1 : DP m1 ε₁) (H2 : DP m2 ε₂) : DP (privParCompose m1 m2 f) (2 * max ε₁ ε₂) := by
 
   apply singleton_to_event
   apply event_to_singleton at H1
@@ -31,7 +29,7 @@ theorem privParComp_DP_Bound {m1 : Mechanism T U} {m2 : Mechanism T V} {ε₁ ε
   -- Simplify the evaluation into a product
   rintro l₁ l₂ HN ⟨u, v⟩
   simp [DFunLike.coe]
-  rw [privParComp_eval, privParComp_eval]
+  rw [privParCompose_eval, privParCompose_eval]
   rw [ENNReal.div_eq_inv_mul]
   rw [ENNReal.mul_inv ?G1 ?G2]
   case G1 =>
@@ -267,7 +265,7 @@ theorem privParComp_DP_Bound {m1 : Mechanism T U} {m2 : Mechanism T V} {ε₁ ε
       · simp
 
 theorem pureDP_priv_Par {m1 : Mechanism T U} {m2 : Mechanism T V} {ε₁ ε₂ ε: NNReal} :
-    ε = 2 * max ε₁ ε₂ -> ∀f, DP m1 ε₁ -> DP m2 ε₂ -> DP (privParComp m1 m2 f) ε :=
-  (· ▸ privParComp_DP_Bound)
+    ε = 2 * max ε₁ ε₂ -> ∀f, DP m1 ε₁ -> DP m2 ε₂ -> DP (privParCompose m1 m2 f) ε :=
+  (· ▸ privParCompose_DP_Bound)
 
 end SLang

@@ -50,7 +50,7 @@ def privConst (u : U) : Mechanism T U := fun _ => SPMF_pure u
 /--
 Parallel composition mechanism
 -/
-def privParComp (m1 : Mechanism T U) (m2 : Mechanism T V) (f : T -> Bool) : Mechanism T (U × V) :=
+def privParCompose (m1 : Mechanism T U) (m2 : Mechanism T V) (f : T -> Bool) : Mechanism T (U × V) :=
   fun l => do
     let v1 <- m1 <| List.filter f l
     let v2 <- m2 <| List.filter ((! ·) ∘ f) l
@@ -80,10 +80,10 @@ lemma privParComp_eval xu xv :
 -/
 
 -- FIXME: Cleanup
-lemma privParComp_eval xu xv :
-    ((privParComp m1 m2 f l) : SLang (U × V)) (xu, xv) =
+lemma privParCompose_eval xu xv :
+    ((privParCompose m1 m2 f l) : SLang (U × V)) (xu, xv) =
       (m1 (List.filter f l) : SLang U) xu * (m2 (List.filter ((! ·) ∘ f) l) : SLang V) xv := by
-  simp [privParComp]
+  simp [privParCompose]
   simp_rw [← ENNReal.tsum_mul_left]
   conv=>
     lhs
