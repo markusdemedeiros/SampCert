@@ -40,67 +40,37 @@ lemma privParNoisedBinCount_DP  (b : Fin numBins) :
   apply exactBinCount_sensitivity
 
 
--- lemma privParNoisedHistogramAux_DP (n : ℕ) (Hn : n < numBins) :
---     dps.prop (privParNoisedHistogramAux numBins B ε₁ ε₂ n Hn) (2 * ε) := by
---   induction n
---   · unfold privParNoisedHistogramAux
---     simp
---     apply dps.postprocess_prop
---     apply dps.prop_par
---     · sorry
---     · sorry
---     · sorry
---     · sorry
---     -- apply dps.compose_prop
---     -- · -- unfold privNoisedBinCount
---     --   -- apply dpn.noise_prop HN_bin
---     --   -- apply exactBinCount_sensitivity
---     --   sorry
---     -- · apply dps.const_prop; rfl
---   · sorry
-
-/-
-
-
-/--
-DP bound for intermediate steps in the histogram calculation.
--/
-lemma privNoisedHistogramAux_DP (n : ℕ) (Hn : n < numBins) :
-  dps.prop (privNoisedHistogramAux numBins B ε₁ ε₂ n Hn) (n.succ * (ε / numBins)) := by
+lemma privParNoisedHistogramAux_DP (n : ℕ) (Hn : n < numBins) :
+    dps.prop (privParNoisedHistogramAux numBins B ε₁ ε₂ n Hn) ε := by
   induction n
-  · unfold privNoisedHistogramAux
+  · unfold privParNoisedHistogramAux
     simp
     apply dps.postprocess_prop
-    apply dps.compose_prop (AddLeftCancelMonoid.add_zero _)
-    · apply privNoisedBinCount_DP; apply HN_bin
-    · apply dps.const_prop; rfl
+    apply (@DPPar.prop_par _ _ _ _ _ _ ε 0)
+    · symm
+      apply max_eq_left
+      apply _root_.zero_le
+    · simp [privParNoisedBinCount]
+      apply dpn.noise_prop HN_bin
+      apply exactBinCount_sensitivity
+    · apply dps.const_prop
+      rfl
   · rename_i _ IH
-    simp [privNoisedHistogramAux]
+    simp [privParNoisedHistogramAux]
     apply dps.postprocess_prop
-    apply dps.compose_prop ?arithmetic
-    · apply privNoisedBinCount_DP; apply HN_bin
+    apply DPPar.prop_par ?arithmetic
+    · apply privParNoisedBinCount_DP
+      apply HN_bin
     · apply IH
-    case arithmetic => simp; ring_nf
+    case arithmetic => simp
+
 
 /--
 DP bound for a noised histogram
 -/
-lemma privNoisedHistogram_DP :
-  dps.prop (privNoisedHistogram numBins B ε₁ ε₂) ε := by
-  unfold privNoisedHistogram
+lemma privParNoisedHistogram_DP :
+  dps.prop (privParNoisedHistogram numBins B ε₁ ε₂) ε := by
+  unfold privParNoisedHistogram
   apply (DPSystem_prop_ext _ ?HEq ?Hdp)
-  case Hdp => apply privNoisedHistogramAux_DP; apply HN_bin
+  case Hdp => apply privParNoisedHistogramAux_DP; apply HN_bin
   case HEq => simp [predBins, mul_div_left_comm]
-
-/--
-DP bound for the thresholding maximum
--/
-lemma privMaxBinAboveThreshold_DP (τ : ℤ) :
-  dps.prop (privMaxBinAboveThreshold numBins B ε₁ ε₂ τ) ε := by
-  unfold privMaxBinAboveThreshold
-  apply dps.postprocess_prop
-  apply privNoisedHistogram_DP
-  apply HN_bin
-
-end SLang
--/
