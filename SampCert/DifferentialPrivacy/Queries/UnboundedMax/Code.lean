@@ -22,7 +22,7 @@ def sens_cov_τ : ℕ+ := 1
 /--
 Sensitivity bound for each upper bound attempt
 -/
-def sens_cov_vk : ℕ+ := 1 + sens_cov_τ
+def sens_cov_vk : ℕ+ := sens_cov_τ + 1
 
 
 /-

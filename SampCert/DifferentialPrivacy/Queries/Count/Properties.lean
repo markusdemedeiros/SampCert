@@ -37,9 +37,6 @@ theorem exactCount_1_sensitive :
   · rename_i a b n h1 h2
     subst h1 h2
     simp
-  · rename_i a n b m h1 h2
-    subst h1 h2
-    simp
 
 /--
 The noised counting query satisfies DP property

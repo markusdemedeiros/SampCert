@@ -20,7 +20,7 @@ namespace SLang
 
 -- FIXME: Cleanup!
 theorem privParCompose_DP_Bound {m1 : Mechanism T U} {m2 : Mechanism T V} {ε₁ ε₂ : NNReal} (f)
-    (H1 : DP m1 ε₁) (H2 : DP m2 ε₂) : DP (privParCompose m1 m2 f) (2 * max ε₁ ε₂) := by
+    (H1 : DP m1 ε₁) (H2 : DP m2 ε₂) : DP (privParCompose m1 m2 f) (max ε₁ ε₂) := by
 
   apply singleton_to_event
   apply event_to_singleton at H1
@@ -74,12 +74,7 @@ theorem privParCompose_DP_Bound {m1 : Mechanism T U} {m2 : Mechanism T V} {ε₁
         conv =>
           lhs
           rw [<- one_mul (max _ _)]
-        apply mul_le_mul
-        · simp
-        · rfl
-        · apply le_max_of_le_right
-          exact NNReal.zero_le_coe
-        · simp
+        simp
     · simp
       rw [mul_comm]
       apply (le_trans ?G1)
@@ -97,15 +92,7 @@ theorem privParCompose_DP_Bound {m1 : Mechanism T U} {m2 : Mechanism T V} {ε₁
         · simp; rfl
       · apply ENNReal.ofReal_le_ofReal
         apply Real.exp_monotone
-        conv =>
-          lhs
-          rw [<- one_mul (ε₁.toReal)]
-        apply mul_le_mul
-        · simp
-        · apply le_max_left
-        · apply NNReal.zero_le_coe
-        · simp
-  -- Deletion
+        simp
   · rename_i l₁' t l₂' Hl₁ Hl₂
     simp only [Hl₁, Hl₂, List.filter_append, List.filter_singleton, Function.comp_apply]
     cases f t
@@ -126,14 +113,7 @@ theorem privParCompose_DP_Bound {m1 : Mechanism T U} {m2 : Mechanism T V} {ε₁
         · rfl
       · apply ENNReal.ofReal_le_ofReal
         apply Real.exp_monotone
-        conv =>
-          lhs
-          rw [<- one_mul (ε₂.toReal)]
-        apply mul_le_mul
-        · simp
-        · apply le_max_right
-        · apply NNReal.zero_le_coe
-        · simp
+        simp
     · simp
       rw [mul_comm]
       apply (le_trans ?G1)
@@ -150,122 +130,10 @@ theorem privParCompose_DP_Bound {m1 : Mechanism T U} {m2 : Mechanism T V} {ε₁
         · simp; rfl
         · rfl
       · apply ENNReal.ofReal_le_ofReal
-        apply Real.exp_monotone
-        conv =>
-          lhs
-          rw [<- one_mul (ε₁.toReal)]
-        apply mul_le_mul
-        · simp
-        · apply le_max_left
-        · apply NNReal.zero_le_coe
-        · simp
-  -- Modification
-  · rename_i l₁' t₁ l₂' t₂ Hl₁ Hl₂
-    simp only [Hl₁, Hl₂, List.filter_append, List.filter_singleton, Function.comp_apply]
-    have Hlem1 : ENNReal.ofReal (rexp ε₁.toReal) ≤ ENNReal.ofReal (rexp (2 * max ε₁.toReal ε₂.toReal)) := by
-      apply ENNReal.ofReal_le_ofReal
-      apply Real.exp_monotone
-      conv =>
-        lhs
-        rw [<- one_mul (ε₁.toReal)]
-      apply mul_le_mul
-      · simp
-      · apply le_max_left
-      · apply NNReal.zero_le_coe
-      · simp
-    have Hlem2 : ENNReal.ofReal (rexp ε₂.toReal) ≤ ENNReal.ofReal (rexp (2 * max ε₁.toReal ε₂.toReal)) := by
-      apply ENNReal.ofReal_le_ofReal
-      apply Real.exp_monotone
-      conv =>
-        lhs
-        rw [<- one_mul (ε₂.toReal)]
-      apply mul_le_mul
-      · simp
-      · apply le_max_right
-      · apply NNReal.zero_le_coe
-      · simp
-    cases f t₁ <;> cases f t₂ <;> simp [Function.comp]
-    · conv=>
-        rhs
-        rw [<- one_mul (ENNReal.ofReal _)]
-      apply mul_le_mul
-      · apply ENNReal.div_self_le_one
-      · apply le_trans
-        · apply H2
-          apply Neighbour.Update
-          · simp; rfl
-          · simp; rfl
-        · apply Hlem2
-      · simp
-      · simp
-    · rw [<- one_add_one_eq_two, add_mul]
-      simp
-      rw [exp_add]
-      rw [ENNReal.ofReal_mul ?G1]
-      case G1 => exact exp_nonneg (max ε₁.toReal ε₂.toReal)
-      apply mul_le_mul
-      · apply le_trans ?G1 _
-        case G1 =>
-          apply H1
-          apply Neighbour.Addition
-          · rfl
-          · simp; rfl
-        apply ENNReal.ofReal_le_ofReal
-        apply Real.exp_monotone
         simp
-      · apply le_trans ?G1 _
-        case G1 =>
-          apply H2
-          apply Neighbour.Deletion
-          · simp; rfl
-          · rfl
-        apply ENNReal.ofReal_le_ofReal
-        apply Real.exp_monotone
-        simp
-      · simp
-      · simp
-    · rw [<- one_add_one_eq_two, add_mul]
-      simp
-      rw [exp_add]
-      rw [ENNReal.ofReal_mul ?G1]
-      case G1 => exact exp_nonneg (max ε₁.toReal ε₂.toReal)
-      apply mul_le_mul
-      · apply le_trans ?G1 _
-        case G1 =>
-          apply H1
-          apply Neighbour.Deletion
-          · simp; rfl
-          · rfl
-        apply ENNReal.ofReal_le_ofReal
-        apply Real.exp_monotone
-        simp
-      · apply le_trans ?G1 _
-        case G1 =>
-          apply H2
-          apply Neighbour.Addition
-          · rfl
-          · simp; rfl
-        apply ENNReal.ofReal_le_ofReal
-        apply Real.exp_monotone
-        simp
-      · simp
-      · simp
-    · conv=>
-        rhs
-        rw [<- mul_one (ENNReal.ofReal _)]
-      apply mul_le_mul
-      · apply le_trans
-        · apply H1
-          apply Neighbour.Update
-          · simp; rfl
-          · simp; rfl
-        · apply Hlem1
-      · apply ENNReal.div_self_le_one
-      · simp
-      · simp
 
 theorem pureDP_priv_Par {m1 : Mechanism T U} {m2 : Mechanism T V} {ε₁ ε₂ ε: NNReal} :
-    ε = 2 * max ε₁ ε₂ -> ∀f, DP m1 ε₁ -> DP m2 ε₂ -> DP (privParCompose m1 m2 f) ε :=
+    ε = max ε₁ ε₂ -> ∀f, DP m1 ε₁ -> DP m2 ε₂ -> DP (privParCompose m1 m2 f) ε :=
   (· ▸ privParCompose_DP_Bound)
 
 end SLang

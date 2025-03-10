@@ -157,57 +157,6 @@ lemma DSN (N : ℕ) (H : Neighbour L1 L2) : ((exactDiffSum N L1) : ℝ) - (exact
       right
       linarith
 
-  · rename_i A B C D H1 H2
-    rw [H1, H2]
-    repeat rw [exactDiffSum_append]
-    simp only [Int.cast_add, add_sub_add_right_eq_sub, add_sub_add_left_eq_sub]
-    simp [exactDiffSum]
-    simp [exactClippedSum]
-    cases (Classical.em ((B : ℝ) ≤ N + 1))
-    · cases (Classical.em ((D : ℝ) ≤ N + 1))
-      · rename_i hb hd
-        rw [min_eq_left_iff.mpr hb]
-        rw [min_eq_left_iff.mpr hd]
-        simp
-        left
-        cases (Classical.em (N.cast ≤ (D.cast : ℝ)))
-        · rw [min_eq_right_iff.mpr ?G1]
-          case G1 => linarith
-          linarith
-        · rw [min_eq_left_iff.mpr ?G1]
-          case G1 => linarith
-          simp
-      · rename_i hb hd
-        rw [min_eq_left_iff.mpr hb]
-        rw [min_eq_right_iff.mpr (by linarith)]
-        rw [min_eq_right_iff.mpr (by linarith)]
-        left
-        linarith
-    · cases (Classical.em ((D : ℝ) ≤ N))
-      · rename_i hb hd
-        rw [min_eq_left_iff.mpr hd]
-        rw [min_eq_left_iff.mpr (by linarith)]
-        rw [min_eq_right_iff.mpr (by linarith)]
-        simp
-        right
-        linarith
-      · rename_i hb hd
-        rw [min_eq_right_iff.mpr (by linarith)]
-        simp only [not_le] at hd
-        rw [min_eq_right_iff.mpr ?G1]
-        case G1 =>
-          have X : (1 : ℝ) = ((1 : ℕ) : ℝ) := by simp
-          rw [X]
-          rw [← Nat.cast_add]
-          apply Nat.cast_le.mpr
-          apply Nat.le_of_lt_succ
-          simp
-          apply Nat.cast_lt.mp at hd
-          trivial
-
-        rw [min_eq_right_iff.mpr (by linarith)]
-        right
-        linarith
 
 lemma Hsens_cov_τ_lemma (HN : Neighbour l₁ l₂) : sv8_sum l₁ H v0 - sv8_sum l₂ H v0 ≤ OfNat.ofNat 1 := by
   simp only [sv8_sum]
@@ -265,16 +214,6 @@ lemma Hsens_cov_vk (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) (point : �
     have _ := @exactDiffSum_singleton_le_1 (point + 1) n
     have _ := @exactDiffSum_nonpos (point + 1) [n]
     linarith
-  · rename_i n1 _ n2 H1 H2
-    simp_all only [H1, H2]; clear H1 H2
-    repeat rw [exactDiffSum_append]
-    simp_all [sens_cov_vk, sens_cov_τ]
-    have _ := @exactDiffSum_singleton_le_1 (point + 1) n1
-    have _ := @exactDiffSum_nonpos (point + 1) [n1]
-    have _ := @exactDiffSum_singleton_le_1 (point + 1) n2
-    have _ := @exactDiffSum_nonpos (point + 1) [n2]
-    linarith
-
 
 
 lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) :

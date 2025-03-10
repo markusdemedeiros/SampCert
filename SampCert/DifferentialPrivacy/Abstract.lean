@@ -147,6 +147,6 @@ class DPNoise (dps : DPSystem T) where
 
 class DPPar (T : Type) extends (DPSystem T) where
   prop_par {m1 : Mechanism T U} {m2 : Mechanism T V} {ε₁ ε₂ ε : NNReal} :
-    ε = 2 * (max ε₁ ε₂) -> ∀f, prop m1 ε₁ -> prop m2 ε₂ -> prop (privParCompose m1 m2 f) ε
+    ε = max ε₁ ε₂ -> ∀f, prop m1 ε₁ -> prop m2 ε₂ -> prop (privParCompose m1 m2 f) ε
 
 end SLang
