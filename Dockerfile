@@ -36,5 +36,5 @@ RUN cd SampCert/ && \
 	lake build FastExtract && \
 	dafny build --target:py Tests/SampCert.dfy Tests/Random.py Tests/testing-kolmogorov-discretegaussian.py Tests/testing-kolmogorov-discretelaplace.py Tests/IBM/discretegauss.py Tests/benchmarks.py -o Tests/SampCert.dfy
 
-# RUN cd SampCert && \
-# 	lake build test
+RUN cd SampCert && \
+	lake build test
