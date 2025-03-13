@@ -40,6 +40,11 @@ lean_exe test where
   extraDepTargets := #[`libleanffi]
   moreLinkArgs := #["-L.lake/build/lib", "-lleanffi"]
 
+lean_exe profile where
+  root := `Profile
+  extraDepTargets := #[`libleanffi]
+  moreLinkArgs := #["-L.lake/build/lib", "-lleanffi"]
+
 lean_exe check where
   root := `SampCertCheck
   extraDepTargets := #[`libleanffi]

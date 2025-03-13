@@ -7,11 +7,13 @@ Authors: Jean-Baptiste Tristan
 #include <fcntl.h>
 #include <unistd.h>
 #include <random>
+#include <stdio.h>
 
 static int urandom = -1; 
 
 extern "C" lean_object * prob_UniformByte (lean_object * eta) {
     lean_dec(eta);
+    printf("X");
     unsigned char r;
     read(urandom, &r,1);
     return lean_box((size_t) r);
