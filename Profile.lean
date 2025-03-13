@@ -19,5 +19,5 @@ def main (args : List String) : IO Unit := do
   let den : ℕ+ := args[1]!.toNat!.toPosUnsafe
   let iterates := args[2]!.toNat!
   for _ in [:iterates] do
-    let _ <- run <| (DiscreteGaussianPMF num den 0)
+    let _ <- run <| (DiscreteGaussianPMF num den 1000)
   return ()

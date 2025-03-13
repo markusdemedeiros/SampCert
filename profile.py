@@ -13,13 +13,12 @@ from diffprivlib.mechanisms import GaussianDiscrete
 import subprocess
 
 def gaussian_benchmarks(mix, warmup_attempts, measured_attempts, lb ,ub, quantity, inv):
-    ub=500
+    ub=50
     quantity=1
 
     # Values of epsilon attempted
     sigmas = []
     nbytes = []
-    mix = 300
 
     g = GaussianDiscrete(epsilon=0.01, delta=0.00001)
 
