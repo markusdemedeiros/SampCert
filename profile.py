@@ -49,7 +49,7 @@ def gaussian_benchmarks(mix, warmup_attempts, measured_attempts, lb ,ub, quantit
     ax1.set_ylabel("Average number of bytes")
     plt.legend(loc = 'best')
     now = datetime.now()
-    filename = 'GaussianProfile' + now.strftime("%H%M%S") + '.pdf'
+    filename = 'GaussianProfile.pdf'
     plt.savefig(filename)
 
 
