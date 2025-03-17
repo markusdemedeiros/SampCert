@@ -43,11 +43,14 @@ def gaussian_benchmarks(mix, warmup_attempts, measured_attempts, lb ,ub, quantit
         nbytes += [float(len(str(result.stdout)) - 3) / float(num_attempts)]
 
     fig,ax1 = plt.subplots(figsize=(7,5))
-
-    ax1.plot(sigmas, nbytes, linewidth=1.0, label="Number of bytes")
+    # only one line may be specified; full height
+    plt.axvline(x = 4, linestyle="--", color = 'gray', linewidth=0.5)
+    plt.axvline(x = 8, linestyle="--", color = 'gray', linewidth=0.5)
+    plt.axvline(x = 16, linestyle="--", color = 'gray', linewidth=0.5)
+    plt.axvline(x = 32, linestyle="--", color = 'gray', linewidth=0.5)
+    ax1.plot(sigmas, nbytes, linewidth=1.0, color="black")
     ax1.set_xlabel("Sigma")
     ax1.set_ylabel("Average number of bytes")
-    plt.legend(loc = 'best')
     now = datetime.now()
     filename = 'GaussianProfile.pdf'
     plt.savefig(filename)
