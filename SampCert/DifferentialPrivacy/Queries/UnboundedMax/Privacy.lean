@@ -216,7 +216,7 @@ lemma Hsens_cov_vk (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) (point : �
     linarith
 
 
-lemma sv8_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) :
+lemma sv9_privMax_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) :
     PureDPSystem.prop (@sv9_privMax_SPMF ε₁ ε₂) ε := by
   -- Unfold DP definitions
   simp [DPSystem.prop]
