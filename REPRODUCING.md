@@ -45,7 +45,7 @@ This command will save a reproduction of figure 4 to the home directory. It can 
 docker cp sampcert:/home/lean/GaussianBenchmarks.pdf .
 ```
 
-To profile the number of bytes of entropy consumed, we have a version of the code instrumented with logging on a separate branch.
+To profile the number of bytes of entropy consumed, we have a version of the code instrumented with logging on a separate branch (``git diff main..PLDI25-profiling`` will show you the differences). 
 To produce a figure that counts the number of bytes of entropy consumed, run the following:
 ```
 git checkout PLDI25-profiling
