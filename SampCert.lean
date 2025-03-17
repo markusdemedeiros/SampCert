@@ -71,3 +71,5 @@ def DiscreteGaussianSampleGet (num den : UInt32) (mix: UInt32) : UInt32 := Id.ru
   else
     let z : IO ℤ ← run <| DiscreteGaussianPMF ⟨ num.toNat , UInt32.toNa_of_non_zero h₁ ⟩ ⟨ den.toNat , UInt32.toNa_of_non_zero h₂ ⟩ mix.toNat
     return DirtyIOGet z
+
+-- #print axioms combineMeanHistogram 
