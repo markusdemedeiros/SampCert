@@ -56,6 +56,7 @@ docker cp sampcert:/home/lean/GaussianBenchmarks.pdf .
 To profile the number of bytes of entropy consumed, we have a version of the code instrumented with logging on a separate branch (``git diff main..PLDI25-profiling`` will show you the differences). 
 To produce a figure that counts the number of bytes of entropy consumed, run the following:
 ```
+cd SampCert
 git checkout PLDI25-profiling
 lake build 
 python3 profile.py 
