@@ -2,7 +2,7 @@ FROM xtrm0/dafny
 
 USER root
 
-RUN apt-get update && apt-get install curl git g++ -y && apt-get clean
+RUN apt-get update && apt-get install curl git g++ vim -y && apt-get clean
 
 RUN pip install matplotlib scipy tqdm diffprivlib
 
