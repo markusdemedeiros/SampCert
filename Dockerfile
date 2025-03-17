@@ -1,4 +1,4 @@
-FROM tchajed/dafny
+FROM xtrm0/dafny
 
 USER root
 
@@ -22,19 +22,19 @@ RUN mkdir SampCert
 COPY --chown=lean . ./SampCert/
 
 RUN curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain none && \
-	. ~/.profile && \
+    . ~/.profile && \
     elan toolchain install $(curl https://raw.githubusercontent.com/leanprover-community/mathlib/master/leanpkg.toml | grep lean_version | awk -F'"' '{print $2}') && \
     elan default stable
 
 RUN cd SampCert/ && \
-	lake exe cache get
+    lake exe cache get
 
 RUN cd SampCert/ && \
-	lake build
+    lake build
 
 RUN cd SampCert/ && \
-	lake build FastExtract && \
-	dafny build --target:py Tests/SampCert.dfy Tests/Random.py Tests/testing-kolmogorov-discretegaussian.py Tests/testing-kolmogorov-discretelaplace.py Tests/IBM/discretegauss.py Tests/benchmarks.py -o Tests/SampCert.dfy
+    lake build FastExtract && \
+    dafny build --target:py Tests/SampCert.dfy Tests/Random.py Tests/testing-kolmogorov-discretegaussian.py Tests/testing-kolmogorov-discretelaplace.py Tests/IBM/discretegauss.py Tests/benchmarks.py -o Tests/SampCert.dfy
 
 RUN cd SampCert && \
-	lake build test
+    lake build test

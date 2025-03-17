@@ -11,12 +11,18 @@ Our artifact consists of
 
 To build and enter the artifact, run the following commands from the root directory of the artifact. 
 ```
-docker build -t sampcert --platform linux/arm64,linux/amd64 .
-docker run -it sampcert -name sampcert /bin/bash
+docker build --platform linux/amd64 -t sampcert .
+docker run -it --platform linux/amd64 --name sampcert sampcert /bin/bash
 ```
 This will compile our Lean code, and extract the implementation of our samplers used by our Large Cloud Provider. 
+If runnning this docker image on a ARM system, please ensure that Rosetta2 virtualization is enabled.
+We have tested that this image builds and runs on a 2023 M2 Macbook Pro. 
 
-Alternatively, you can load our included docker image using 
+Alternatively, you can load our prebuilt docker image using 
+```
+docker image load -i sampcert-image.tar 
+docker run -it --platform linux/amd64 --name sampcert sampcert /bin/bash
+```
 
 
 ## The Lean code
