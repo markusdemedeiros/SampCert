@@ -242,60 +242,6 @@ lemma sv1_ub ε₁ ε₂ l : ∑'s, sv1_privMax ε₁ ε₂ l s ≤ 1 := by
       intro cut
       apply sv1_loop_ub
 
-/-
-/-
-History-aware progam computes the same as the history-agnostic program
--/
-lemma sv0_eq_sv1 ε₁ ε₂ l : sv0_privMax ε₁ ε₂ l = sv1_privMax ε₁ ε₂ l := by
-  apply SLang.ext
-
-  -- Initial setup is equal
-  intro result
-  simp [sv0_privMax, sv1_privMax]
-  apply tsum_congr
-  intro τ
-  congr 1
-  apply tsum_congr
-  intro v0
-  congr 1
-
-  -- unfold sum over product; term re. last sample should be equal as well
-  conv =>
-    congr
-    · unfold sv0_state
-      rw [ENNReal.tsum_prod', ENNReal.tsum_comm]
-    · unfold sv1_state
-      rw [ENNReal.tsum_prod', ENNReal.tsum_comm]
-  apply tsum_congr
-  intro vk
-
-  -- LHS: simplify singleton sum
-  conv =>
-    enter [1, 1, a]
-    simp [sv0_threshold]
-  rw [ENNReal.tsum_eq_add_tsum_ite result]
-  simp
-  rw [@tsum_congr ENNReal ℕ _ _ _ (fun _ => 0) ?G1]
-  case G1 =>
-    intro
-    split <;> simp
-    rename_i H1
-    intro
-    exfalso
-    apply H1
-    symm
-    trivial
-  simp only [tsum_zero, add_zero]
-
-  -- RHS: sum over all lists of length "result"?
-  -- rw [tsum_ite_eq]
-  simp [sv1_threshold]
-  s orry
-  -/
-
-
-
-
 
 /-
 ## Program version 2
@@ -2075,18 +2021,6 @@ lemma sv8_G_comm : sv8_G (A ++ B) vp v0 vf = sv8_G (B ++ A) vp v0 vf := by
     congr 1
     apply IH
 
--- -- IDK
--- lemma sv8_G_cons : sv8_G (x :: L) vp v0 vf = 0 := by
---   revert vp v0
---   induction vf
---   · intros v0 vp
---     simp [sv8_G]
---     s orry
---   · intro vp v0
---     simp [sv8_G]
---     s orry
---     -- unfold sv8_G
-
 lemma exactDiffSum_nonpos : exactDiffSum point L ≤ 0 := by
   simp [exactDiffSum, exactClippedSum]
   induction L
@@ -2223,8 +2157,6 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_privMax PureDPSystem laplace_pur
   apply le_trans _ ?G1
   case G1 =>
     apply ENNReal.tsum_iSup_comm'
-
-  -- Now we're in a world of sanity, because the CDF is actually a CDF.
 
   -- The lucky event: sampling above a value T, which forces the loop to terminate
   rcases (lucky_guess τ l) with ⟨ K, HK ⟩
@@ -2406,7 +2338,7 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_privMax PureDPSystem laplace_pur
     apply ENNReal.add_sub_cancel_left
     exact LT.lt.ne_top Hρ_ub_strict
 
-  -- Now we have the right inductive structure, I think?
+  -- Now we have the right inductive structure
   induction cut
   · -- Base case is trivial?
     simp [geo_cdf]
@@ -2467,10 +2399,7 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_privMax PureDPSystem laplace_pur
           enter [1, b]
           rw [X b]
         clear X
-
         simp [sv1_privMaxF]
-
-        -- Somehow we need it to unfold this tsum. Weird.
         apply le_trans
         · apply ENNReal.tsum_le_tsum
           intro a

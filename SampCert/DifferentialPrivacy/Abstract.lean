@@ -113,9 +113,6 @@ lemma bind_bind_indep (p : Mechanism T U) (q : Mechanism T V) (h : U → V → P
   ext l x
   simp [privCompose, privComposeAdaptive, tsum_prod']
 
-
-
-
 /--
 A noise function for a differential privacy system
 -/
@@ -137,13 +134,6 @@ class DPNoise (dps : DPSystem T) where
     sensitivity q Δ →
     dps.prop (noise q Δ εn εd) ε
 
-
--- /-
--- A DPNoise instance for when the arguments to noise_prop can be computed dynamically
--- -/
--- class DPNoiseDynamic {dps : DPSystem T} (dpn : DPNoise dps) where
---   compute_factor : (ε : NNReal) -> (ℕ+ × ℕ+)
---   compute_factor_spec : ∀ ε : NNReal, dpn.noise_priv (compute_factor ε).1 (compute_factor ε).2 ε
 
 class DPPar (T : Type) extends (DPSystem T) where
   prop_par {m1 : Mechanism T U} {m2 : Mechanism T V} {ε₁ ε₂ ε : NNReal} :

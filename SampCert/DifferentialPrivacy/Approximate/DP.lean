@@ -6,9 +6,6 @@ Authors: Jean-Baptiste Tristan
 import SampCert.SLang
 import SampCert.DifferentialPrivacy.Generic
 import SampCert.DifferentialPrivacy.Neighbours
--- import SampCert.DifferentialPrivacy.Pure.DP
--- import SampCert.DifferentialPrivacy.ZeroConcentrated.DP
--- import SampCert.Util.Log
 
 noncomputable section
 

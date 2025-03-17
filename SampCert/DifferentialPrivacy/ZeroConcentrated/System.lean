@@ -64,14 +64,4 @@ instance gaussian_zCDPSystem (T : Type) : DPNoise (@zCDPSystem T) where
       apply HS
     · apply H
 
-
--- /-
--- Laplace noise for zCDP system?
--- -/
--- instance laplace_zCDPSystem (T : Type) : DPNoise (@zCDPSystem T) where
---   noise := sorry
---   noise_priv := sorry
---   noise_prop := sorry -- privNoisedQuery_zCDP
-
-
 end SLang

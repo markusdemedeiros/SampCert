@@ -80,8 +80,6 @@ def DiscreteLaplaceSampleOptimized (num den : PNat) : SLang ℤ := do
 /--
 ``SLang`` term to obtain a sample from the discrete Laplace distribution, optimized
 based on (num/den).
-
-FIXME: Extractor breaks when we move 50 to an external constant, even when we specify @[always_inline]
 -/
 def DiscreteLaplaceSampleMixed (num den : PNat) (mix: ℕ) : SLang ℤ := do
   if num ≤ den * mix

@@ -366,10 +366,6 @@ theorem privPostPocess_DP_pre_reduct {U : Type} [m2 : MeasurableSpace U] [count 
   rw [<- mul_assoc] at HJ
 
   -- Move constants to the left-hand side of HJ
-  -- Super haunted bug: When I apply this as normal to HJ (with placeholders)
-  -- Lean it lights up all of my "have" and "let" statements because it \"doesn't
-  -- know how to synthesize\" a placeholder. The placeholder it points me to is in
-  -- Pure/Postprocessing, where the same lemma is also applied with placeholders.
   have W :=
     @ENNReal.div_le_iff_le_mul
       1

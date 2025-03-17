@@ -14,7 +14,7 @@ This file defines neighbouring lists.
 variable {T : Type}
 
 /--
-Lists which differ by the inclusion or modification of an element.
+Lists which differ by the inclusion or exclusion of an element.
 
 This is SampCert's private property. 
 -/
