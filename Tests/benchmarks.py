@@ -136,7 +136,7 @@ def gaussian_benchmarks(mix, warmup_attempts, measured_attempts, lb ,ub, quantit
     plt.legend(loc = 'best')
     now = datetime.now()
     filename = 'GaussianBenchmarks.pdf'
-	print(filename)
+    print(filename)
     plt.savefig(filename)
 
 if __name__ == "__main__":

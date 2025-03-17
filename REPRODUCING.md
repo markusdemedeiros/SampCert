@@ -9,12 +9,14 @@ Our artifact consists of
 
 ## Building
 
-To build and enter the artifact, run the following commands. 
+To build and enter the artifact, run the following commands from the root directory of the artifact. 
 ```
 docker build -t sampcert --platform linux/arm64,linux/amd64 .
 docker run -it sampcert -name sampcert /bin/bash
 ```
 This will compile our Lean code, and extract the implementation of our samplers used by our Large Cloud Provider. 
+
+Alternatively, you can load our included docker image using 
 
 
 ## The Lean code
