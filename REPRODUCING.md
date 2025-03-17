@@ -58,7 +58,7 @@ To produce a figure that counts the number of bytes of entropy consumed, run the
 ```
 cd SampCert
 git checkout PLDI25-profiling
-lake build 
+lake build profile
 python3 profile.py 
 ```
 To view the profile, it can be copied out of the container as above:
