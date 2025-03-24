@@ -110,9 +110,9 @@ lemma ENNReal.tsum_iSup_comm' (f : T -> U -> ENNReal) : ⨆ y, ∑' x, f x y ≤
   intro a
   apply le_iSup
 
-lemma iSup_comm_lemma (ε₁ ε₂ : ℕ+) (l : List ℕ) (τ v0 : ℤ):
-     ∑' b, ⨆ i, probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) i ([], v0) b =
-     ⨆ i, ∑' b, probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) i ([], v0) b := by
+lemma iSup_comm_lemma qs (ε₁ ε₂ : ℕ+) (l : List ℕ) (τ v0 : ℤ):
+     ∑' b, ⨆ i, probWhileCut (sv1_privMaxC qs τ l) (sv1_privMaxF ε₁ ε₂) i ([], v0) b =
+     ⨆ i, ∑' b, probWhileCut (sv1_privMaxC qs τ l) (sv1_privMaxF ε₁ ε₂) i ([], v0) b := by
   rw [ENNReal.tsum_eq_iSup_sum]
   conv =>
     rhs
@@ -125,8 +125,7 @@ lemma iSup_comm_lemma (ε₁ ε₂ : ℕ+) (l : List ℕ) (τ v0 : ℤ):
   intro a
   apply probWhileCut_monotonic
 
-
-lemma sv1_loop_ub ε₁ ε₂ l : ∀ L : List ℤ, ∀ (v0 : ℤ), (∑' (x : sv1_state), probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) cut (L, v0) x ≤ 1) := by
+lemma sv1_loop_ub qs ε₁ ε₂ l : ∀ L : List ℤ, ∀ (v0 : ℤ), (∑' (x : sv1_state), probWhileCut (sv1_privMaxC qs τ l) (sv1_privMaxF ε₁ ε₂) cut (L, v0) x ≤ 1) := by
   induction cut
   · simp [probWhileCut]
   · rename_i cut' IH
@@ -146,7 +145,7 @@ lemma sv1_loop_ub ε₁ ε₂ l : ∀ L : List ℤ, ∀ (v0 : ℤ), (∑' (x : s
 
       apply
         @le_trans _ _ _
-        (∑' (x : sv1_state) (b : ℤ), (privNoiseGuess ε₁ ε₂) b * probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) cut' (L ++ [v0], b) x)
+        (∑' (x : sv1_state) (b : ℤ), (privNoiseGuess ε₁ ε₂) b * probWhileCut (sv1_privMaxC qs τ l) (sv1_privMaxF ε₁ ε₂) cut' (L ++ [v0], b) x)
         _ ?G5 ?G6
       case G5 =>
         apply ENNReal.tsum_le_tsum
@@ -183,9 +182,7 @@ lemma sv1_loop_ub ε₁ ε₂ l : ∀ L : List ℤ, ∀ (v0 : ℤ), (∑' (x : s
     · simp
 
 
-
-
-lemma sv1_ub ε₁ ε₂ l : ∑'s, sv1_privMax ε₁ ε₂ l s ≤ 1 := by
+lemma sv1_ub qs ε₁ ε₂ l : ∑'s, sv1_privMax qs ε₁ ε₂ l s ≤ 1 := by
   unfold sv1_privMax
   unfold sv1_threshold
   simp
@@ -229,7 +226,7 @@ lemma sv1_ub ε₁ ε₂ l : ∑'s, sv1_privMax ε₁ ε₂ l s ≤ 1 := by
 
     apply
       @le_trans _ _ _
-      (∑' (b : sv1_state), probWhile (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) ([], v0) b )
+      (∑' (b : sv1_state), probWhile (sv1_privMaxC qs τ l) (sv1_privMaxF ε₁ ε₂) ([], v0) b )
       _ ?G3 ?G4
     case G3 =>
       apply ENNReal.tsum_le_tsum
@@ -242,27 +239,27 @@ lemma sv1_ub ε₁ ε₂ l : ∑'s, sv1_privMax ε₁ ε₂ l s ≤ 1 := by
       intro cut
       apply sv1_loop_ub
 
-
 /-
 ## Program version 2
   - Only moves the loop into a non-executable form, ie. explicitly defines the PMF
 -/
 
-def sv2_privMax (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv2_privMax (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
     let τ <- privNoiseThresh ε₁ ε₂
     let v0 <- privNoiseGuess ε₁ ε₂
-    let sk <- probWhile (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) ([], v0)
+    let sk <- probWhile (sv1_privMaxC qs τ l) (sv1_privMaxF ε₁ ε₂) ([], v0)
     return (sv1_threshold sk)
   computation point
 
-lemma sv1_sv2_eq ε₁ ε₂ l : sv1_privMax ε₁ ε₂ l = sv2_privMax ε₁ ε₂ l := by
+lemma sv1_sv2_eq ε₁ ε₂ l : sv1_privMax qs ε₁ ε₂ l = sv2_privMax qs ε₁ ε₂ l := by
   apply SLang.ext
   intro result
   simp [sv1_privMax, sv2_privMax]
 
 
+/-
 
 
 /-
@@ -2615,3 +2612,4 @@ def sv9_privMax_SPMF (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
       apply LE.le.antisymm
       · apply sv1_ub
       · apply sv1_lb ⟩
+-/
