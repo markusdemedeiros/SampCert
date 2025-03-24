@@ -99,7 +99,7 @@ def sv1_threshold (s : sv1_state) : ℕ := List.length s.1
 def sv1_noise (s : sv1_state) : ℤ := s.2
 
 def sv1_privMaxC (qs : sv_query) (τ : ℤ) (l : List ℕ) (s : sv1_state) : Bool :=
-  decide (qs (sv1_threshold s) l < τ)
+  decide (qs (sv1_threshold s) l + (sv1_noise s) < τ)
   -- decide (exactDiffSum (sv1_threshold s) l + (sv1_noise s) < τ)
 
 def sv1_privMaxF (ε₁ ε₂ : ℕ+) (s : sv1_state) : SLang sv1_state := do
