@@ -2581,22 +2581,24 @@ def sv1_privMax_PMF (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
       · apply sv1_ub
       · apply sv1_lb ⟩
 
+-/
+
 /--
 sv9 normalizes because sv1 normalizes
 -/
-def sv9_privMax_SPMF (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
-  ⟨ @sv9_privMax PureDPSystem laplace_pureDPSystem ε₁ ε₂ l,
+def sv9_privMax_SPMF (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
+  ⟨ @sv9_privMax PureDPSystem laplace_pureDPSystem qs ε₁ ε₂ l,
     by
-      rw [<- sv8_sv9_eq]
-      rw [<- sv7_sv8_eq]
-      rw [<- sv6_sv7_eq]
-      rw [<- sv5_sv6_eq]
-      rw [<- sv4_sv5_eq]
-      rw [<- sv3_sv4_eq]
-      rw [<- sv2_sv3_eq]
-      rw [<- sv1_sv2_eq]
+      rw [<- @sv8_sv9_eq]
+      rw [<- @sv7_sv8_eq]
+      rw [<- @sv6_sv7_eq]
+      rw [<- @sv5_sv6_eq]
+      rw [<- @sv4_sv5_eq]
+      rw [<- @sv3_sv4_eq]
+      rw [<- @sv2_sv3_eq]
+      rw [<- @sv1_sv2_eq]
       rw [Summable.hasSum_iff ENNReal.summable]
-      apply LE.le.antisymm
-      · apply sv1_ub
-      · apply sv1_lb ⟩
--/
+      sorry ⟩
+--       apply LE.le.antisymm
+--       · apply sv1_ub
+--       · apply sv1_lb ⟩
