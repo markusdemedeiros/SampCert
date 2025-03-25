@@ -10,64 +10,58 @@ import SampCert.DifferentialPrivacy.Queries.Sparse.Code
 import SampCert.DifferentialPrivacy.Queries.AboveThresh.Properties
 import SampCert.DifferentialPrivacy.Queries.AboveThresh.Privacy
 
-/-
 noncomputable section
 
 open Classical
 
 namespace SLang
 
-variable (ε₁ ε₂ : ℕ+)
+variable (T : ℤ) (ε₁ ε₂ : ℕ+) {sv_T : Type}
 
-lemma exactDiffSum_sens i : sensitivity (exactDiffSum i) 1 := by
-  intro l₁ l₂ H
-  cases H
-  · rename_i A B C H1 H2
-    rw [H1, H2]
-    repeat rw [exactDiffSum_append]
-    simp [exactDiffSum, exactClippedSum]
-    apply Int.le_of_ofNat_le_ofNat
-    simp
-    cases (Classical.em (C ≤ i))
-    · rw [min_eq_left (by linarith)]
-      rw [min_eq_left (by linarith)]
-      simp
-    · cases (Classical.em (C ≤ i + 1))
-      · have HC : C = i + 1 := by linarith
-        simp_all
-      · rw [min_eq_right (by linarith)]
-        rw [min_eq_right (by linarith)]
-        simp
-  · rename_i A C B H1 H2
-    rw [H1, H2]
-    repeat rw [exactDiffSum_append]
-    simp [exactDiffSum, exactClippedSum]
-    apply Int.le_of_ofNat_le_ofNat
-    simp
-    cases (Classical.em (C ≤ i))
-    · rw [min_eq_left (by linarith)]
-      rw [min_eq_left (by linarith)]
-      simp
-    · cases (Classical.em (C ≤ i + 1))
-      · have HC : C = i + 1 := by linarith
-        simp_all
-      · rw [min_eq_right (by linarith)]
-        rw [min_eq_right (by linarith)]
-        simp
+variable [dps : DPSystem sv_T]
+variable [dpn : DPNoise dps]
 
-lemma privUnboundedMax_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) :
-    PureDPSystem.prop (@privUnboundedMax ε₁ ε₂) ε := by
-  suffices H : (privUnboundedMax ε₁ ε₂) = (sv9_aboveThresh_SPMF exactDiffSum 0 lucky_guess ε₁ ε₂) by
-    rw [H]
-    apply sv9_aboveThresh_pmf_DP
-    · apply exactDiffSum_sens
-    · trivial
-  unfold privUnboundedMax
-  unfold sv1_aboveThresh_PMF
-  unfold sv9_aboveThresh_SPMF
-  apply funext
-  intro l
-  congr
-  rw [<- sv8_sv9_eq, <- sv7_sv8_eq, <- sv6_sv7_eq, <- sv5_sv6_eq,
-      <- sv4_sv5_eq, <- sv3_sv4_eq, <- sv2_sv3_eq, <- sv1_sv2_eq]
--/
+variable (qs : sv_query sv_T)
+-- variable (Hqs : ∀ N : ℕ, has_lucky (shift_qs N qs) T)
+variable (Hqs : has_lucky qs T)
+variable (HDP : ∀ N H, ∀ ε : NNReal, (ε = ε₁ / ε₂) -> dps.prop (sv1_aboveThresh_PMF (shift_qs N qs) T H ε₁ ε₂) ε)
+
+lemma shift_qs_add {T : Type} (qs' : sv_query T) (A B : ℕ) : (shift_qs A (shift_qs B qs')) = (shift_qs (A + B) qs') := by
+  apply funext; simp [shift_qs, add_assoc]
+
+local instance : MeasurableSpace (List ℕ) where
+  MeasurableSet' _ := True
+  measurableSet_empty := by simp only
+  measurableSet_compl := by simp only [imp_self, implies_true]
+  measurableSet_iUnion := by simp only [implies_true, imp_self]
+
+local instance : DiscreteMeasurableSpace (List ℕ) where
+  forall_measurableSet := by simp only [MeasurableSpace.measurableSet_top, implies_true]
+
+lemma privSparseAux_DP (ε : NNReal) (c : ℕ) (Hε : ε = ε₁ / ε₂) :
+    ∀ N : ℕ, ∀ H, dps.prop (privSparseAux T ε₁ ε₂ (shift_qs N qs) H c) (c * ε) := by
+  induction c
+  · intro _ _
+    unfold privSparseAux
+    simp
+    apply dps.const_prop
+    simp_all
+  · rename_i c' IH
+    intro N HL
+    simp [privSparseAux]
+    apply dps.postprocess_prop
+    apply @DPSystem.adaptive_compose_prop _ _ _ _ _ _ _ _ ε (c' * ε) ((c' + 1) * ε)
+    · apply HDP
+      trivial
+    · intro u
+      let IH' := IH (u + N)
+      rw [<- shift_qs_add] at IH'
+      apply IH'
+    · ring_nf
+
+lemma privSparse_DP (ε : NNReal) (c : ℕ) (Hε : ε = ε₁ / ε₂) :
+    dps.prop (privSparse T ε₁ ε₂ qs Hqs c) (c * ε) := by
+  unfold privSparse
+  apply privSparseAux_DP
+  · apply HDP
+  · trivial

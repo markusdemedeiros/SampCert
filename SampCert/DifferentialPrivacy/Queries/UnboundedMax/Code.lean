@@ -66,7 +66,8 @@ lemma exactDiffSum_append : exactDiffSum i (A ++ B) = exactDiffSum i A + exactDi
   linarith
 
 -- There is a value such that sampling at least that value implies the loop definitely terminiates
-lemma lucky_guess (τ : ℤ) (l : List ℕ) : ∃ (K : ℤ), ∀ A, ∀ (K' : ℤ), K ≤ K' -> exactDiffSum A l + K' ≥ τ + 0 := by
+lemma lucky_guess : has_lucky exactDiffSum 0 := by
+  intros τ l
   exists (List.length l + τ)
   intro A K' HK'
   apply ge_iff_le.mpr

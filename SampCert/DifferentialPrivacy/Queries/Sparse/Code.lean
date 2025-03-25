@@ -7,61 +7,46 @@ Authors: Markus de Medeiros
 import SampCert.DifferentialPrivacy.Abstract
 import SampCert.DifferentialPrivacy.Pure.System
 import SampCert.DifferentialPrivacy.Queries.AboveThresh.Code
+import SampCert.DifferentialPrivacy.Queries.AboveThresh.Properties
 
 namespace SLang
 
 variable (T : ℤ) (ε₁ ε₂ : ℕ+) {sv_T : Type}
+variable (qs : sv_query sv_T)
+variable (HL : has_lucky qs T)
 
 variable [dps : DPSystem ℕ]
 variable [dpn : DPNoise dps]
 
-/-
+
+def snoc {T : Type*} (x : T) (L : List T) := L ++ [x]
+
 -- "Sparse" algorithm as described in the proof of 3.25 of
 -- Cynthia Dwork and Aaron Roth "The Algorithmic Foundations of Differential Privacy" (2014)
 
 def shift_qs (n : ℕ) (qs : sv_query sv_T) : sv_query sv_T := fun i => qs (i + n)
 
+lemma shift_qs_lucky n (qs' : sv_query sv_T) (H : has_lucky qs' T) : has_lucky (shift_qs n qs') T := by
+  intro τ l
+  rcases (H τ l) with ⟨ K, HK ⟩
+  exists K
+  intro A K' HK'
+  simp only [shift_qs]
+  apply HK
+  trivial
 
-def privSparse {sv_T : Type} (qs : sv_query sv_T) (c : ℕ) : Mechanism sv_T (List ℕ) :=
+
+def privSparseAux {sv_T : Type} (qs' : sv_query sv_T) (HL' : has_lucky qs' T) (c : ℕ) : Mechanism sv_T (List ℕ) :=
   match c with
   | 0 => privConst []
   | Nat.succ c' =>
       privPostProcess
         (privComposeAdaptive
-          (sorry : Mechanism ℕ ℕ)
-          (fun n => privSparse (shift_qs n qs) c'))
-      (fun (x, L) => x :: L)
+          (sv1_aboveThresh_PMF qs' T HL' ε₁ ε₂)
+          (fun n => privSparseAux (shift_qs n qs') (shift_qs_lucky T n qs' HL') c'))
+      (Function.uncurry snoc)
 
+def privSparse (c : ℕ) : Mechanism sv_T (List ℕ) :=
+  privSparseAux T ε₁ ε₂ (shift_qs 0 qs) (shift_qs_lucky _ _ _ HL) c
 
-
--- def privParNoisedBinCount (ε₁ ε₂ : ℕ+) (b : Fin numBins) : Mechanism T ℤ :=
---   (dpn.noise (exactBinCount numBins B b) 1 ε₁ ε₂)
---
--- def privParNoisedHistogramAux (ε₁ ε₂ : ℕ+) (n : ℕ) (Hn : n < numBins) : Mechanism T (Histogram T numBins B) :=
---   let privParNoisedHistogramAux_rec :=
---     match n with
---     | Nat.zero => privConst (emptyHistogram numBins B)
---     | Nat.succ n' => privParNoisedHistogramAux ε₁ ε₂ n' (Nat.lt_of_succ_lt Hn)
---   privPostProcess
---     (privParCompose
---       (privParNoisedBinCount numBins B ε₁ ε₂ n)
---       privParNoisedHistogramAux_rec
---       (B.bin · = n))
---     (fun z => setCount numBins B z.2 n z.1)
---
--- /--
--- Histogram with noise added to each count
--- -/
--- def privParNoisedHistogram (ε₁ ε₂ : ℕ+) : Mechanism T (Histogram T numBins B) :=
---   privParNoisedHistogramAux numBins B ε₁ ε₂ (predBins numBins) (predBins_lt_numBins numBins)
-
-
-def sv1_sparse (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (c : ℕ) : SPMF (List ℕ) :=
-  match c with
-  | 0 => return []
-  | Nat.succ c' => sorry
-    -- privComposeAdaptive
-    --   sorry -- (sv1_aboveThresh qs T ε₁ ε₂ l)
-    --   sorry
--/
 end SLang

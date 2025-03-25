@@ -1931,6 +1931,10 @@ lemma geo_cdf_rec (β : ENNReal) (Hβ1: β ≤ 1) (n : ℕ) :
 
 end equiv
 
+
+abbrev has_lucky {sv_T : Type} (qs : sv_query sv_T) (T : ℤ) : Prop :=
+  ∀ (τ : ℤ) (l : List sv_T), ∃ (K : ℤ), ∀ A, ∀ (K' : ℤ), K ≤ K' -> qs A l + K' ≥ τ + T
+
 section pmf
 
 lemma ite_conv_left {P : Prop} {D} {a b c : ENNReal} (H : a = c) : @ite _ P D a b = @ite _ P D c b := by
@@ -1946,7 +1950,7 @@ lemma ite_lemma_1 {P : Prop} {D} {f : T -> ENNReal} : ∑'(a : T), @ite _ P D (f
 
 variable (qs :  sv_query sv_T)
 variable (T : ℤ)
-variable (lucky_guess : ∀ (τ : ℤ) (l : List sv_T), ∃ (K : ℤ), ∀ A, ∀ (K' : ℤ), K ≤ K' -> qs A l + K' ≥ τ + T)
+variable (lucky_guess : has_lucky qs T)
 
 lemma sv1_lb ε₁ ε₂ l :
     1 ≤ ∑'s, (@sv1_aboveThresh PureDPSystem laplace_pureDPSystem sv_T qs T ε₁ ε₂ l s)  := by
