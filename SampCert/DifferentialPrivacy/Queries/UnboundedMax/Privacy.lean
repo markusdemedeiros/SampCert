@@ -56,7 +56,7 @@ lemma exactDiffSum_sens i : sensitivity (exactDiffSum i) 1 := by
 
 lemma privUnboundedMax_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) :
     PureDPSystem.prop (@privUnboundedMax ε₁ ε₂) ε := by
-  suffices H : (privUnboundedMax ε₁ ε₂) = (sv9_aboveThresh_SPMF exactDiffSum lucky_guess ε₁ ε₂) by
+  suffices H : (privUnboundedMax ε₁ ε₂) = (sv9_aboveThresh_SPMF exactDiffSum 0 lucky_guess ε₁ ε₂) by
     rw [H]
     apply sv9_aboveThresh_pmf_DP
     · apply exactDiffSum_sens

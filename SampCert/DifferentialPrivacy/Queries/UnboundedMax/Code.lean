@@ -66,7 +66,7 @@ lemma exactDiffSum_append : exactDiffSum i (A ++ B) = exactDiffSum i A + exactDi
   linarith
 
 -- There is a value such that sampling at least that value implies the loop definitely terminiates
-lemma lucky_guess (τ : ℤ) (l : List ℕ) : ∃ (K : ℤ), ∀ A, ∀ (K' : ℤ), K ≤ K' -> exactDiffSum A l + K' ≥ τ := by
+lemma lucky_guess (τ : ℤ) (l : List ℕ) : ∃ (K : ℤ), ∀ A, ∀ (K' : ℤ), K ≤ K' -> exactDiffSum A l + K' ≥ τ + 0 := by
   exists (List.length l + τ)
   intro A K' HK'
   apply ge_iff_le.mpr
@@ -102,7 +102,7 @@ lemma lucky_guess (τ : ℤ) (l : List ℕ) : ∃ (K : ℤ), ∀ A, ∀ (K' : �
       linarith
 
 def privUnboundedMax (ε₁ ε₂ : ℕ+) : List ℕ -> SPMF ℕ :=
-  sv1_aboveThresh_PMF exactDiffSum lucky_guess ε₁ ε₂
+  sv1_aboveThresh_PMF exactDiffSum 0 lucky_guess ε₁ ε₂
 
 /-
 /-

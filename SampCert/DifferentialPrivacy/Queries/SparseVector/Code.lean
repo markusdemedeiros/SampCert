@@ -50,19 +50,18 @@ def sv1_threshold (s : sv1_state) : ℕ := List.length s.1
 
 def sv1_noise (s : sv1_state) : ℤ := s.2
 
-def sv1_aboveThreshC (qs : sv_query) (τ : ℤ) (l : List ℕ) (s : sv1_state) : Bool :=
-  decide (qs (sv1_threshold s) l + (sv1_noise s) < τ)
+def sv1_aboveThreshC (qs : sv_query) (T : ℤ) (τ : ℤ) (l : List ℕ) (s : sv1_state) : Bool :=
+  decide (qs (sv1_threshold s) l + (sv1_noise s) < τ + T)
   -- decide (exactDiffSum (sv1_threshold s) l + (sv1_noise s) < τ)
 
 def sv1_aboveThreshF (ε₁ ε₂ : ℕ+) (s : sv1_state) : SLang sv1_state := do
   let vn <- privNoiseGuess ε₁ ε₂
   return (s.1 ++ [s.2], vn)
 
-def sv1_aboveThresh (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ := do
+def sv1_aboveThresh (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ := do
   let τ <- privNoiseThresh ε₁ ε₂
   let v0 <- privNoiseGuess ε₁ ε₂
-  let sk <- probWhile (sv1_aboveThreshC qs τ l) (sv1_aboveThreshF ε₁ ε₂) ([], v0)
+  let sk <- probWhile (sv1_aboveThreshC qs T τ l) (sv1_aboveThreshF ε₁ ε₂) ([], v0)
   return (sv1_threshold sk)
-
 
 end SLang

@@ -14,7 +14,7 @@ open Classical
 
 namespace SLang
 
-variable (qs : sv_query) (ε₁ ε₂ : ℕ+)
+variable (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+)
 variable (Hqs_sens : ∀ i, sensitivity (qs i) 1)
 
 def cov_τ_def (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) : ℤ := (sv8_G qs l₁ [] v0 vs) - (sv8_G qs l₂ [] v0 vs)
@@ -177,7 +177,7 @@ lemma Hsens_cov_vk (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) (point : �
   apply le_abs_self
 
 lemma sv9_aboveThresh_pmf_DP HL (ε : NNReal) (Hε : ε = ε₁ / ε₂) :
-    PureDPSystem.prop (@sv9_aboveThresh_SPMF qs HL ε₁ ε₂) ε := by
+    PureDPSystem.prop (@sv9_aboveThresh_SPMF qs T HL ε₁ ε₂) ε := by
   -- Unfold DP definitions
   simp [DPSystem.prop]
   apply singleton_to_event
@@ -281,11 +281,11 @@ lemma sv9_aboveThresh_pmf_DP HL (ε : NNReal) (Hε : ε = ε₁ / ε₂) :
       · simp
 
 
-
-
     · -- Conditionals should be equal
-      suffices (τ + cov_τ ≤ sv8_sum qs l₁ [] (vk + cov_vk)) = (τ ≤ sv8_sum qs l₂ [] vk) by
+      suffices (τ + T + cov_τ ≤ sv8_sum qs l₁ [] (vk + cov_vk)) = (τ + T ≤ sv8_sum qs l₂ [] vk) by
         split <;> simp_all
+        split <;> simp_all
+        linarith
       apply propext
       simp [sv8_sum, cov_vk]
       apply Iff.intro
@@ -365,8 +365,8 @@ lemma sv9_aboveThresh_pmf_DP HL (ε : NNReal) (Hε : ε = ε₁ / ε₂) :
     apply mul_le_mul' _ ?G2
     case G2 =>
       apply Eq.le
-      suffices ((sv8_G qs l₁ [] v0 ↑vs < τ + cov_τ) = (sv8_G qs l₂ [] v0 ↑vs < τ)) ∧
-               ((τ + cov_τ ≤ qs (point + 1) l₁ + (vk + cov_vk)) = (τ ≤ qs (point + 1) l₂ + vk)) by
+      suffices ((sv8_G qs l₁ [] v0 ↑vs < τ + cov_τ + T) = (sv8_G qs l₂ [] v0 ↑vs < τ + T)) ∧
+               ((τ + cov_τ + T ≤ qs (point + 1) l₁ + (vk + cov_vk)) = (τ + T ≤ qs (point + 1) l₂ + vk)) by
         simp_all
       apply And.intro
       · -- cov_τ
