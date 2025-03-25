@@ -10,20 +10,19 @@ import SampCert.DifferentialPrivacy.Queries.AboveThresh.Code
 
 namespace SLang
 
-variable (T : ℤ) (ε₁ ε₂ : ℕ+)
+variable (T : ℤ) (ε₁ ε₂ : ℕ+) {sv_T : Type}
 
 variable [dps : DPSystem ℕ]
 variable [dpn : DPNoise dps]
 
+/-
 -- "Sparse" algorithm as described in the proof of 3.25 of
 -- Cynthia Dwork and Aaron Roth "The Algorithmic Foundations of Differential Privacy" (2014)
 
-def shift_qs (n : ℕ) (qs : sv_query) : sv_query := fun i => qs (i + n)
+def shift_qs (n : ℕ) (qs : sv_query sv_T) : sv_query sv_T := fun i => qs (i + n)
 
 
-
-
-def privSparse (qs : sv_query) (c : ℕ) : Mechanism ℕ (List ℕ) :=
+def privSparse {sv_T : Type} (qs : sv_query sv_T) (c : ℕ) : Mechanism sv_T (List ℕ) :=
   match c with
   | 0 => privConst []
   | Nat.succ c' =>
@@ -64,5 +63,5 @@ def sv1_sparse (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (c : ℕ) : SPMF (
     -- privComposeAdaptive
     --   sorry -- (sv1_aboveThresh qs T ε₁ ε₂ l)
     --   sorry
-
+-/
 end SLang

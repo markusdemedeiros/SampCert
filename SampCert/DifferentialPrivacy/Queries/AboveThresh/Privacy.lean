@@ -14,19 +14,19 @@ open Classical
 
 namespace SLang
 
-variable (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+)
+variable {sv_Ta: Type} (qs : sv_query sv_T) (T : ℤ) (ε₁ ε₂ : ℕ+)
 variable (Hqs_sens : ∀ i, sensitivity (qs i) 1)
 
-def cov_τ_def (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) : ℤ := (sv8_G qs l₁ [] v0 vs) - (sv8_G qs l₂ [] v0 vs)
+def cov_τ_def (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List sv_T) : ℤ := (sv8_G qs l₁ [] v0 vs) - (sv8_G qs l₂ [] v0 vs)
 
-lemma cov_τ_def_neg (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) : cov_τ_def qs v0 vs l₁ l₂ = -cov_τ_def qs v0 vs l₂ l₁ := by
+lemma cov_τ_def_neg (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List sv_T) : cov_τ_def qs v0 vs l₁ l₂ = -cov_τ_def qs v0 vs l₂ l₁ := by
   simp [cov_τ_def]
 
-def cov_vk_def (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) (point : ℕ) : ℤ :=
+def cov_vk_def (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List sv_T) (point : ℕ) : ℤ :=
   -- exactDiffSum (point + 1) l₂ - exactDiffSum (point + 1) l₁ + cov_τ_def qs v0 vs l₁ l₂
   qs (point + 1) l₂ - qs (point + 1) l₁ + cov_τ_def qs v0 vs l₁ l₂
 
-lemma cov_vk_def_neg (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) : cov_vk_def qs v0 vs l₁ l₂ point = -cov_vk_def qs v0 vs l₂ l₁ point := by
+lemma cov_vk_def_neg (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List sv_T) : cov_vk_def qs v0 vs l₁ l₂ point = -cov_vk_def qs v0 vs l₂ l₁ point := by
   simp [cov_τ_def, cov_vk_def]
   linarith
 
@@ -132,7 +132,7 @@ lemma DSN (N : ℕ) (H : Neighbour L1 L2) : ((qs N L1) : ℝ) - (qs N L2) ≤ 1 
 lemma Hsens_cov_τ_lemma (HN : Neighbour l₁ l₂) : sv8_sum qs l₁ H v0 - sv8_sum qs l₂ H v0 ≤ OfNat.ofNat 1 := by
   simp only [sv8_sum]
   rw [add_tsub_add_eq_tsub_right]
-  have X := @DSN qs Hqs_sens l₁ l₂ H.length HN
+  have X := @DSN sv_T qs Hqs_sens l₁ l₂ H.length HN
   rw [← Int.cast_sub] at X
   have Y : (@OfNat.ofNat.{0} Real 1 (@One.toOfNat1.{0} Real Real.instOne)) = (@OfNat.ofNat.{0} Int (@OfNat.ofNat.{0} Nat 1 (instOfNatNat 1)) (@instOfNat (@OfNat.ofNat.{0} Nat 1 (instOfNatNat 1)))) :=
     by simp
@@ -141,7 +141,7 @@ lemma Hsens_cov_τ_lemma (HN : Neighbour l₁ l₂) : sv8_sum qs l₁ H v0 - sv8
   apply le_trans X
   simp
 
-lemma Hsens_cov_τ (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) (Hneighbour : Neighbour l₁ l₂) : cov_τ_def qs v0 vs l₁ l₂ ≤ sens_cov_τ := by
+lemma Hsens_cov_τ (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List sv_T) (Hneighbour : Neighbour l₁ l₂) : cov_τ_def qs v0 vs l₁ l₂ ≤ sens_cov_τ := by
   dsimp [cov_τ_def, sens_cov_τ]
 
   suffices (∀ H v0, sv8_G qs l₁ H v0 vs - sv8_G qs l₂ H v0 vs ≤ sens_cov_τ.val.cast) by
@@ -163,7 +163,7 @@ lemma Hsens_cov_τ (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) (Hneighbour
     · apply IH
 
 -- Prove sensitivity bound
-lemma Hsens_cov_vk (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) (point : ℕ) (Hneighbour : Neighbour l₁ l₂) : cov_vk_def qs v0 vs l₁ l₂ point ≤ sens_cov_vk := by
+lemma Hsens_cov_vk (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List sv_T) (point : ℕ) (Hneighbour : Neighbour l₁ l₂) : cov_vk_def qs v0 vs l₁ l₂ point ≤ sens_cov_vk := by
   dsimp [cov_vk_def]
   have X := Hsens_cov_τ qs Hqs_sens v0 vs l₁ l₂ Hneighbour
   simp_all [sens_cov_vk, sens_cov_τ]
@@ -177,7 +177,7 @@ lemma Hsens_cov_vk (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) (point : �
   apply le_abs_self
 
 lemma sv9_aboveThresh_pmf_DP HL (ε : NNReal) (Hε : ε = ε₁ / ε₂) :
-    PureDPSystem.prop (@sv9_aboveThresh_SPMF qs T HL ε₁ ε₂) ε := by
+    PureDPSystem.prop (@sv9_aboveThresh_SPMF sv_T qs T HL ε₁ ε₂) ε := by
   -- Unfold DP definitions
   simp [DPSystem.prop]
   apply singleton_to_event

@@ -16,6 +16,7 @@ section equiv
 
 variable [dps : DPSystem ℕ]
 variable [dpn : DPNoise dps]
+variable {sv_T : Type}
 
 /--
 Stronger congruence rule for probBind: The bound-to functions have to be equal only on the support of
@@ -62,7 +63,7 @@ lemma ENNReal.tsum_iSup_comm' (f : T -> U -> ENNReal) : ⨆ y, ∑' x, f x y ≤
   intro a
   apply le_iSup
 
-lemma iSup_comm_lemma qs T (ε₁ ε₂ : ℕ+) (l : List ℕ) (τ v0 : ℤ):
+lemma iSup_comm_lemma (qs : sv_query sv_T) T (ε₁ ε₂ : ℕ+) (l : List sv_T) (τ v0 : ℤ):
      ∑' b, ⨆ i, probWhileCut (sv1_aboveThreshC qs T τ l) (sv1_aboveThreshF ε₁ ε₂) i ([], v0) b =
      ⨆ i, ∑' b, probWhileCut (sv1_aboveThreshC qs T τ l) (sv1_aboveThreshF ε₁ ε₂) i ([], v0) b := by
   rw [ENNReal.tsum_eq_iSup_sum]
@@ -77,7 +78,7 @@ lemma iSup_comm_lemma qs T (ε₁ ε₂ : ℕ+) (l : List ℕ) (τ v0 : ℤ):
   intro a
   apply probWhileCut_monotonic
 
-lemma sv1_loop_ub qs T ε₁ ε₂ l : ∀ L : List ℤ, ∀ (v0 : ℤ), (∑' (x : sv1_state), probWhileCut (sv1_aboveThreshC qs T τ l) (sv1_aboveThreshF ε₁ ε₂) cut (L, v0) x ≤ 1) := by
+lemma sv1_loop_ub (qs : sv_query sv_T) T ε₁ ε₂ l : ∀ L : List ℤ, ∀ (v0 : ℤ), (∑' (x : sv1_state), probWhileCut (sv1_aboveThreshC qs T τ l) (sv1_aboveThreshF ε₁ ε₂) cut (L, v0) x ≤ 1) := by
   induction cut
   · simp [probWhileCut]
   · rename_i cut' IH
@@ -134,7 +135,7 @@ lemma sv1_loop_ub qs T ε₁ ε₂ l : ∀ L : List ℤ, ∀ (v0 : ℤ), (∑' (
     · simp
 
 
-lemma sv1_ub qs T ε₁ ε₂ l : ∑'s, sv1_aboveThresh qs T ε₁ ε₂ l s ≤ 1 := by
+lemma sv1_ub (qs : sv_query sv_T) T ε₁ ε₂ l : ∑'s, sv1_aboveThresh qs T ε₁ ε₂ l s ≤ 1 := by
   unfold sv1_aboveThresh
   unfold sv1_threshold
   simp
@@ -196,7 +197,7 @@ lemma sv1_ub qs T ε₁ ε₂ l : ∑'s, sv1_aboveThresh qs T ε₁ ε₂ l s �
   - Only moves the loop into a non-executable form, ie. explicitly defines the PMF
 -/
 
-def sv2_aboveThresh (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv2_aboveThresh (qs : sv_query sv_T) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List sv_T) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
     let τ <- privNoiseThresh ε₁ ε₂
@@ -217,10 +218,10 @@ lemma sv1_sv2_eq ε₁ ε₂ l : sv1_aboveThresh qs T ε₁ ε₂ l = sv2_aboveT
   - Truncates the loop
 -/
 
-def sv3_loop (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv1_state) : SLang sv1_state := do
+def sv3_loop (qs : sv_query sv_T) (T : ℤ) (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List sv_T) (point : ℕ) (init : sv1_state) : SLang sv1_state := do
   probWhileCut (sv1_aboveThreshC qs T τ l) (sv1_aboveThreshF ε₁ ε₂) (point + 1) init
 
-def sv3_aboveThresh (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv3_aboveThresh (qs : sv_query sv_T) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List sv_T) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
     let τ <- privNoiseThresh ε₁ ε₂
@@ -232,7 +233,7 @@ def sv3_aboveThresh (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ
 def cone_of_possibility (cut : ℕ) (initial hist : List ℤ) : Prop :=
   (hist.length < cut + initial.length) ∧ (initial.length ≤ hist.length)
 
-def constancy_at {qs : sv_query} {T : ℤ} {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List ℕ} {v0 vk : ℤ} (cut : ℕ) (initial hist : List ℤ) : Prop :=
+def constancy_at {qs : sv_query sv_T} {T : ℤ} {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List sv_T} {v0 vk : ℤ} (cut : ℕ) (initial hist : List ℤ) : Prop :=
   probWhileCut (sv1_aboveThreshC qs T τ data) (sv1_aboveThreshF ε₁ ε₂) (1 + cut) (initial, v0) (hist, vk) =
   probWhileCut (sv1_aboveThreshC qs T τ data) (sv1_aboveThreshF ε₁ ε₂) cut       (initial, v0) (hist, vk)
 
@@ -274,10 +275,10 @@ lemma external_to_cone_zero :
       simp_all [cone_of_possibility]
 
 -- Base case: left edge of the cone satisfies constancy
-lemma cone_left_edge_constancy {qs} {T : ℤ} {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List ℕ} {v0 vk : ℤ} (cut : ℕ) (initial hist : List ℤ) :
+lemma cone_left_edge_constancy {qs : sv_query sv_T} {T : ℤ} {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List sv_T} {v0 vk : ℤ} (cut : ℕ) (initial hist : List ℤ) :
     hist.length = initial.length ->
     cone_of_possibility cut initial hist ->
-    @constancy_at _ _ qs T ε₁ ε₂ τ data v0 vk cut initial hist := by
+    @constancy_at _ _ _ qs T ε₁ ε₂ τ data v0 vk cut initial hist := by
   intro Hlen Hcone
   -- cut > 0 due to cone
   cases cut
@@ -327,9 +328,9 @@ lemma cone_left_edge_constancy {qs} {T : ℤ} {ε₁ ε₂ : ℕ+} {τ : ℤ} {d
     rw [external_to_cone_zero (by simp_all [cone_of_possibility])]
     rw [external_to_cone_zero (by simp_all [cone_of_possibility])]
 
-lemma cone_constancy {qs} {T : ℤ} {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List ℕ} {v0 vk : ℤ} (cut : ℕ) (initial hist : List ℤ) :
+lemma cone_constancy {qs} {T : ℤ} {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List sv_T} {v0 vk : ℤ} (cut : ℕ) (initial hist : List ℤ) :
     cone_of_possibility cut initial hist ->
-    @constancy_at _ _ qs T ε₁ ε₂ τ data v0 vk cut initial hist := by
+    @constancy_at _ _ _ qs T ε₁ ε₂ τ data v0 vk cut initial hist := by
   -- Need theorem to be true for all initial states, since this will increase during the induction
   -- v0 and vk will also change in ways which don't matter
   revert initial v0 vk
@@ -412,7 +413,7 @@ lemma cone_constancy {qs} {T : ℤ} {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List
     · trivial
 
 
-lemma sv2_sv3_eq (qs : sv_query) (T : ℤ) ε₁ ε₂ l : sv2_aboveThresh qs T ε₁ ε₂ l = sv3_aboveThresh qs T ε₁ ε₂ l := by
+lemma sv2_sv3_eq (qs : sv_query sv_T) (T : ℤ) ε₁ ε₂ l : sv2_aboveThresh qs T ε₁ ε₂ l = sv3_aboveThresh qs T ε₁ ε₂ l := by
   apply SLang.ext
 
   -- Step through equal headers
@@ -462,7 +463,7 @@ lemma sv2_sv3_eq (qs : sv_query) (T : ℤ) ε₁ ε₂ l : sv2_aboveThresh qs T 
         rename_i Hcont _
         apply Hcont
         linarith
-    have HK := @cone_constancy _ _ qs T ε₁ ε₂ τ l v0 vk i [] hist
+    have HK := @cone_constancy _ _ _ qs T ε₁ ε₂ τ l v0 vk i [] hist
     unfold constancy_at at HK
     conv =>
       enter [1, 3]
@@ -482,7 +483,7 @@ lemma sv2_sv3_eq (qs : sv_query) (T : ℤ) ε₁ ε₂ l : sv2_aboveThresh qs T 
 
 
 -- Commute out a single sample from the loop
-lemma sv3_loop_unroll_1 qs (T : ℤ) (τ : ℤ) (ε₁ ε₂ : ℕ+) l point L vk :
+lemma sv3_loop_unroll_1 (qs : sv_query sv_T) (T : ℤ) (τ : ℤ) (ε₁ ε₂ : ℕ+) l point L vk :
     sv3_loop qs T ε₁ ε₂ τ l (point + 1) (L, vk) =
     (do
       let vk1 <- privNoiseGuess ε₁ ε₂
@@ -558,15 +559,15 @@ def sv4_aboveThreshF (s : sv4_state) : SLang sv4_state :=
   | [] => probZero
   | (p :: ps) => return ((s.1.1 ++ [s.1.2], p), ps)
 
-def sv4_aboveThreshC (qs : sv_query) (T : ℤ) (τ : ℤ) (l : List ℕ) (st : sv4_state) : Bool :=
+def sv4_aboveThreshC (qs : sv_query sv_T) (T : ℤ) (τ : ℤ) (l : List sv_T) (st : sv4_state) : Bool :=
   sv1_aboveThreshC qs T τ l st.1
 
-def sv4_loop (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv1_state) : SLang sv1_state := do
+def sv4_loop (qs : sv_query sv_T) (T : ℤ) (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List sv_T) (point : ℕ) (init : sv1_state) : SLang sv1_state := do
   let presamples <- sv4_presample ε₁ ε₂ point
   let v <- probWhileCut (sv4_aboveThreshC qs T τ l) sv4_aboveThreshF (point + 1) (init, presamples)
   return v.1
 
-lemma sv3_loop_unroll_1_alt qs (τ : ℤ) (ε₁ ε₂ : ℕ+) l point (initial_state : sv1_state) :
+lemma sv3_loop_unroll_1_alt (qs : sv_query sv_T) (τ : ℤ) (ε₁ ε₂ : ℕ+) l point (initial_state : sv1_state) :
     sv3_loop qs T ε₁ ε₂ τ l (point + 1) initial_state =
     (do
       let vk1 <- privNoiseGuess ε₁ ε₂
@@ -1037,7 +1038,7 @@ lemma presample_norm_lemma  (point : ℕ) (ε₁ ε₂ : ℕ+) :
     apply HasSum.tsum_eq S
 
 
-def sv3_sv4_loop_eq qs (T : ℤ) (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv1_state) :
+def sv3_sv4_loop_eq qs (T : ℤ) (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List sv_T) (point : ℕ) (init : sv1_state) :
     sv3_loop qs T ε₁ ε₂ τ l point init = sv4_loop qs T ε₁ ε₂ τ l point init := by
   revert init
   induction point
@@ -1231,7 +1232,7 @@ def sv3_sv4_loop_eq qs (T : ℤ) (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) 
         apply presample_norm_lemma
       · simp
 
-def sv4_aboveThresh (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv4_aboveThresh (qs : sv_query sv_T) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List sv_T) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
     let τ <- privNoiseThresh ε₁ ε₂
@@ -1240,7 +1241,7 @@ def sv4_aboveThresh (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ
     return (sv1_threshold sk)
   computation point
 
-def sv3_sv4_eq qs (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ) :
+def sv3_sv4_eq qs (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List sv_T) :
     sv3_aboveThresh qs T ε₁ ε₂ l = sv4_aboveThresh qs T ε₁ ε₂ l := by
     unfold sv3_aboveThresh
     unfold sv4_aboveThresh
@@ -1255,20 +1256,20 @@ def sv3_sv4_eq qs (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ) :
   - Isolates the loop for the next step
 -/
 
-def sv5_loop (qs : sv_query) (T : ℤ) (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv4_state) : SLang ℕ := do
+def sv5_loop (qs :  sv_query sv_T) (T : ℤ) (τ : ℤ) (l : List sv_T) (point : ℕ) (init : sv4_state) : SLang ℕ := do
   let sk <- probWhileCut (sv4_aboveThreshC qs T τ l) sv4_aboveThreshF (point + 1) init
   return (sv1_threshold sk.1)
 
-def sv5_aboveThresh (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv5_aboveThresh (qs :  sv_query sv_T) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List sv_T) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
     let τ <- privNoiseThresh ε₁ ε₂
     let v0 <- privNoiseGuess ε₁ ε₂
     let presamples <- sv4_presample ε₁ ε₂ point
-    @sv5_loop qs T τ l point (([], v0), presamples)
+    @sv5_loop _ qs T τ l point (([], v0), presamples)
   computation point
 
-def sv4_sv5_eq (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ) :
+def sv4_sv5_eq (qs : sv_query sv_T) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List sv_T) :
     sv4_aboveThresh qs T ε₁ ε₂ l = sv5_aboveThresh qs T ε₁ ε₂ l := by
   unfold sv4_aboveThresh
   unfold sv5_aboveThresh
@@ -1302,14 +1303,14 @@ def is_past_configuration (sp sc : sv4_state) : Prop :=
   (sp.1.1.length ≤ sc.1.1.length) ∧ sp.1.1 ++ [sp.1.2] ++ sp.2 = sc.1.1 ++ [sc.1.2] ++ sc.2
 
 -- All past configurations had their loop check execute to True
-def sv6_aboveThresh_hist (qs : sv_query) (T : ℤ) (τ : ℤ) (l : List ℕ) (s : sv4_state) : Prop :=
+def sv6_aboveThresh_hist (qs :  sv_query sv_T) (T : ℤ) (τ : ℤ) (l : List sv_T) (s : sv4_state) : Prop :=
   ∀ sp, (is_past_configuration sp s) -> sv4_aboveThreshC qs T τ l sp = true
 
 
 -- If all past configurations of sp evaluate to True,
 -- and the next one evaluates to true,
 -- then all past configurations for the next one evaluate to True
-lemma sv6_aboveThresh_hist_step (qs : sv_query) (T : ℤ) (τ : ℤ) (l : List ℕ) (past fut_rest : List ℤ) (present fut : ℤ) :
+lemma sv6_aboveThresh_hist_step (qs :  sv_query sv_T) (T : ℤ) (τ : ℤ) (l : List sv_T) (past fut_rest : List ℤ) (present fut : ℤ) :
     sv6_aboveThresh_hist qs T τ l ((past, present), fut :: fut_rest) ->
     sv4_aboveThreshC qs T τ l ((past ++ [present], fut), fut_rest) ->
     sv6_aboveThresh_hist qs T τ l ((past ++ [present], fut), fut_rest) := by
@@ -1347,10 +1348,10 @@ def is_past_configuration_strict (sp sc : sv4_state) : Prop :=
   (sp.1.1.length < sc.1.1.length) ∧ sp.1.1 ++ [sp.1.2] ++ sp.2 = sc.1.1 ++ [sc.1.2] ++ sc.2
 
 -- All strictly past configurations had their loop check execute to True
-def sv6_aboveThresh_hist_strict (qs : sv_query) (T : ℤ) (τ : ℤ) (l : List ℕ) (s : sv4_state) : Prop :=
+def sv6_aboveThresh_hist_strict (qs :  sv_query sv_T) (T : ℤ) (τ : ℤ) (l : List sv_T) (s : sv4_state) : Prop :=
   ∀ sp, (is_past_configuration_strict sp s) -> sv4_aboveThreshC qs T τ l sp = true
 
-lemma sv6_aboveThresh_hist_step_strict (qs : sv_query) (T : ℤ) (τ : ℤ) (l : List ℕ) (past fut_rest : List ℤ) (present fut : ℤ) :
+lemma sv6_aboveThresh_hist_step_strict (qs :  sv_query sv_T) (T : ℤ) (τ : ℤ) (l : List sv_T) (past fut_rest : List ℤ) (present fut : ℤ) :
     sv6_aboveThresh_hist_strict qs T τ l ((past, present), fut :: fut_rest) ->
     sv4_aboveThreshC qs T τ l ((past, present), fut :: fut_rest) ->
     sv6_aboveThresh_hist_strict qs T τ l ((past ++ [present], fut), fut_rest) := by
@@ -1383,22 +1384,22 @@ lemma sv6_aboveThresh_hist_step_strict (qs : sv_query) (T : ℤ) (τ : ℤ) (l :
     simp_all
 
 @[simp]
-def sv6_cond_rec (qs : sv_query) (T : ℤ) (τ : ℤ) (l : List ℕ) (past : List ℤ) (pres : ℤ) (future : List ℤ) : Bool :=
+def sv6_cond_rec (qs :  sv_query sv_T) (T : ℤ) (τ : ℤ) (l : List sv_T) (past : List ℤ) (pres : ℤ) (future : List ℤ) : Bool :=
   match future with
   | [] => ¬ (sv4_aboveThreshC qs T τ l ((past, pres), []))
   | (f :: ff) => (sv4_aboveThreshC qs T τ l ((past, pres), f :: ff) = true) && (sv6_cond_rec qs T τ l (past ++ [pres]) f ff)
 
 @[simp]
-def sv6_cond (qs : sv_query) (T : ℤ) (τ : ℤ) (l : List ℕ) (init : sv4_state) : Bool :=
+def sv6_cond (qs :  sv_query sv_T) (T : ℤ) (τ : ℤ) (l : List sv_T) (init : sv4_state) : Bool :=
   sv6_cond_rec qs T τ l init.1.1 init.1.2 init.2
 
-def sv6_loop (qs : sv_query) (T : ℤ) (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv4_state) : SLang ℕ := do
+def sv6_loop (qs :  sv_query sv_T) (T : ℤ) (τ : ℤ) (l : List sv_T) (point : ℕ) (init : sv4_state) : SLang ℕ := do
   if (sv6_cond qs T τ l init)
     then return point
     else probZero
 
 -- QUESTION: What do we need for equality in the base case?
-lemma sv5_sv6_loop_base_case (qs : sv_query) (T : ℤ) (τ : ℤ) (l : List ℕ) (point eval : ℕ) (past future : List ℤ) (pres : ℤ) :
+lemma sv5_sv6_loop_base_case (qs :  sv_query sv_T) (T : ℤ) (τ : ℤ) (l : List sv_T) (point eval : ℕ) (past future : List ℤ) (pres : ℤ) :
     future = [] ->
     List.length future = eval ->
     List.length (past ++ [pres] ++ future) = point + 1 ->
@@ -1433,7 +1434,7 @@ lemma sv5_sv6_loop_base_case (qs : sv_query) (T : ℤ) (τ : ℤ) (l : List ℕ)
     aesop
 
 -- QUESTION: What do we need for sv6_loop to be equal to sv6_loop_cond (next)
-lemma sv6_loop_ind (qs : sv_query) (T : ℤ) (τ : ℤ) (l : List ℕ) (point : ℕ) (past ff: List ℤ) (pres f: ℤ) :
+lemma sv6_loop_ind (qs :  sv_query sv_T) (T : ℤ) (τ : ℤ) (l : List sv_T) (point : ℕ) (past ff: List ℤ) (pres f: ℤ) :
       (sv4_aboveThreshC qs T τ l ((past, pres), f :: ff) = true) ->
       List.length (past ++ [pres] ++ f :: ff) = point + 1 ->
       (sv6_loop qs T τ l point ((past, pres), f :: ff)) point = (sv6_loop qs T τ l point ((past ++ [pres], f), ff)) point := by
@@ -1450,7 +1451,7 @@ lemma sv6_loop_ind (qs : sv_query) (T : ℤ) (τ : ℤ) (l : List ℕ) (point : 
 
 
 -- QUESTION: What do we need for sv5 to be equal to sv5_loop_cond (next) evaluated at point
-lemma sv5_loop_ind (qs : sv_query) (T : ℤ) (τ : ℤ) (l : List ℕ) (eval point : ℕ) (past ff: List ℤ) (pres f: ℤ) :
+lemma sv5_loop_ind (qs :  sv_query sv_T) (T : ℤ) (τ : ℤ) (l : List sv_T) (eval point : ℕ) (past ff: List ℤ) (pres f: ℤ) :
       (sv4_aboveThreshC qs T τ l ((past, pres), f :: ff) = true) ->
       (sv5_loop qs T τ l (eval + 1) ((past, pres), f :: ff)) point = (sv5_loop qs T τ l eval ((past ++ [pres], f), ff)) point := by
   intro Hcondition
@@ -1466,22 +1467,22 @@ lemma sv5_loop_ind (qs : sv_query) (T : ℤ) (τ : ℤ) (l : List ℕ) (eval poi
   · exfalso
     trivial
 
-def sv6_aboveThresh (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv6_aboveThresh (qs :  sv_query sv_T) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List sv_T) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
     let τ <- privNoiseThresh ε₁ ε₂
     let v0 <- privNoiseGuess ε₁ ε₂
     let presamples <- sv4_presample ε₁ ε₂ point
-    @sv6_loop qs T τ l point (([], v0), presamples)
+    @sv6_loop _ qs T τ l point (([], v0), presamples)
   computation point
 
 
 -- sv6_loop and sv5_loop are equal at point (under some conditions)
-def sv5_sv6_loop_eq_point (qs : sv_query) (T : ℤ) (τ : ℤ) (l : List ℕ) (point eval : ℕ) (past future : List ℤ) (pres : ℤ) :
+def sv5_sv6_loop_eq_point (qs :  sv_query sv_T) (T : ℤ) (τ : ℤ) (l : List sv_T) (point eval : ℕ) (past future : List ℤ) (pres : ℤ) :
     List.length (past ++ [pres] ++ future) = point + 1 ->
     List.length future = eval ->
     -- sv6_aboveThresh_hist_strict τ l ((past, pres), future) ->
-    @sv5_loop qs T τ l eval ((past, pres), future) point = @sv6_loop qs T τ l point ((past, pres), future) point := by
+    @sv5_loop _ qs T τ l eval ((past, pres), future) point = @sv6_loop _ qs T τ l point ((past, pres), future) point := by
   revert past pres eval
   induction future
   · intro eval past pres H1 H2
@@ -1517,7 +1518,7 @@ def sv5_sv6_loop_eq_point (qs : sv_query) (T : ℤ) (τ : ℤ) (l : List ℕ) (p
     simp_all [sv1_threshold]
 
 
-def sv5_sv6_eq (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ) :
+def sv5_sv6_eq (qs :  sv_query sv_T) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List sv_T) :
     sv5_aboveThresh qs T ε₁ ε₂ l = sv6_aboveThresh qs T ε₁ ε₂ l := by
   unfold sv5_aboveThresh
   unfold sv6_aboveThresh
@@ -1544,7 +1545,7 @@ Not executable
 Separates out the zero case
 -/
 
-def sv7_aboveThresh (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv7_aboveThresh (qs :  sv_query sv_T) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List sv_T) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
     let τ <- privNoiseThresh ε₁ ε₂
@@ -1562,7 +1563,7 @@ def sv7_aboveThresh (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ
         else probZero
   computation point
 
-def sv6_sv7_eq (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ) :
+def sv6_sv7_eq (qs :  sv_query sv_T) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List sv_T) :
     sv6_aboveThresh qs T ε₁ ε₂ l = sv7_aboveThresh qs T ε₁ ε₂ l := by
   apply SLang.ext
   intro point
@@ -1674,20 +1675,20 @@ Defines G from the paper
 
 
 
-def sv8_sum (qs : sv_query) (l : List ℕ) (past : List ℤ) (pres : ℤ) : ℤ :=
+def sv8_sum (qs :  sv_query sv_T) (l : List sv_T) (past : List ℤ) (pres : ℤ) : ℤ :=
   qs (List.length past) l + pres
   -- exactDiffSum (List.length past) l + pres
 
 -- G is the maximum value of sv8_sum over the tape
-def sv8_G (qs : sv_query) (l : List ℕ) (past : List ℤ) (pres : ℤ) (future : List ℤ) : ℤ :=
+def sv8_G (qs :  sv_query sv_T) (l : List sv_T) (past : List ℤ) (pres : ℤ) (future : List ℤ) : ℤ :=
   match future with
   | []        => sv8_sum qs l past pres
   | (f :: ff) => max (sv8_sum qs l past pres) (sv8_G qs l (past ++ [pres]) f ff)
 
- def sv8_cond (qs : sv_query) (T : ℤ) (τ : ℤ) (l : List ℕ) (past : List ℤ) (pres : ℤ) (future : List ℤ) (last : ℤ) : Bool :=
+ def sv8_cond (qs :  sv_query sv_T) (T : ℤ) (τ : ℤ) (l : List sv_T) (past : List ℤ) (pres : ℤ) (future : List ℤ) (last : ℤ) : Bool :=
    (sv8_G qs l past pres future < τ + T) ∧ (sv8_sum qs l (past ++ [pres] ++ future) last ≥ τ + T)
 
-def sv8_aboveThresh (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv8_aboveThresh (qs :  sv_query sv_T) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List sv_T) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
     let τ <- privNoiseThresh ε₁ ε₂
@@ -1705,7 +1706,7 @@ def sv8_aboveThresh (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ
         else probZero
   computation point
 
-lemma sv7_sv8_cond_eq (qs : sv_query) (T : ℤ) (τ : ℤ) (l : List ℕ) (v0 : ℤ) (vs : List ℤ) (vk : ℤ) :
+lemma sv7_sv8_cond_eq (qs :  sv_query sv_T) (T : ℤ) (τ : ℤ) (l : List sv_T) (v0 : ℤ) (vs : List ℤ) (vk : ℤ) :
     sv8_cond qs T τ l [] v0 vs vk = sv6_cond qs T τ l (([], v0), vs ++ [vk]) := by
   suffices (∀ init, sv8_cond qs T τ l init v0 vs vk = sv6_cond qs T τ l ((init, v0), vs ++ [vk])) by
     apply this
@@ -1735,7 +1736,7 @@ lemma sv7_sv8_cond_eq (qs : sv_query) (T : ℤ) (τ : ℤ) (l : List ℕ) (v0 : 
     simp [sv4_aboveThreshC, sv1_aboveThreshC, sv8_sum, sv1_threshold, sv1_noise]
 
 
-def sv7_sv8_eq (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ) :
+def sv7_sv8_eq (qs :  sv_query sv_T) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List sv_T) :
     sv7_aboveThresh qs T ε₁ ε₂ l = sv8_aboveThresh qs T ε₁ ε₂ l := by
   apply SLang.ext
   intro point
@@ -1757,7 +1758,7 @@ Rewritten so that the randomness we will cancel out is right at the front
 -/
 
 
-def sv9_aboveThresh (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv9_aboveThresh (qs :  sv_query sv_T) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List sv_T) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
     match point with
@@ -1777,7 +1778,7 @@ def sv9_aboveThresh (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ
         else probZero
   computation point
 
-def sv8_sv9_eq (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ) :
+def sv8_sv9_eq (qs :  sv_query sv_T) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List sv_T) :
     sv8_aboveThresh qs T ε₁ ε₂ l = sv9_aboveThresh qs T ε₁ ε₂ l := by
   apply SLang.ext
   intro point
@@ -1943,12 +1944,12 @@ lemma ite_lemma_1 {P : Prop} {D} {f : T -> ENNReal} : ∑'(a : T), @ite _ P D (f
   · rfl
   · simp
 
-variable (qs : sv_query)
+variable (qs :  sv_query sv_T)
 variable (T : ℤ)
-variable (lucky_guess : ∀ (τ : ℤ) (l : List ℕ), ∃ (K : ℤ), ∀ A, ∀ (K' : ℤ), K ≤ K' -> qs A l + K' ≥ τ + T)
+variable (lucky_guess : ∀ (τ : ℤ) (l : List sv_T), ∃ (K : ℤ), ∀ A, ∀ (K' : ℤ), K ≤ K' -> qs A l + K' ≥ τ + T)
 
 lemma sv1_lb ε₁ ε₂ l :
-    1 ≤ ∑'s, (@sv1_aboveThresh PureDPSystem laplace_pureDPSystem qs T ε₁ ε₂ l s)  := by
+    1 ≤ ∑'s, (@sv1_aboveThresh PureDPSystem laplace_pureDPSystem sv_T qs T ε₁ ε₂ l s)  := by
   simp only [sv1_aboveThresh, bind, pure, bind_apply]
   -- Push the sum over s inwards
   conv =>
@@ -2440,7 +2441,7 @@ lemma sv1_lb ε₁ ε₂ l :
       rw [add_comm]
 
 
-def sv1_aboveThresh_PMF (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
+def sv1_aboveThresh_PMF (ε₁ ε₂ : ℕ+) (l : List sv_T) : SPMF ℕ :=
   ⟨ sv1_aboveThresh qs T ε₁ ε₂ l,
     by
       rw [Summable.hasSum_iff ENNReal.summable]
@@ -2452,8 +2453,8 @@ def sv1_aboveThresh_PMF (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
 /--
 sv9 normalizes because sv1 normalizes
 -/
-def sv9_aboveThresh_SPMF (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
-  ⟨ @sv9_aboveThresh PureDPSystem laplace_pureDPSystem qs T ε₁ ε₂ l,
+def sv9_aboveThresh_SPMF (ε₁ ε₂ : ℕ+) (l : List sv_T) : SPMF ℕ :=
+  ⟨ @sv9_aboveThresh PureDPSystem laplace_pureDPSystem sv_T qs T ε₁ ε₂ l,
     by
       rw [<- @sv8_sv9_eq]
       rw [<- @sv7_sv8_eq]
