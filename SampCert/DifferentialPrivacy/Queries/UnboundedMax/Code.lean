@@ -6,6 +6,8 @@ Authors: Markus de Medeiros
 
 import SampCert.DifferentialPrivacy.Abstract
 import SampCert.DifferentialPrivacy.Pure.System
+import SampCert.DifferentialPrivacy.Queries.SparseVector.Code
+import SampCert.DifferentialPrivacy.Queries.SparseVector.Properties
 
 namespace SLang
 
@@ -13,21 +15,6 @@ variable (ε₁ ε₂ : ℕ+)
 
 variable [dps : DPSystem ℕ]
 variable [dpn : DPNoise dps]
-
-/--
-Sensitivity bound for the τ threshold
--/
-def sens_cov_τ : ℕ+ := 1
-
-/--
-Sensitivity bound for each upper bound attempt
--/
-def sens_cov_vk : ℕ+ := sens_cov_τ + 1
-
-
-/-
-## Executable code for the sparse vector mechanism
--/
 
 /--
 Sum over a list, clipping each element to a maximum.
@@ -44,18 +31,11 @@ Always negative or zero.
 -/
 def exactDiffSum (m : ℕ) (l : List ℕ) : ℤ := exactClippedSum m l - exactClippedSum (m + 1) l
 
-/--
-Noise the constant 0 value using the abstract noise function.
-
-This looks strange, but will specialize to Lap(ε₁/ε₂, 0) in the pure DP case.
--/
-def privNoiseZero (ε₁ ε₂ : ℕ+) : SPMF ℤ := dpn.noise (fun _ => 0) 1 ε₁ ε₂ []
+def privUnboundedMax (ε₁ ε₂ : ℕ+) : List ℕ -> SPMF ℕ :=
+  sv1_aboveThresh_PMF exactDiffSum ε₁ ε₂
 
 
-def privNoiseGuess (ε₁ ε₂ : ℕ+) : SPMF ℤ := privNoiseZero ε₁ (2 * sens_cov_vk * ε₂)
-
-def privNoiseThresh (ε₁ ε₂ : ℕ+) : SPMF ℤ := privNoiseZero ε₁ (2 * sens_cov_τ * ε₂)
-
+/-
 /-
 ## Program version 0
   - Executable
@@ -69,48 +49,84 @@ def sv0_threshold (s : sv0_state) : ℕ := s.1
 
 def sv0_noise (s : sv0_state) : ℤ := s.2
 
-def sv0_privMaxC (τ : ℤ) (l : List ℕ) (s : sv0_state) : Bool :=
+def sv0_aboveThreshC (τ : ℤ) (l : List ℕ) (s : sv0_state) : Bool :=
   decide (exactDiffSum (sv0_threshold s) l + (sv0_noise s) < τ)
 
-def sv0_privMaxF (ε₁ ε₂ : ℕ+) (s : sv0_state) : SLang sv0_state := do
+def sv0_aboveThreshF (ε₁ ε₂ : ℕ+) (s : sv0_state) : SLang sv0_state := do
   let vn <- privNoiseGuess ε₁ ε₂
   let n := (sv0_threshold s) + 1
   return (n, vn)
 
-def sv0_privMax (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ := do
+def sv0_aboveThresh (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ := do
   let τ <- privNoiseThresh ε₁ ε₂
   let v0 <- privNoiseGuess ε₁ ε₂
-  let sk <- probWhile (sv0_privMaxC τ l) (sv0_privMaxF ε₁ ε₂) (0, v0)
+  let sk <- probWhile (sv0_aboveThreshC τ l) (sv0_aboveThreshF ε₁ ε₂) (0, v0)
   return (sv0_threshold sk)
-
-/-
-## Program version 1
-  - Executable
-  - Tracks history of samples
 -/
 
 
-def sv_query : Type := ℕ -> Query ℕ ℤ
 
-def sv1_state : Type := List ℤ × ℤ
 
-def sv1_threshold (s : sv1_state) : ℕ := List.length s.1
+-- Unused for now
+lemma exactDiffSum_eventually_constant : ∃ K, ∀ K', K ≤ K' -> exactDiffSum K' l = 0 := by
+  cases l
+  · simp [exactDiffSum, exactClippedSum]
+  · rename_i l0 ll
+    let K := (@List.maximum_of_length_pos _ _ (l0 :: ll) (by simp))
+    exists K
+    intro K' HK'
+    simp [exactDiffSum, exactClippedSum]
+    rw [min_eq_left_iff.mpr ?G1]
+    case G1 =>
+      simp
+      apply le_trans _ HK'
+      apply List.le_maximum_of_length_pos_of_mem
+      apply List.mem_cons_self
+    rw [min_eq_left_iff.mpr ?G1]
+    case G1 =>
+      apply (@le_trans _ _ _ (↑K') _ _ (by simp))
+      simp
+      apply le_trans _ HK'
+      apply List.le_maximum_of_length_pos_of_mem
+      apply List.mem_cons_self
+    conv =>
+      enter [1, 1, 2, 1]
+      rw [(@List.map_inj_left _ _ _ _ (fun n => ↑n)).mpr
+            (by
+              intro a Ha
+              rw [min_eq_left_iff.mpr _]
+              simp
+              apply le_trans _ HK'
+              apply List.le_maximum_of_length_pos_of_mem
+              apply List.mem_cons_of_mem
+              apply Ha)]
+      rfl
+    conv =>
+      enter [1, 2, 2, 1]
+      rw [(@List.map_inj_left _ _ _ _ (fun n => ↑n)).mpr
+            (by
+              intro a Ha
+              rw [min_eq_left_iff.mpr _]
+              apply (@le_trans _ _ _ (↑K') _ _ (by simp))
+              simp
+              apply le_trans _ HK'
+              apply List.le_maximum_of_length_pos_of_mem
+              apply List.mem_cons_of_mem
+              apply Ha)]
+      rfl
+    simp
 
-def sv1_noise (s : sv1_state) : ℤ := s.2
+lemma exactClippedSum_append : exactClippedSum i (A ++ B) = exactClippedSum i A + exactClippedSum i B := by
+  simp [exactClippedSum]
 
-def sv1_privMaxC (qs : sv_query) (τ : ℤ) (l : List ℕ) (s : sv1_state) : Bool :=
-  decide (qs (sv1_threshold s) l + (sv1_noise s) < τ)
-  -- decide (exactDiffSum (sv1_threshold s) l + (sv1_noise s) < τ)
+lemma exactDiffSum_append : exactDiffSum i (A ++ B) = exactDiffSum i A + exactDiffSum i B := by
+  simp [exactDiffSum]
+  rw [exactClippedSum_append]
+  rw [exactClippedSum_append]
+  linarith
 
-def sv1_privMaxF (ε₁ ε₂ : ℕ+) (s : sv1_state) : SLang sv1_state := do
-  let vn <- privNoiseGuess ε₁ ε₂
-  return (s.1 ++ [s.2], vn)
 
-def sv1_privMax (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ := do
-  let τ <- privNoiseThresh ε₁ ε₂
-  let v0 <- privNoiseGuess ε₁ ε₂
-  let sk <- probWhile (sv1_privMaxC qs τ l) (sv1_privMaxF ε₁ ε₂) ([], v0)
-  return (sv1_threshold sk)
+
 
 
 end SLang

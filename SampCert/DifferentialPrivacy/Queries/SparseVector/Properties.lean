@@ -5,7 +5,7 @@ Authors: Markus de Medeiros
 -/
 
 import SampCert.DifferentialPrivacy.Abstract
-import SampCert.DifferentialPrivacy.Queries.UnboundedMax.Code
+import SampCert.DifferentialPrivacy.Queries.SparseVector.Code
 
 noncomputable section
 open Classical
@@ -45,54 +45,6 @@ lemma probBind_congr_strong (p : SLang T) (f : T -> SLang U) (g : T -> SLang U) 
   apply Hp
 
 
-lemma exactDiffSum_eventually_constant : ∃ K, ∀ K', K ≤ K' -> exactDiffSum K' l = 0 := by
-  cases l
-  · simp [exactDiffSum, exactClippedSum]
-  · rename_i l0 ll
-    let K := (@List.maximum_of_length_pos _ _ (l0 :: ll) (by simp))
-    exists K
-    intro K' HK'
-    simp [exactDiffSum, exactClippedSum]
-    rw [min_eq_left_iff.mpr ?G1]
-    case G1 =>
-      simp
-      apply le_trans _ HK'
-      apply List.le_maximum_of_length_pos_of_mem
-      apply List.mem_cons_self
-    rw [min_eq_left_iff.mpr ?G1]
-    case G1 =>
-      apply (@le_trans _ _ _ (↑K') _ _ (by simp))
-      simp
-      apply le_trans _ HK'
-      apply List.le_maximum_of_length_pos_of_mem
-      apply List.mem_cons_self
-    conv =>
-      enter [1, 1, 2, 1]
-      rw [(@List.map_inj_left _ _ _ _ (fun n => ↑n)).mpr
-            (by
-              intro a Ha
-              rw [min_eq_left_iff.mpr _]
-              simp
-              apply le_trans _ HK'
-              apply List.le_maximum_of_length_pos_of_mem
-              apply List.mem_cons_of_mem
-              apply Ha)]
-      rfl
-    conv =>
-      enter [1, 2, 2, 1]
-      rw [(@List.map_inj_left _ _ _ _ (fun n => ↑n)).mpr
-            (by
-              intro a Ha
-              rw [min_eq_left_iff.mpr _]
-              apply (@le_trans _ _ _ (↑K') _ _ (by simp))
-              simp
-              apply le_trans _ HK'
-              apply List.le_maximum_of_length_pos_of_mem
-              apply List.mem_cons_of_mem
-              apply Ha)]
-      rfl
-    simp
-
 
 
 lemma ENNReal.tsum_iSup_comm (f : T -> U -> ENNReal) : ∑' x, ⨆ y, f x y ≥ ⨆ y, ∑' x, f x y := by
@@ -111,8 +63,8 @@ lemma ENNReal.tsum_iSup_comm' (f : T -> U -> ENNReal) : ⨆ y, ∑' x, f x y ≤
   apply le_iSup
 
 lemma iSup_comm_lemma qs (ε₁ ε₂ : ℕ+) (l : List ℕ) (τ v0 : ℤ):
-     ∑' b, ⨆ i, probWhileCut (sv1_privMaxC qs τ l) (sv1_privMaxF ε₁ ε₂) i ([], v0) b =
-     ⨆ i, ∑' b, probWhileCut (sv1_privMaxC qs τ l) (sv1_privMaxF ε₁ ε₂) i ([], v0) b := by
+     ∑' b, ⨆ i, probWhileCut (sv1_aboveThreshC qs τ l) (sv1_aboveThreshF ε₁ ε₂) i ([], v0) b =
+     ⨆ i, ∑' b, probWhileCut (sv1_aboveThreshC qs τ l) (sv1_aboveThreshF ε₁ ε₂) i ([], v0) b := by
   rw [ENNReal.tsum_eq_iSup_sum]
   conv =>
     rhs
@@ -125,7 +77,7 @@ lemma iSup_comm_lemma qs (ε₁ ε₂ : ℕ+) (l : List ℕ) (τ v0 : ℤ):
   intro a
   apply probWhileCut_monotonic
 
-lemma sv1_loop_ub qs ε₁ ε₂ l : ∀ L : List ℤ, ∀ (v0 : ℤ), (∑' (x : sv1_state), probWhileCut (sv1_privMaxC qs τ l) (sv1_privMaxF ε₁ ε₂) cut (L, v0) x ≤ 1) := by
+lemma sv1_loop_ub qs ε₁ ε₂ l : ∀ L : List ℤ, ∀ (v0 : ℤ), (∑' (x : sv1_state), probWhileCut (sv1_aboveThreshC qs τ l) (sv1_aboveThreshF ε₁ ε₂) cut (L, v0) x ≤ 1) := by
   induction cut
   · simp [probWhileCut]
   · rename_i cut' IH
@@ -133,7 +85,7 @@ lemma sv1_loop_ub qs ε₁ ε₂ l : ∀ L : List ℤ, ∀ (v0 : ℤ), (∑' (x 
     simp [probWhileCut, probWhileFunctional]
     split
     · simp
-      simp [sv1_privMaxF]
+      simp [sv1_aboveThreshF]
       conv =>
         enter [1, 1, x]
         conv =>
@@ -145,7 +97,7 @@ lemma sv1_loop_ub qs ε₁ ε₂ l : ∀ L : List ℤ, ∀ (v0 : ℤ), (∑' (x 
 
       apply
         @le_trans _ _ _
-        (∑' (x : sv1_state) (b : ℤ), (privNoiseGuess ε₁ ε₂) b * probWhileCut (sv1_privMaxC qs τ l) (sv1_privMaxF ε₁ ε₂) cut' (L ++ [v0], b) x)
+        (∑' (x : sv1_state) (b : ℤ), (privNoiseGuess ε₁ ε₂) b * probWhileCut (sv1_aboveThreshC qs τ l) (sv1_aboveThreshF ε₁ ε₂) cut' (L ++ [v0], b) x)
         _ ?G5 ?G6
       case G5 =>
         apply ENNReal.tsum_le_tsum
@@ -182,8 +134,8 @@ lemma sv1_loop_ub qs ε₁ ε₂ l : ∀ L : List ℤ, ∀ (v0 : ℤ), (∑' (x 
     · simp
 
 
-lemma sv1_ub qs ε₁ ε₂ l : ∑'s, sv1_privMax qs ε₁ ε₂ l s ≤ 1 := by
-  unfold sv1_privMax
+lemma sv1_ub qs ε₁ ε₂ l : ∑'s, sv1_aboveThresh qs ε₁ ε₂ l s ≤ 1 := by
+  unfold sv1_aboveThresh
   unfold sv1_threshold
   simp
   -- Push the sum over s inwards
@@ -226,7 +178,7 @@ lemma sv1_ub qs ε₁ ε₂ l : ∑'s, sv1_privMax qs ε₁ ε₂ l s ≤ 1 := b
 
     apply
       @le_trans _ _ _
-      (∑' (b : sv1_state), probWhile (sv1_privMaxC qs τ l) (sv1_privMaxF ε₁ ε₂) ([], v0) b )
+      (∑' (b : sv1_state), probWhile (sv1_aboveThreshC qs τ l) (sv1_aboveThreshF ε₁ ε₂) ([], v0) b )
       _ ?G3 ?G4
     case G3 =>
       apply ENNReal.tsum_le_tsum
@@ -244,19 +196,19 @@ lemma sv1_ub qs ε₁ ε₂ l : ∑'s, sv1_privMax qs ε₁ ε₂ l s ≤ 1 := b
   - Only moves the loop into a non-executable form, ie. explicitly defines the PMF
 -/
 
-def sv2_privMax (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv2_aboveThresh (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
     let τ <- privNoiseThresh ε₁ ε₂
     let v0 <- privNoiseGuess ε₁ ε₂
-    let sk <- probWhile (sv1_privMaxC qs τ l) (sv1_privMaxF ε₁ ε₂) ([], v0)
+    let sk <- probWhile (sv1_aboveThreshC qs τ l) (sv1_aboveThreshF ε₁ ε₂) ([], v0)
     return (sv1_threshold sk)
   computation point
 
-lemma sv1_sv2_eq ε₁ ε₂ l : sv1_privMax qs ε₁ ε₂ l = sv2_privMax qs ε₁ ε₂ l := by
+lemma sv1_sv2_eq ε₁ ε₂ l : sv1_aboveThresh qs ε₁ ε₂ l = sv2_aboveThresh qs ε₁ ε₂ l := by
   apply SLang.ext
   intro result
-  simp [sv1_privMax, sv2_privMax]
+  simp [sv1_aboveThresh, sv2_aboveThresh]
 
 
 
@@ -266,9 +218,9 @@ lemma sv1_sv2_eq ε₁ ε₂ l : sv1_privMax qs ε₁ ε₂ l = sv2_privMax qs �
 -/
 
 def sv3_loop (qs : sv_query) (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv1_state) : SLang sv1_state := do
-  probWhileCut (sv1_privMaxC qs τ l) (sv1_privMaxF ε₁ ε₂) (point + 1) init
+  probWhileCut (sv1_aboveThreshC qs τ l) (sv1_aboveThreshF ε₁ ε₂) (point + 1) init
 
-def sv3_privMax (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv3_aboveThresh (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
     let τ <- privNoiseThresh ε₁ ε₂
@@ -281,14 +233,14 @@ def cone_of_possibility (cut : ℕ) (initial hist : List ℤ) : Prop :=
   (hist.length < cut + initial.length) ∧ (initial.length ≤ hist.length)
 
 def constancy_at {qs : sv_query} {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List ℕ} {v0 vk : ℤ} (cut : ℕ) (initial hist : List ℤ) : Prop :=
-  probWhileCut (sv1_privMaxC qs τ data) (sv1_privMaxF ε₁ ε₂) (1 + cut) (initial, v0) (hist, vk) =
-  probWhileCut (sv1_privMaxC qs τ data) (sv1_privMaxF ε₁ ε₂) cut       (initial, v0) (hist, vk)
+  probWhileCut (sv1_aboveThreshC qs τ data) (sv1_aboveThreshF ε₁ ε₂) (1 + cut) (initial, v0) (hist, vk) =
+  probWhileCut (sv1_aboveThreshC qs τ data) (sv1_aboveThreshF ε₁ ε₂) cut       (initial, v0) (hist, vk)
 
 
 -- All points outside of the cone are zero
 lemma external_to_cone_zero :
     (¬ cone_of_possibility cut initial hist) ->
-    probWhileCut (sv1_privMaxC qs τ data) (sv1_privMaxF ε₁ ε₂) cut (initial, v0) (hist, vk) = 0 := by
+    probWhileCut (sv1_aboveThreshC qs τ data) (sv1_aboveThreshF ε₁ ε₂) cut (initial, v0) (hist, vk) = 0 := by
   revert initial v0 vk
   induction cut
   · simp [probWhileCut, probWhileFunctional]
@@ -301,7 +253,7 @@ lemma external_to_cone_zero :
       rcases h with ⟨ initial', vk' ⟩
       cases Classical.em (¬ ∃ v', initial' = intial  ++ [v'])
       · left
-        simp [sv1_privMaxF]
+        simp [sv1_aboveThreshF]
         intro i Hi
         exfalso
         cases Hi
@@ -339,7 +291,7 @@ lemma cone_left_edge_constancy {qs} {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List
   unfold probWhileCut
   unfold probWhileFunctional
 
-  cases (sv1_privMaxC qs τ data (initial, v0))
+  cases (sv1_aboveThreshC qs τ data (initial, v0))
   · -- False case: both programs terminate with initial state
     simp
   · -- True case: both programs step to a point outside of the cone, so are zero
@@ -347,7 +299,7 @@ lemma cone_left_edge_constancy {qs} {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List
     apply tsum_congr
     intro ⟨ initial', v1 ⟩
 
-    simp [sv1_privMaxF]
+    simp [sv1_aboveThreshF]
     rw [← ENNReal.tsum_mul_right]
     rw [← ENNReal.tsum_mul_right]
 
@@ -388,7 +340,7 @@ lemma cone_constancy {qs} {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List ℕ} {v0 
     intro v0 vk initial Hcone
     unfold constancy_at
     simp [probWhileCut, probWhileFunctional]
-    cases (sv1_privMaxC qs τ data (initial, v0)) <;> simp
+    cases (sv1_aboveThreshC qs τ data (initial, v0)) <;> simp
     unfold cone_of_possibility at Hcone
     linarith
 
@@ -404,7 +356,7 @@ lemma cone_constancy {qs} {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List ℕ} {v0 
   unfold probWhileFunctional
 
   -- If the conditional is false, we are done
-  cases (sv1_privMaxC qs τ data (initial, v0))
+  cases (sv1_aboveThreshC qs τ data (initial, v0))
   · simp
 
 
@@ -415,9 +367,9 @@ lemma cone_constancy {qs} {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List ℕ} {v0 
   apply tsum_congr
   intro ⟨ initial', vk' ⟩
 
-  -- We only need to consider the cases where sv1_privMaxF is nonzero
+  -- We only need to consider the cases where sv1_aboveThreshF is nonzero
   -- And this is exactly the case where initial' is initial plus one element
-  simp [sv1_privMaxF]
+  simp [sv1_aboveThreshF]
   rw [← ENNReal.tsum_mul_right]
   rw [← ENNReal.tsum_mul_right]
   apply tsum_congr
@@ -460,13 +412,13 @@ lemma cone_constancy {qs} {ε₁ ε₂ : ℕ+} {τ : ℤ} {data : List ℕ} {v0 
     · trivial
 
 
-lemma sv2_sv3_eq (qs : sv_query) ε₁ ε₂ l : sv2_privMax qs ε₁ ε₂ l = sv3_privMax qs ε₁ ε₂ l := by
+lemma sv2_sv3_eq (qs : sv_query) ε₁ ε₂ l : sv2_aboveThresh qs ε₁ ε₂ l = sv3_aboveThresh qs ε₁ ε₂ l := by
   apply SLang.ext
 
   -- Step through equal headers
   intro point
-  unfold sv2_privMax
-  unfold sv3_privMax
+  unfold sv2_aboveThresh
+  unfold sv3_aboveThresh
   unfold sv3_loop
   simp
   apply tsum_congr
@@ -534,7 +486,7 @@ lemma sv3_loop_unroll_1 qs (τ : ℤ) (ε₁ ε₂ : ℕ+) l point L vk :
     sv3_loop qs ε₁ ε₂ τ l (point + 1) (L, vk) =
     (do
       let vk1 <- privNoiseGuess ε₁ ε₂
-      if (sv1_privMaxC qs τ l (L, vk))
+      if (sv1_aboveThreshC qs τ l (L, vk))
         then (sv3_loop qs ε₁ ε₂ τ l point (L ++ [vk], vk1))
         else probPure (L, vk)) := by
   conv =>
@@ -548,7 +500,7 @@ lemma sv3_loop_unroll_1 qs (τ : ℤ) (ε₁ ε₂ : ℕ+) l point L vk :
     unfold sv3_loop
     conv =>
       enter [1, 1, a, 1]
-      unfold sv1_privMaxF
+      unfold sv1_aboveThreshF
       simp
     conv =>
       enter [1, 1, a]
@@ -601,23 +553,23 @@ def sv4_presample (ε₁ ε₂ : ℕ+) (n : ℕ) : SLang { l : List ℤ // List.
     return ⟨ vks ++ [vk1], by simp ⟩
 
 
-def sv4_privMaxF (s : sv4_state) : SLang sv4_state :=
+def sv4_aboveThreshF (s : sv4_state) : SLang sv4_state :=
   match s.2 with
   | [] => probZero
   | (p :: ps) => return ((s.1.1 ++ [s.1.2], p), ps)
 
-def sv4_privMaxC (qs : sv_query) (τ : ℤ) (l : List ℕ) (st : sv4_state) : Bool := sv1_privMaxC qs τ l st.1
+def sv4_aboveThreshC (qs : sv_query) (τ : ℤ) (l : List ℕ) (st : sv4_state) : Bool := sv1_aboveThreshC qs τ l st.1
 
 def sv4_loop (qs : sv_query) (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv1_state) : SLang sv1_state := do
   let presamples <- sv4_presample ε₁ ε₂ point
-  let v <- probWhileCut (sv4_privMaxC qs τ l) sv4_privMaxF (point + 1) (init, presamples)
+  let v <- probWhileCut (sv4_aboveThreshC qs τ l) sv4_aboveThreshF (point + 1) (init, presamples)
   return v.1
 
 lemma sv3_loop_unroll_1_alt qs (τ : ℤ) (ε₁ ε₂ : ℕ+) l point (initial_state : sv1_state) :
     sv3_loop qs ε₁ ε₂ τ l (point + 1) initial_state =
     (do
       let vk1 <- privNoiseGuess ε₁ ε₂
-      if (sv1_privMaxC qs τ l initial_state)
+      if (sv1_aboveThreshC qs τ l initial_state)
         then (sv3_loop qs ε₁ ε₂ τ l point (initial_state.1 ++ [initial_state.2], vk1))
         else probPure initial_state) := by
   rcases initial_state with ⟨ _ , _ ⟩
@@ -1090,9 +1042,9 @@ def sv3_sv4_loop_eq qs (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (point : �
   induction point
   · -- It's a mess but it works
     intro init
-    simp [sv3_loop, sv4_loop, probWhileCut, probWhileFunctional, sv4_presample, sv4_privMaxC]
+    simp [sv3_loop, sv4_loop, probWhileCut, probWhileFunctional, sv4_presample, sv4_aboveThreshC]
     split
-    · simp [sv4_privMaxF, sv1_privMaxF]
+    · simp [sv4_aboveThreshF, sv1_aboveThreshF]
       apply SLang.ext
       intro final_state
       simp
@@ -1137,12 +1089,12 @@ def sv3_sv4_loop_eq qs (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (point : �
     let ApplyIH :
       ((do
         let vk1 ← privNoiseGuess ε₁ ε₂
-        if sv1_privMaxC qs τ l init = true
+        if sv1_aboveThreshC qs τ l init = true
           then sv3_loop qs ε₁ ε₂ τ l point (init.1 ++ [init.2], vk1)
           else (SLang.probPure init) : SLang _) =
       ((do
         let vk1 ← privNoiseGuess ε₁ ε₂
-        if sv1_privMaxC qs τ l init = true
+        if sv1_aboveThreshC qs τ l init = true
           then sv4_loop qs ε₁ ε₂ τ l point (init.1 ++ [init.2], vk1)
           else probPure init) : SLang _)) := by
       simp
@@ -1161,11 +1113,11 @@ def sv3_sv4_loop_eq qs (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (point : �
     have ToPresample :
         (do
           let vk1 ← privNoiseGuess ε₁  ε₂
-          if sv1_privMaxC qs τ l init = true then sv4_loop qs ε₁ ε₂ τ l point (init.1 ++ [init.2], vk1) else probPure init) =
+          if sv1_aboveThreshC qs τ l init = true then sv4_loop qs ε₁ ε₂ τ l point (init.1 ++ [init.2], vk1) else probPure init) =
         (do
           let vps ← sv4_presample ε₁ ε₂ 1
           let vk1 := len_1_list_to_val vps
-          if sv1_privMaxC qs τ l init = true then sv4_loop qs ε₁ ε₂ τ l point (init.1 ++ [init.2], vk1) else probPure init) := by
+          if sv1_aboveThreshC qs τ l init = true then sv4_loop qs ε₁ ε₂ τ l point (init.1 ++ [init.2], vk1) else probPure init) := by
       apply SLang.ext
       intro final_state
       simp
@@ -1215,7 +1167,7 @@ def sv3_sv4_loop_eq qs (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (point : �
       enter [2]
       unfold probWhileCut
       unfold probWhileFunctional
-      unfold sv4_privMaxC
+      unfold sv4_aboveThreshC
 
     split
     · conv =>
@@ -1254,7 +1206,7 @@ def sv3_sv4_loop_eq qs (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (point : �
       rename_i vs1 vs_emp
       conv =>
         enter [2, 1, a, 1]
-        unfold sv4_privMaxF
+        unfold sv4_aboveThreshF
         simp [len_list_append_rev]
       have Hemp : vs_emp = [] := by cases vs_emp <;> simp_all
       simp_all
@@ -1278,7 +1230,7 @@ def sv3_sv4_loop_eq qs (ε₁ ε₂ : ℕ+) (τ : ℤ) (l : List ℕ) (point : �
         apply presample_norm_lemma
       · simp
 
-def sv4_privMax (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv4_aboveThresh (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
     let τ <- privNoiseThresh ε₁ ε₂
@@ -1288,9 +1240,9 @@ def sv4_privMax (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ 
   computation point
 
 def sv3_sv4_eq qs (ε₁ ε₂ : ℕ+) (l : List ℕ) :
-    sv3_privMax qs ε₁ ε₂ l = sv4_privMax qs ε₁ ε₂ l := by
-    unfold sv3_privMax
-    unfold sv4_privMax
+    sv3_aboveThresh qs ε₁ ε₂ l = sv4_aboveThresh qs ε₁ ε₂ l := by
+    unfold sv3_aboveThresh
+    unfold sv4_aboveThresh
     simp
     conv =>
       enter [1, x, 1, y, 2, 1, z]
@@ -1303,10 +1255,10 @@ def sv3_sv4_eq qs (ε₁ ε₂ : ℕ+) (l : List ℕ) :
 -/
 
 def sv5_loop (qs : sv_query) (τ : ℤ) (l : List ℕ) (point : ℕ) (init : sv4_state) : SLang ℕ := do
-  let sk <- probWhileCut (sv4_privMaxC qs τ l) sv4_privMaxF (point + 1) init
+  let sk <- probWhileCut (sv4_aboveThreshC qs τ l) sv4_aboveThreshF (point + 1) init
   return (sv1_threshold sk.1)
 
-def sv5_privMax (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv5_aboveThresh (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
     let τ <- privNoiseThresh ε₁ ε₂
@@ -1316,9 +1268,9 @@ def sv5_privMax (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ 
   computation point
 
 def sv4_sv5_eq (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) :
-    sv4_privMax qs ε₁ ε₂ l = sv5_privMax qs ε₁ ε₂ l := by
-  unfold sv4_privMax
-  unfold sv5_privMax
+    sv4_aboveThresh qs ε₁ ε₂ l = sv5_aboveThresh qs ε₁ ε₂ l := by
+  unfold sv4_aboveThresh
+  unfold sv5_aboveThresh
   unfold sv4_loop
   unfold sv5_loop
   simp
@@ -1331,15 +1283,15 @@ def sv4_sv5_eq (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) :
 -/
 
 -- -- When you look at exactly n loops in the future, the check evaluates to true
--- def sv6_privMax_check (τ : ℤ) (l : List ℕ) (s : sv4_state) (n : ℕ) : Bool :=
+-- def sv6_aboveThresh_check (τ : ℤ) (l : List ℕ) (s : sv4_state) (n : ℕ) : Bool :=
 --   match n with
 --   | 0 => true
 --   | Nat.succ n' =>
 --     match s with
 --     -- If there is more samples on the tape, call recursively
 --     | ((past, present), (future_next :: future_rest)) =>
---       sv4_privMaxC τ l ((past, present), (future_next :: future_rest)) ∧
---       sv6_privMax_check τ l ((past ++ [present], future_next), future_rest) n'
+--       sv4_aboveThreshC τ l ((past, present), (future_next :: future_rest)) ∧
+--       sv6_aboveThresh_check τ l ((past ++ [present], future_next), future_rest) n'
 --     | (_, []) =>
 --       -- Out of samples on the tape
 --       false
@@ -1349,19 +1301,19 @@ def is_past_configuration (sp sc : sv4_state) : Prop :=
   (sp.1.1.length ≤ sc.1.1.length) ∧ sp.1.1 ++ [sp.1.2] ++ sp.2 = sc.1.1 ++ [sc.1.2] ++ sc.2
 
 -- All past configurations had their loop check execute to True
-def sv6_privMax_hist (qs : sv_query) (τ : ℤ) (l : List ℕ) (s : sv4_state) : Prop :=
-  ∀ sp, (is_past_configuration sp s) -> sv4_privMaxC qs τ l sp = true
+def sv6_aboveThresh_hist (qs : sv_query) (τ : ℤ) (l : List ℕ) (s : sv4_state) : Prop :=
+  ∀ sp, (is_past_configuration sp s) -> sv4_aboveThreshC qs τ l sp = true
 
 
 -- If all past configurations of sp evaluate to True,
 -- and the next one evaluates to true,
 -- then all past configurations for the next one evaluate to True
-lemma sv6_privMax_hist_step (qs : sv_query) (τ : ℤ) (l : List ℕ) (past fut_rest : List ℤ) (present fut : ℤ) :
-    sv6_privMax_hist qs τ l ((past, present), fut :: fut_rest) ->
-    sv4_privMaxC qs τ l ((past ++ [present], fut), fut_rest) ->
-    sv6_privMax_hist qs τ l ((past ++ [present], fut), fut_rest) := by
+lemma sv6_aboveThresh_hist_step (qs : sv_query) (τ : ℤ) (l : List ℕ) (past fut_rest : List ℤ) (present fut : ℤ) :
+    sv6_aboveThresh_hist qs τ l ((past, present), fut :: fut_rest) ->
+    sv4_aboveThreshC qs τ l ((past ++ [present], fut), fut_rest) ->
+    sv6_aboveThresh_hist qs τ l ((past ++ [present], fut), fut_rest) := by
   intro H1 H2
-  unfold sv6_privMax_hist
+  unfold sv6_aboveThresh_hist
   intro s H3
   unfold is_past_configuration at H3
   rcases H3 with ⟨ H3, H4 ⟩
@@ -1394,15 +1346,15 @@ def is_past_configuration_strict (sp sc : sv4_state) : Prop :=
   (sp.1.1.length < sc.1.1.length) ∧ sp.1.1 ++ [sp.1.2] ++ sp.2 = sc.1.1 ++ [sc.1.2] ++ sc.2
 
 -- All strictly past configurations had their loop check execute to True
-def sv6_privMax_hist_strict (qs : sv_query) (τ : ℤ) (l : List ℕ) (s : sv4_state) : Prop :=
-  ∀ sp, (is_past_configuration_strict sp s) -> sv4_privMaxC qs τ l sp = true
+def sv6_aboveThresh_hist_strict (qs : sv_query) (τ : ℤ) (l : List ℕ) (s : sv4_state) : Prop :=
+  ∀ sp, (is_past_configuration_strict sp s) -> sv4_aboveThreshC qs τ l sp = true
 
-lemma sv6_privMax_hist_step_strict (qs : sv_query) (τ : ℤ) (l : List ℕ) (past fut_rest : List ℤ) (present fut : ℤ) :
-    sv6_privMax_hist_strict qs τ l ((past, present), fut :: fut_rest) ->
-    sv4_privMaxC qs τ l ((past, present), fut :: fut_rest) ->
-    sv6_privMax_hist_strict qs τ l ((past ++ [present], fut), fut_rest) := by
+lemma sv6_aboveThresh_hist_step_strict (qs : sv_query) (τ : ℤ) (l : List ℕ) (past fut_rest : List ℤ) (present fut : ℤ) :
+    sv6_aboveThresh_hist_strict qs τ l ((past, present), fut :: fut_rest) ->
+    sv4_aboveThreshC qs τ l ((past, present), fut :: fut_rest) ->
+    sv6_aboveThresh_hist_strict qs τ l ((past ++ [present], fut), fut_rest) := by
   intro H1 H2
-  unfold sv6_privMax_hist_strict
+  unfold sv6_aboveThresh_hist_strict
   intro s H3
   unfold is_past_configuration_strict at H3
   rcases H3 with ⟨ H3, H4 ⟩
@@ -1432,8 +1384,8 @@ lemma sv6_privMax_hist_step_strict (qs : sv_query) (τ : ℤ) (l : List ℕ) (pa
 @[simp]
 def sv6_cond_rec (qs : sv_query) (τ : ℤ) (l : List ℕ) (past : List ℤ) (pres : ℤ) (future : List ℤ) : Bool :=
   match future with
-  | [] => ¬ (sv4_privMaxC qs τ l ((past, pres), []))
-  | (f :: ff) => (sv4_privMaxC qs τ l ((past, pres), f :: ff) = true) && (sv6_cond_rec qs τ l (past ++ [pres]) f ff)
+  | [] => ¬ (sv4_aboveThreshC qs τ l ((past, pres), []))
+  | (f :: ff) => (sv4_aboveThreshC qs τ l ((past, pres), f :: ff) = true) && (sv6_cond_rec qs τ l (past ++ [pres]) f ff)
 
 @[simp]
 def sv6_cond (qs : sv_query) (τ : ℤ) (l : List ℕ) (init : sv4_state) : Bool :=
@@ -1481,7 +1433,7 @@ lemma sv5_sv6_loop_base_case (qs : sv_query) (τ : ℤ) (l : List ℕ) (point ev
 
 -- QUESTION: What do we need for sv6_loop to be equal to sv6_loop_cond (next)
 lemma sv6_loop_ind (qs : sv_query) (τ : ℤ) (l : List ℕ) (point : ℕ) (past ff: List ℤ) (pres f: ℤ) :
-      (sv4_privMaxC qs τ l ((past, pres), f :: ff) = true) ->
+      (sv4_aboveThreshC qs τ l ((past, pres), f :: ff) = true) ->
       List.length (past ++ [pres] ++ f :: ff) = point + 1 ->
       (sv6_loop qs τ l point ((past, pres), f :: ff)) point = (sv6_loop qs τ l point ((past ++ [pres], f), ff)) point := by
   intro Hcondition _
@@ -1498,7 +1450,7 @@ lemma sv6_loop_ind (qs : sv_query) (τ : ℤ) (l : List ℕ) (point : ℕ) (past
 
 -- QUESTION: What do we need for sv5 to be equal to sv5_loop_cond (next) evaluated at point
 lemma sv5_loop_ind (qs : sv_query) (τ : ℤ) (l : List ℕ) (eval point : ℕ) (past ff: List ℤ) (pres f: ℤ) :
-      (sv4_privMaxC qs τ l ((past, pres), f :: ff) = true) ->
+      (sv4_aboveThreshC qs τ l ((past, pres), f :: ff) = true) ->
       (sv5_loop qs τ l (eval + 1) ((past, pres), f :: ff)) point = (sv5_loop qs τ l eval ((past ++ [pres], f), ff)) point := by
   intro Hcondition
   conv =>
@@ -1507,13 +1459,13 @@ lemma sv5_loop_ind (qs : sv_query) (τ : ℤ) (l : List ℕ) (eval point : ℕ) 
     unfold probWhileCut
     unfold probWhileFunctional
   split
-  · simp only [bind, pure, sv4_privMaxF, pure_bind]
+  · simp only [bind, pure, sv4_aboveThreshF, pure_bind]
     unfold sv5_loop
     rfl
   · exfalso
     trivial
 
-def sv6_privMax (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv6_aboveThresh (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
     let τ <- privNoiseThresh ε₁ ε₂
@@ -1527,7 +1479,7 @@ def sv6_privMax (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ 
 def sv5_sv6_loop_eq_point (qs : sv_query) (τ : ℤ) (l : List ℕ) (point eval : ℕ) (past future : List ℤ) (pres : ℤ) :
     List.length (past ++ [pres] ++ future) = point + 1 ->
     List.length future = eval ->
-    -- sv6_privMax_hist_strict τ l ((past, pres), future) ->
+    -- sv6_aboveThresh_hist_strict τ l ((past, pres), future) ->
     @sv5_loop qs τ l eval ((past, pres), future) point = @sv6_loop qs τ l point ((past, pres), future) point := by
   revert past pres eval
   induction future
@@ -1544,7 +1496,7 @@ def sv5_sv6_loop_eq_point (qs : sv_query) (τ : ℤ) (l : List ℕ) (point eval 
     · simp at Heval
 
     rename_i eval
-    cases (Classical.em (sv4_privMaxC qs τ l ((past, pres), f :: ff) = true))
+    cases (Classical.em (sv4_aboveThreshC qs τ l ((past, pres), f :: ff) = true))
     · rename_i Hcondition
       rw [sv5_loop_ind _ _ _ _ _ _ _ _ _ Hcondition]
       rw [sv6_loop_ind _ _ _ _ _ _ _ _ Hcondition Hstate]
@@ -1565,9 +1517,9 @@ def sv5_sv6_loop_eq_point (qs : sv_query) (τ : ℤ) (l : List ℕ) (point eval 
 
 
 def sv5_sv6_eq (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) :
-    sv5_privMax qs ε₁ ε₂ l = sv6_privMax qs ε₁ ε₂ l := by
-  unfold sv5_privMax
-  unfold sv6_privMax
+    sv5_aboveThresh qs ε₁ ε₂ l = sv6_aboveThresh qs ε₁ ε₂ l := by
+  unfold sv5_aboveThresh
+  unfold sv6_aboveThresh
   apply SLang.ext
   intro eval_point
   simp
@@ -1591,14 +1543,14 @@ Not executable
 Separates out the zero case
 -/
 
-def sv7_privMax (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv7_aboveThresh (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
     let τ <- privNoiseThresh ε₁ ε₂
     let v0 <- privNoiseGuess ε₁ ε₂
     match point with
     | 0 =>
-      if (¬ (sv4_privMaxC qs τ l (([], v0), [])))
+      if (¬ (sv4_aboveThreshC qs τ l (([], v0), [])))
         then probPure point
         else probZero
     | (Nat.succ point') => do
@@ -1610,11 +1562,11 @@ def sv7_privMax (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ 
   computation point
 
 def sv6_sv7_eq (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) :
-    sv6_privMax qs ε₁ ε₂ l = sv7_privMax qs ε₁ ε₂ l := by
+    sv6_aboveThresh qs ε₁ ε₂ l = sv7_aboveThresh qs ε₁ ε₂ l := by
   apply SLang.ext
   intro point
-  unfold sv6_privMax
-  unfold sv7_privMax
+  unfold sv6_aboveThresh
+  unfold sv7_aboveThresh
   cases point
   · simp [sv6_loop, sv6_cond]
     apply tsum_congr
@@ -1734,7 +1686,7 @@ def sv8_G (qs : sv_query) (l : List ℕ) (past : List ℤ) (pres : ℤ) (future 
  def sv8_cond (qs : sv_query) (τ : ℤ) (l : List ℕ) (past : List ℤ) (pres : ℤ) (future : List ℤ) (last : ℤ) : Bool :=
    (sv8_G qs l past pres future < τ) ∧ (sv8_sum qs l (past ++ [pres] ++ future) last ≥ τ)
 
-def sv8_privMax (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv8_aboveThresh (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
     let τ <- privNoiseThresh ε₁ ε₂
@@ -1761,7 +1713,7 @@ lemma sv7_sv8_cond_eq (qs : sv_query) (τ : ℤ) (l : List ℕ) (v0 : ℤ) (vs :
   simp
   induction vs
   · intro v0 init
-    simp [sv6_cond_rec, sv4_privMaxC, sv1_privMaxC, sv1_threshold, sv1_noise, List.length]
+    simp [sv6_cond_rec, sv4_aboveThreshC, sv1_aboveThreshC, sv1_threshold, sv1_noise, List.length]
     simp [sv8_G, sv8_sum]
   · intro vi init
     rename_i vi_1 rest IH
@@ -1779,16 +1731,16 @@ lemma sv7_sv8_cond_eq (qs : sv_query) (τ : ℤ) (l : List ℕ) (v0 : ℤ) (vs :
       unfold sv8_G
       simp
     cases (decide (sv8_G qs l (init ++ [vi]) vi_1 rest < τ)) <;> simp
-    simp [sv4_privMaxC, sv1_privMaxC, sv8_sum, sv1_threshold, sv1_noise]
+    simp [sv4_aboveThreshC, sv1_aboveThreshC, sv8_sum, sv1_threshold, sv1_noise]
 
 def sv7_sv8_eq (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) :
-    sv7_privMax qs ε₁ ε₂ l = sv8_privMax qs ε₁ ε₂ l := by
+    sv7_aboveThresh qs ε₁ ε₂ l = sv8_aboveThresh qs ε₁ ε₂ l := by
   apply SLang.ext
   intro point
-  unfold sv7_privMax
-  unfold sv8_privMax
+  unfold sv7_aboveThresh
+  unfold sv8_aboveThresh
   cases point
-  · simp [sv4_privMaxC, sv1_privMaxC, sv8_sum, sv1_threshold, sv1_noise]
+  · simp [sv4_aboveThreshC, sv1_aboveThreshC, sv8_sum, sv1_threshold, sv1_noise]
   rename_i point'
   simp only []
   repeat (apply tsum_congr; intro _; congr 1)
@@ -1803,7 +1755,7 @@ Rewritten so that the randomness we will cancel out is right at the front
 -/
 
 
-def sv9_privMax (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
+def sv9_aboveThresh (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ :=
   fun (point : ℕ) =>
   let computation : SLang ℕ := do
     match point with
@@ -1824,11 +1776,11 @@ def sv9_privMax (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SLang ℕ 
   computation point
 
 def sv8_sv9_eq (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) :
-    sv8_privMax qs ε₁ ε₂ l = sv9_privMax qs ε₁ ε₂ l := by
+    sv8_aboveThresh qs ε₁ ε₂ l = sv9_aboveThresh qs ε₁ ε₂ l := by
   apply SLang.ext
   intro point
-  unfold sv8_privMax
-  unfold sv9_privMax
+  unfold sv8_aboveThresh
+  unfold sv9_aboveThresh
   simp
   split
   · simp
@@ -1972,15 +1924,6 @@ lemma geo_cdf_rec (β : ENNReal) (Hβ1: β ≤ 1) (n : ℕ) :
   linarith
 
 
-lemma exactClippedSum_append : exactClippedSum i (A ++ B) = exactClippedSum i A + exactClippedSum i B := by
-  simp [exactClippedSum]
-
-lemma exactDiffSum_append : exactDiffSum i (A ++ B) = exactDiffSum i A + exactDiffSum i B := by
-  simp [exactDiffSum]
-  rw [exactClippedSum_append]
-  rw [exactClippedSum_append]
-  linarith
-
 /-
 lemma sv8_sum_append qs : sv8_sum (A ++ B) vp v0 = sv8_sum A vp v0 + sv8_sum B vp v0 - v0 := by
   simp [sv8_sum]
@@ -2082,8 +2025,8 @@ lemma ite_lemma_1 {P : Prop} {D} {f : T -> ENNReal} : ∑'(a : T), @ite _ P D (f
 
 end equiv
 
-lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_privMax PureDPSystem laplace_pureDPSystem ε₁ ε₂ l s)  := by
-  simp only [sv1_privMax, bind, pure, bind_apply]
+lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_aboveThresh PureDPSystem laplace_pureDPSystem ε₁ ε₂ l s)  := by
+  simp only [sv1_aboveThresh, bind, pure, bind_apply]
   -- Push the sum over s inwards
   conv =>
     rhs
@@ -2274,7 +2217,7 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_privMax PureDPSystem laplace_pur
   rw [ENNReal.tsum_split PLucky]
   apply add_le_add
   · -- Lucky guess
-    simp [probWhileCut, probWhileFunctional, sv1_privMaxC, sv1_noise]
+    simp [probWhileCut, probWhileFunctional, sv1_aboveThreshC, sv1_noise]
     conv =>
       rhs
       enter [1, a, 2, 1, x, 1, x1]
@@ -2302,7 +2245,7 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_privMax PureDPSystem laplace_pur
   -- Unlucky
   suffices (∀ H, ∀ a : {t : ℤ // ¬ PLucky t}, geo_cdf ρ cut ≤
                   ∑' (x : ℕ) (x_1 : sv1_state),
-                    if x = sv1_threshold x_1 then probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) (cut + 1) (H, ↑a) x_1 else 0) by
+                    if x = sv1_threshold x_1 then probWhileCut (sv1_aboveThreshC τ l) (sv1_aboveThreshF ε₁ ε₂) (cut + 1) (H, ↑a) x_1 else 0) by
     apply le_trans _ ?G1
     case G1 =>
       apply ENNReal.tsum_le_tsum
@@ -2336,9 +2279,9 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_privMax PureDPSystem laplace_pur
     have advance :
       ((∑' (x1 : ℕ) (x2 : sv1_state),
             if x1 = sv1_threshold x2
-              then (sv1_privMaxF ε₁ ε₂ (H, v)).probBind (fun v => probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) (cut + 1) v) x2
+              then (sv1_aboveThreshF ε₁ ε₂ (H, v)).probBind (fun v => probWhileCut (sv1_aboveThreshC τ l) (sv1_aboveThreshF ε₁ ε₂) (cut + 1) v) x2
               else 0)
-        ≤ (∑' (x : ℕ) (x_1 : sv1_state), if x = sv1_threshold x_1 then probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) (cut + 1 + 1) (H, v) x_1 else 0)) := by
+        ≤ (∑' (x : ℕ) (x_1 : sv1_state), if x = sv1_threshold x_1 then probWhileCut (sv1_aboveThreshC τ l) (sv1_aboveThreshF ε₁ ε₂) (cut + 1 + 1) (H, v) x_1 else 0)) := by
       conv =>
         rhs
         enter [1, x1, 1, x2]
@@ -2360,11 +2303,11 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_privMax PureDPSystem laplace_pur
           (∑' (x1 : ℕ) (x2 : sv1_state),
             if x1 = sv1_threshold x2 then
               ∑' (a : sv1_state),
-                sv1_privMaxF ε₁ ε₂ (H, v) a * probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) (cut + 1) a x2
+                sv1_aboveThreshF ε₁ ε₂ (H, v) a * probWhileCut (sv1_aboveThreshC τ l) (sv1_aboveThreshF ε₁ ε₂) (cut + 1) a x2
             else 0) =
           (∑' (x1 : ℕ) (x2 : sv1_state),
             if x1 = sv1_threshold x2 then
-              ((sv1_privMaxF ε₁ ε₂ (H, v) >>=  probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) (cut + 1)) x2)
+              ((sv1_aboveThreshF ε₁ ε₂ (H, v) >>=  probWhileCut (sv1_aboveThreshC τ l) (sv1_aboveThreshF ε₁ ε₂) (cut + 1)) x2)
             else 0) := by
           simp
         rw [X]
@@ -2373,9 +2316,9 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_privMax PureDPSystem laplace_pur
         have X : ∀ b : sv1_state,
                  (∑' (a : ℕ),
                    if a = sv1_threshold b then
-                     (sv1_privMaxF ε₁ ε₂ (H, v) >>= probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) (cut + 1)) b
+                     (sv1_aboveThreshF ε₁ ε₂ (H, v) >>= probWhileCut (sv1_aboveThreshC τ l) (sv1_aboveThreshF ε₁ ε₂) (cut + 1)) b
                  else 0) =
-                 ((sv1_privMaxF ε₁ ε₂ (H, v) >>= probWhileCut (sv1_privMaxC τ l) (sv1_privMaxF ε₁ ε₂) (cut + 1)) b) :=  by
+                 ((sv1_aboveThreshF ε₁ ε₂ (H, v) >>= probWhileCut (sv1_aboveThreshC τ l) (sv1_aboveThreshF ε₁ ε₂) (cut + 1)) b) :=  by
             intro b
             rw [tsum_ite_eq]
         conv =>
@@ -2383,7 +2326,7 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_privMax PureDPSystem laplace_pur
           enter [1, b]
           rw [X b]
         clear X
-        simp [sv1_privMaxF]
+        simp [sv1_aboveThreshF]
         apply le_trans
         · apply ENNReal.tsum_le_tsum
           intro a
@@ -2412,7 +2355,7 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_privMax PureDPSystem laplace_pur
     clear advance
 
 
-    -- Now we want to commute out the randomness associate to that s1_privMaxF
+    -- Now we want to commute out the randomness associate to that s1_aboveThreshF
     apply le_trans _ ?G1
     case G1 =>
       apply ENNReal.tsum_le_tsum
@@ -2455,7 +2398,7 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_privMax PureDPSystem laplace_pur
         rw [ENNReal.tsum_mul_left]
 
       -- Conclude by simplification
-      simp only [sv1_privMaxF, bind, pure, bind_apply, pure_apply, mul_ite, mul_one, mul_zero]
+      simp only [sv1_aboveThreshF, bind, pure, bind_apply, pure_apply, mul_ite, mul_one, mul_zero]
       unfold probWhileCut
       unfold probWhileFunctional
       -- Push the ite inside so that all of the sums are in a row
@@ -2502,7 +2445,7 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_privMax PureDPSystem laplace_pur
         intro c
         apply ENNReal.mul_left_mono
         simp [sv1_threshold]
-        simp [sv1_privMaxC]
+        simp [sv1_aboveThreshC]
         apply ite_mono_left
         rw [ite_eq_right_iff.mpr (by
           intro K
@@ -2559,7 +2502,7 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_privMax PureDPSystem laplace_pur
       apply ENNReal.mul_right_mono
 
       -- Conclude by simplification
-      simp only [sv1_privMaxF, bind, pure, bind_apply, pure_apply, mul_ite, mul_one, mul_zero]
+      simp only [sv1_aboveThreshF, bind, pure, bind_apply, pure_apply, mul_ite, mul_one, mul_zero]
       apply le_trans _ ?G1
       case G1 =>
         apply ENNReal.tsum_le_tsum
@@ -2573,21 +2516,23 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_privMax PureDPSystem laplace_pur
       rw [add_comm]
 
 
-def sv1_privMax_PMF (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
-  ⟨ sv1_privMax ε₁ ε₂ l,
+-/
+
+def sv1_aboveThresh_PMF (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
+  ⟨ sv1_aboveThresh qs ε₁ ε₂ l,
     by
       rw [Summable.hasSum_iff ENNReal.summable]
-      apply LE.le.antisymm
-      · apply sv1_ub
-      · apply sv1_lb ⟩
+      sorry ⟩
 
--/
+--       apply LE.le.antisymm
+--       · apply sv1_ub
+--       · apply sv1_lb ⟩
 
 /--
 sv9 normalizes because sv1 normalizes
 -/
-def sv9_privMax_SPMF (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
-  ⟨ @sv9_privMax PureDPSystem laplace_pureDPSystem qs ε₁ ε₂ l,
+def sv9_aboveThresh_SPMF (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
+  ⟨ @sv9_aboveThresh PureDPSystem laplace_pureDPSystem qs ε₁ ε₂ l,
     by
       rw [<- @sv8_sv9_eq]
       rw [<- @sv7_sv8_eq]

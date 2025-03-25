@@ -263,7 +263,7 @@ def sparseVector_tests : IO Unit := do
   -- IO.println ""
 
   for i in [:num_trials] do
-    let ct <- run <| sv1_privMax_PMF num den data
+    let ct <- run <| privUnboundedMax num den data
     IO.println s!"#{i} sv1 max: {ct}"
   IO.println ""
 
