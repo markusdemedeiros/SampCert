@@ -5,7 +5,7 @@ Authors: Markus de Medeiros
 -/
 
 import SampCert.DifferentialPrivacy.Abstract
-import SampCert.DifferentialPrivacy.Queries.SparseVector.Properties
+import SampCert.DifferentialPrivacy.Queries.AboveThresh.Properties
 import SampCert.DifferentialPrivacy.Pure.System
 
 noncomputable section

@@ -5,7 +5,7 @@ Authors: Markus de Medeiros
 -/
 
 import SampCert.DifferentialPrivacy.Abstract
-import SampCert.DifferentialPrivacy.Queries.SparseVector.Code
+import SampCert.DifferentialPrivacy.Queries.AboveThresh.Code
 
 noncomputable section
 open Classical

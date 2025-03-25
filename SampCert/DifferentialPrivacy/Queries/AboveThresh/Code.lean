@@ -64,4 +64,14 @@ def sv1_aboveThresh (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (l : List ℕ
   let sk <- probWhile (sv1_aboveThreshC qs T τ l) (sv1_aboveThreshF ε₁ ε₂) ([], v0)
   return (sv1_threshold sk)
 
+-- -- "Sparse" algorithm as described in the proof of 3.25 of
+-- -- Cynthia Dwork and Aaron Roth "The Algorithmic Foundations of Differential Privacy" (2014)
+-- def sv1_sparse (qs : sv_query) (T : ℤ) (ε₁ ε₂ : ℕ+) (c : ℕ) : SPMF (List ℕ) :=
+--   match c with
+--   | 0 => return []
+--   | Nat.succ c' =>
+--     privComposeAdaptive
+--       sorry -- (sv1_aboveThresh qs T ε₁ ε₂ l)
+--       sorry
+
 end SLang

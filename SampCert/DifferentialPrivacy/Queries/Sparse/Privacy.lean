@@ -6,10 +6,11 @@ Authors: Markus de Medeiros
 
 import SampCert.DifferentialPrivacy.Abstract
 import SampCert.DifferentialPrivacy.Pure.System
-import SampCert.DifferentialPrivacy.Queries.UnboundedMax.Code
+import SampCert.DifferentialPrivacy.Queries.Sparse.Code
 import SampCert.DifferentialPrivacy.Queries.AboveThresh.Properties
 import SampCert.DifferentialPrivacy.Queries.AboveThresh.Privacy
 
+/-
 noncomputable section
 
 open Classical
@@ -69,3 +70,4 @@ lemma privUnboundedMax_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) :
   congr
   rw [<- sv8_sv9_eq, <- sv7_sv8_eq, <- sv6_sv7_eq, <- sv5_sv6_eq,
       <- sv4_sv5_eq, <- sv3_sv4_eq, <- sv2_sv3_eq, <- sv1_sv2_eq]
+-/
