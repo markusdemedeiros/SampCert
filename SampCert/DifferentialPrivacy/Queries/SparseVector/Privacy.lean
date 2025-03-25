@@ -129,50 +129,6 @@ lemma DSN (N : ℕ) (H : Neighbour L1 L2) : ((qs N L1) : ℝ) - (qs N L2) ≤ 1 
   apply le_trans _ X1
   apply le_abs_self
 
-/-
-
--- Keep this but param by sentivity bound in this file
-
--- Coercions nonsense
-lemma DSN (N : ℕ) (H : Neighbour L1 L2) : ((exactDiffSum N L1) : ℝ) - (exactDiffSum N L2) ≤ 1 := by
-  cases H
-  · rename_i A B C H1 H2
-    rw [H1, H2]
-    repeat rw [exactDiffSum_append]
-    simp
-    apply neg_le.mp
-    have _ := @exactDiffSum_singleton_le_1 0 C
-    simp [exactDiffSum]
-    simp [exactClippedSum]
-    cases (Classical.em (C.cast ≤ (N.cast : ℝ)))
-    · rename_i h
-      rw [min_eq_left_iff.mpr h]
-      left
-      simp
-    · right
-      simp_all
-      linarith
-
-  · rename_i A B C H1 H2
-    rw [H1, H2]
-    repeat rw [exactDiffSum_append]
-    simp
-    have _ := @exactDiffSum_nonpos 0 C
-    simp [exactDiffSum]
-    simp [exactClippedSum]
-    cases (Classical.em ((B : ℝ) ≤ N + 1))
-    · rename_i h
-      rw [min_eq_left_iff.mpr h]
-      left
-      simp
-    · rename_i h
-      rw [min_eq_right_iff.mpr ?G1]
-      case G1 => linarith
-      right
-      linarith
-
--/
-
 lemma Hsens_cov_τ_lemma (HN : Neighbour l₁ l₂) : sv8_sum qs l₁ H v0 - sv8_sum qs l₂ H v0 ≤ OfNat.ofNat 1 := by
   simp only [sv8_sum]
   rw [add_tsub_add_eq_tsub_right]
