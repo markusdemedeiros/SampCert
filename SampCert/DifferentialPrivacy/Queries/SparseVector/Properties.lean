@@ -1924,93 +1924,11 @@ lemma geo_cdf_rec (β : ENNReal) (Hβ1: β ≤ 1) (n : ℕ) :
   linarith
 
 
-/-
-lemma sv8_sum_append qs : sv8_sum (A ++ B) vp v0 = sv8_sum A vp v0 + sv8_sum B vp v0 - v0 := by
-  simp [sv8_sum]
-  simp [exactDiffSum_append]
-  linarith
-
-lemma sv8_sum_comm : sv8_sum (A ++ B) vp v0 = sv8_sum (B ++ A) vp v0 := by
-  unfold sv8_sum
-  simp
-  simp [exactDiffSum, exactClippedSum]
-  linarith
-
-lemma sv8_G_comm : sv8_G (A ++ B) vp v0 vf = sv8_G (B ++ A) vp v0 vf := by
-  revert vp v0
-  induction vf
-  · intros
-    apply sv8_sum_comm
-  · intro v0 vp
-    rename_i next rest IH
-    unfold sv8_G
-    rw [sv8_sum_comm]
-    congr 1
-    apply IH
-
-lemma exactDiffSum_nonpos : exactDiffSum point L ≤ 0 := by
-  simp [exactDiffSum, exactClippedSum]
-  induction L
-  · simp
-  · rename_i l ll IH
-    simp
-    apply le_trans
-    · apply add_le_add
-      · rfl
-      · apply IH
-    simp
-
-lemma exactDiffSum_singleton_le_1 : -1 ≤ exactDiffSum point [v] := by
-  simp [exactDiffSum, exactClippedSum]
-  cases (Classical.em (point ≤ v))
-  · right
-    trivial
-  · left
-    rename_i h
-    simp at h
-    rw [Int.min_def]
-    simp
-    split
-    · linarith
-    · linarith
 
 
+end equiv
 
--- There is a value such that sampling at least that value implies the loop definitely terminiates
-lemma lucky_guess (τ : ℤ) (l : List ℕ) : ∃ (K : ℤ), ∀ A, ∀ (K' : ℤ), K ≤ K' -> exactDiffSum A l + K' ≥ τ := by
-  exists (List.length l + τ)
-  intro A K' HK'
-  apply ge_iff_le.mpr
-  apply le_trans _ ?G1
-  case G1 =>
-    apply add_le_add
-    · rfl
-    · apply HK'
-  conv =>
-    lhs
-    rw [<- zero_add τ]
-  rw [<- add_assoc]
-  simp
-  clear HK'
-
-  induction l
-  · simp [exactDiffSum, exactClippedSum]
-  · rename_i l0 ll IH
-    simp
-    rw [<- List.singleton_append]
-    rw [exactDiffSum_append]
-    rw [add_comm]
-    repeat rw [<- add_assoc]
-    rw [add_comm]
-    repeat rw [<- add_assoc]
-    rw [add_assoc]
-    conv =>
-      lhs
-      rw [<- add_zero 0]
-    apply add_le_add
-    · apply IH
-    · have H := @exactDiffSum_singleton_le_1 A l0
-      linarith
+section pmf
 
 lemma ite_conv_left {P : Prop} {D} {a b c : ENNReal} (H : a = c) : @ite _ P D a b = @ite _ P D c b := by
   split <;> trivial
@@ -2023,9 +1941,11 @@ lemma ite_lemma_1 {P : Prop} {D} {f : T -> ENNReal} : ∑'(a : T), @ite _ P D (f
   · rfl
   · simp
 
-end equiv
+variable (qs : sv_query)
+variable (lucky_guess : ∀ (τ : ℤ) (l : List ℕ), ∃ (K : ℤ), ∀ A, ∀ (K' : ℤ), K ≤ K' -> qs A l + K' ≥ τ )
 
-lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_aboveThresh PureDPSystem laplace_pureDPSystem ε₁ ε₂ l s)  := by
+lemma sv1_lb ε₁ ε₂ l :
+    1 ≤ ∑'s, (@sv1_aboveThresh PureDPSystem laplace_pureDPSystem qs ε₁ ε₂ l s)  := by
   simp only [sv1_aboveThresh, bind, pure, bind_apply]
   -- Push the sum over s inwards
   conv =>
@@ -2088,7 +2008,7 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_aboveThresh PureDPSystem laplace
   -- The lucky event: sampling above a value T, which forces the loop to terminate
   rcases (lucky_guess τ l) with ⟨ K, HK ⟩
   let PLucky (K' : ℤ) : Prop := K ≤ K'
-  have HLucky : ∀ (K' : ℤ), ∀ A, PLucky K' → exactDiffSum A l + K' ≥ τ := by aesop
+  have HLucky : ∀ (K' : ℤ), ∀ A, PLucky K' → qs A l + K' ≥ τ := by aesop
   clear HK
 
   -- We will split the sum based on PLucky at each step
@@ -2242,10 +2162,11 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_aboveThresh PureDPSystem laplace
     apply ENNReal.tsum_lb_single ([], x.1)
     simp [sv1_threshold]
 
+
   -- Unlucky
   suffices (∀ H, ∀ a : {t : ℤ // ¬ PLucky t}, geo_cdf ρ cut ≤
                   ∑' (x : ℕ) (x_1 : sv1_state),
-                    if x = sv1_threshold x_1 then probWhileCut (sv1_aboveThreshC τ l) (sv1_aboveThreshF ε₁ ε₂) (cut + 1) (H, ↑a) x_1 else 0) by
+                    if x = sv1_threshold x_1 then probWhileCut (sv1_aboveThreshC qs τ l) (sv1_aboveThreshF ε₁ ε₂) (cut + 1) (H, ↑a) x_1 else 0) by
     apply le_trans _ ?G1
     case G1 =>
       apply ENNReal.tsum_le_tsum
@@ -2279,9 +2200,9 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_aboveThresh PureDPSystem laplace
     have advance :
       ((∑' (x1 : ℕ) (x2 : sv1_state),
             if x1 = sv1_threshold x2
-              then (sv1_aboveThreshF ε₁ ε₂ (H, v)).probBind (fun v => probWhileCut (sv1_aboveThreshC τ l) (sv1_aboveThreshF ε₁ ε₂) (cut + 1) v) x2
+              then (sv1_aboveThreshF ε₁ ε₂ (H, v)).probBind (fun v => probWhileCut (sv1_aboveThreshC qs τ l) (sv1_aboveThreshF ε₁ ε₂) (cut + 1) v) x2
               else 0)
-        ≤ (∑' (x : ℕ) (x_1 : sv1_state), if x = sv1_threshold x_1 then probWhileCut (sv1_aboveThreshC τ l) (sv1_aboveThreshF ε₁ ε₂) (cut + 1 + 1) (H, v) x_1 else 0)) := by
+        ≤ (∑' (x : ℕ) (x_1 : sv1_state), if x = sv1_threshold x_1 then probWhileCut (sv1_aboveThreshC qs τ l) (sv1_aboveThreshF ε₁ ε₂) (cut + 1 + 1) (H, v) x_1 else 0)) := by
       conv =>
         rhs
         enter [1, x1, 1, x2]
@@ -2303,11 +2224,11 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_aboveThresh PureDPSystem laplace
           (∑' (x1 : ℕ) (x2 : sv1_state),
             if x1 = sv1_threshold x2 then
               ∑' (a : sv1_state),
-                sv1_aboveThreshF ε₁ ε₂ (H, v) a * probWhileCut (sv1_aboveThreshC τ l) (sv1_aboveThreshF ε₁ ε₂) (cut + 1) a x2
+                sv1_aboveThreshF ε₁ ε₂ (H, v) a * probWhileCut (sv1_aboveThreshC qs τ l) (sv1_aboveThreshF ε₁ ε₂) (cut + 1) a x2
             else 0) =
           (∑' (x1 : ℕ) (x2 : sv1_state),
             if x1 = sv1_threshold x2 then
-              ((sv1_aboveThreshF ε₁ ε₂ (H, v) >>=  probWhileCut (sv1_aboveThreshC τ l) (sv1_aboveThreshF ε₁ ε₂) (cut + 1)) x2)
+              ((sv1_aboveThreshF ε₁ ε₂ (H, v) >>=  probWhileCut (sv1_aboveThreshC qs τ l) (sv1_aboveThreshF ε₁ ε₂) (cut + 1)) x2)
             else 0) := by
           simp
         rw [X]
@@ -2316,9 +2237,9 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_aboveThresh PureDPSystem laplace
         have X : ∀ b : sv1_state,
                  (∑' (a : ℕ),
                    if a = sv1_threshold b then
-                     (sv1_aboveThreshF ε₁ ε₂ (H, v) >>= probWhileCut (sv1_aboveThreshC τ l) (sv1_aboveThreshF ε₁ ε₂) (cut + 1)) b
+                     (sv1_aboveThreshF ε₁ ε₂ (H, v) >>= probWhileCut (sv1_aboveThreshC qs τ l) (sv1_aboveThreshF ε₁ ε₂) (cut + 1)) b
                  else 0) =
-                 ((sv1_aboveThreshF ε₁ ε₂ (H, v) >>= probWhileCut (sv1_aboveThreshC τ l) (sv1_aboveThreshF ε₁ ε₂) (cut + 1)) b) :=  by
+                 ((sv1_aboveThreshF ε₁ ε₂ (H, v) >>= probWhileCut (sv1_aboveThreshC qs τ l) (sv1_aboveThreshF ε₁ ε₂) (cut + 1)) b) :=  by
             intro b
             rw [tsum_ite_eq]
         conv =>
@@ -2353,7 +2274,6 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_aboveThresh PureDPSystem laplace
     apply le_trans _ advance
     simp
     clear advance
-
 
     -- Now we want to commute out the randomness associate to that s1_aboveThreshF
     apply le_trans _ ?G1
@@ -2516,22 +2436,19 @@ lemma sv1_lb ε₁ ε₂ l : 1 ≤ ∑'s, (@sv1_aboveThresh PureDPSystem laplace
       rw [add_comm]
 
 
--/
-
-def sv1_aboveThresh_PMF (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
+def sv1_aboveThresh_PMF (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
   ⟨ sv1_aboveThresh qs ε₁ ε₂ l,
     by
       rw [Summable.hasSum_iff ENNReal.summable]
-      sorry ⟩
-
---       apply LE.le.antisymm
---       · apply sv1_ub
---       · apply sv1_lb ⟩
+      apply LE.le.antisymm
+      · apply sv1_ub
+      · apply sv1_lb
+        apply lucky_guess ⟩
 
 /--
 sv9 normalizes because sv1 normalizes
 -/
-def sv9_aboveThresh_SPMF (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
+def sv9_aboveThresh_SPMF (ε₁ ε₂ : ℕ+) (l : List ℕ) : SPMF ℕ :=
   ⟨ @sv9_aboveThresh PureDPSystem laplace_pureDPSystem qs ε₁ ε₂ l,
     by
       rw [<- @sv8_sv9_eq]
@@ -2543,7 +2460,11 @@ def sv9_aboveThresh_SPMF (qs : sv_query) (ε₁ ε₂ : ℕ+) (l : List ℕ) : S
       rw [<- @sv2_sv3_eq]
       rw [<- @sv1_sv2_eq]
       rw [Summable.hasSum_iff ENNReal.summable]
-      sorry ⟩
---       apply LE.le.antisymm
---       · apply sv1_ub
---       · apply sv1_lb ⟩
+      apply LE.le.antisymm
+      · apply sv1_ub
+      · apply sv1_lb
+        apply lucky_guess ⟩
+
+end pmf
+
+end SLang

@@ -176,8 +176,8 @@ lemma Hsens_cov_vk (v0 : ℤ) (vs : List ℤ) (l₁ l₂ : List ℕ) (point : �
   apply le_trans _ X1
   apply le_abs_self
 
-lemma sv9_aboveThresh_pmf_DP (ε : NNReal) (Hε : ε = ε₁ / ε₂) :
-    PureDPSystem.prop (@sv9_aboveThresh_SPMF qs ε₁ ε₂) ε := by
+lemma sv9_aboveThresh_pmf_DP HL (ε : NNReal) (Hε : ε = ε₁ / ε₂) :
+    PureDPSystem.prop (@sv9_aboveThresh_SPMF qs HL ε₁ ε₂) ε := by
   -- Unfold DP definitions
   simp [DPSystem.prop]
   apply singleton_to_event

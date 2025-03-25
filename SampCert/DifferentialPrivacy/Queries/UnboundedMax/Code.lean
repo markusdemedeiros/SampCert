@@ -13,9 +13,6 @@ namespace SLang
 
 variable (ε₁ ε₂ : ℕ+)
 
-variable [dps : DPSystem ℕ]
-variable [dpn : DPNoise dps]
-
 /--
 Sum over a list, clipping each element to a maximum.
 
@@ -31,9 +28,81 @@ Always negative or zero.
 -/
 def exactDiffSum (m : ℕ) (l : List ℕ) : ℤ := exactClippedSum m l - exactClippedSum (m + 1) l
 
-def privUnboundedMax (ε₁ ε₂ : ℕ+) : List ℕ -> SPMF ℕ :=
-  sv1_aboveThresh_PMF exactDiffSum ε₁ ε₂
+/-
+lemma exactDiffSum_nonpos : exactDiffSum point L ≤ 0 := by
+  simp [exactDiffSum, exactClippedSum]
+  induction L
+  · simp
+  · rename_i l ll IH
+    simp
+    apply le_trans
+    · apply add_le_add
+      · rfl
+      · apply IH
+    simp
+-/
 
+lemma exactDiffSum_singleton_le_1 : -1 ≤ exactDiffSum point [v] := by
+  simp [exactDiffSum, exactClippedSum]
+  cases (Classical.em (point ≤ v))
+  · right
+    trivial
+  · left
+    rename_i h
+    simp at h
+    rw [Int.min_def]
+    simp
+    split
+    · linarith
+    · linarith
+
+lemma exactClippedSum_append : exactClippedSum i (A ++ B) = exactClippedSum i A + exactClippedSum i B := by
+  simp [exactClippedSum]
+
+lemma exactDiffSum_append : exactDiffSum i (A ++ B) = exactDiffSum i A + exactDiffSum i B := by
+  simp [exactDiffSum]
+  rw [exactClippedSum_append]
+  rw [exactClippedSum_append]
+  linarith
+
+-- There is a value such that sampling at least that value implies the loop definitely terminiates
+lemma lucky_guess (τ : ℤ) (l : List ℕ) : ∃ (K : ℤ), ∀ A, ∀ (K' : ℤ), K ≤ K' -> exactDiffSum A l + K' ≥ τ := by
+  exists (List.length l + τ)
+  intro A K' HK'
+  apply ge_iff_le.mpr
+  apply le_trans _ ?G1
+  case G1 =>
+    apply add_le_add
+    · rfl
+    · apply HK'
+  conv =>
+    lhs
+    rw [<- zero_add τ]
+  rw [<- add_assoc]
+  simp
+  clear HK'
+
+  induction l
+  · simp [exactDiffSum, exactClippedSum]
+  · rename_i l0 ll IH
+    simp
+    rw [<- List.singleton_append]
+    rw [exactDiffSum_append]
+    rw [add_comm]
+    repeat rw [<- add_assoc]
+    rw [add_comm]
+    repeat rw [<- add_assoc]
+    rw [add_assoc]
+    conv =>
+      lhs
+      rw [<- add_zero 0]
+    apply add_le_add
+    · apply IH
+    · have H := @exactDiffSum_singleton_le_1 A l0
+      linarith
+
+def privUnboundedMax (ε₁ ε₂ : ℕ+) : List ℕ -> SPMF ℕ :=
+  sv1_aboveThresh_PMF exactDiffSum lucky_guess ε₁ ε₂
 
 /-
 /-
@@ -115,18 +184,6 @@ lemma exactDiffSum_eventually_constant : ∃ K, ∀ K', K ≤ K' -> exactDiffSum
               apply Ha)]
       rfl
     simp
-
-lemma exactClippedSum_append : exactClippedSum i (A ++ B) = exactClippedSum i A + exactClippedSum i B := by
-  simp [exactClippedSum]
-
-lemma exactDiffSum_append : exactDiffSum i (A ++ B) = exactDiffSum i A + exactDiffSum i B := by
-  simp [exactDiffSum]
-  rw [exactClippedSum_append]
-  rw [exactClippedSum_append]
-  linarith
-
-
-
 
 
 end SLang
