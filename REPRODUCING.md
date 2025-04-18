@@ -48,7 +48,7 @@ To reproduce our benchmarks (figure 4), run the following command from (**the ho
 ```
 sh SampCert/Tests/run_benchmark.sh
 ```
-This command will save a reproduction of figure 5 to the home directory (figure 4 is the same as figure 5, but with the C++ benchmark removed). The figure can be accessed by running the following command (**from outside of the container**).
+This command will save a reproduction of figure 4 to the home directory. It can be accessed by running the following command (**from outside of the container**).
 ```
 docker cp sampcert:/home/lean/GaussianBenchmarks.pdf .
 ```

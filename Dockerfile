@@ -33,11 +33,8 @@ RUN cd SampCert/ && \
     lake build
 
 RUN cd SampCert/ && \
-    sh pbuild.sh
-
-RUN cd SampCert/ && \
     lake build FastExtract && \
-    dafny build --target:py Tests/SampCert.dfy Tests/Random.py Tests/testing-kolmogorov-discretegaussian.py Tests/testing-kolmogorov-discretelaplace.py Tests/IBM/discretegauss.py Tests/Load.py Tests/benchmarks.py -o Tests/SampCert.dfy
+    dafny build --target:py Tests/SampCert.dfy Tests/Random.py Tests/testing-kolmogorov-discretegaussian.py Tests/testing-kolmogorov-discretelaplace.py Tests/IBM/discretegauss.py Tests/benchmarks.py -o Tests/SampCert.dfy
 
 RUN cd SampCert && \
     lake build test
